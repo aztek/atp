@@ -11,7 +11,7 @@ license: GPL-3.0-only
 license-file: LICENSE
 author: Evgenii Kotelnikov
 maintainer: evgeny.kotelnikov@gmail.com
-category: Theorem Provers, Formal Methods, Math
+category: Theorem Provers, Formal Methods, Logic, Math
 tested-with:
   GHC == 7.8.4,
   GHC == 7.10.3,
