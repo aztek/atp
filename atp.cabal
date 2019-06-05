@@ -54,3 +54,26 @@ test-suite test-suite
   build-depends:
     base,
     atp
+
+test-suite doctests
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  default-language: Haskell2010
+  main-is: DocTests/Main.hs
+  other-modules:
+    QuickCheckSpec.Generators
+  ghc-options:
+    -Wall -threaded
+  if flag(Werror)
+    ghc-options: -Werror
+  -- TODO: Make it work for older GHCs
+  if impl(ghc < 8.4)
+    buildable: False
+  build-depends:
+    base,
+    containers,
+    text,
+    generic-random >= 1.2.0.0 && < 1.3,
+    QuickCheck     >= 2.4     && < 3.0,
+    atp,
+    doctest
