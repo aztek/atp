@@ -197,15 +197,11 @@ pattern Falsum = Atomic (Constant False)
 
 -- | A smart constructor for equality.
 (===) :: Term -> Term -> Formula
-a === b
-  | a == b    = tautology
-  | otherwise = Atomic (Equality a b)
+a === b = Atomic (Equality a b)
 
 -- | A smart constructor for inequality.
 (=/=) :: Term -> Term -> Formula
-a =/= b
-  | a == b    = falsum
-  | otherwise = Negate (Atomic (Equality a b))
+a =/= b = Negate (a === b)
 
 -- | A smart constructor for negation.
 neg :: Formula -> Formula
