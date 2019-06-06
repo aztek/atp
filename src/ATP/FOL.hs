@@ -310,6 +310,12 @@ quantified _ _ Tautology = tautology
 quantified _ _ Falsum    = falsum
 quantified q v f = Quantified q v f
 
+-- | A smart constructor for quantified formulas.
+-- Provides a higher-order abstract syntax for the binding of
+-- a quantified variable.
+--
+-- See <https://emilaxelsson.github.io/documents/axelsson2013using.pdf>
+-- for details.
 quantifiedHOAS :: Quantifier -> (Term -> Formula) -> Formula
 quantifiedHOAS q p = quantified q v f
   where
