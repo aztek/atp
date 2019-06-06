@@ -49,7 +49,6 @@ library
     ghc-options:
       -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns
       -Wredundant-constraints
-    default-extensions: Safe
 
 test-suite test-suite
   type: exitcode-stdio-1.0
