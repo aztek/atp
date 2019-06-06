@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternSynonyms #-}
 
@@ -76,6 +77,12 @@ module ATP.FOL (
 
 import Data.Foldable (Foldable)
 import qualified Data.Foldable as Foldable (toList)
+#if !MIN_VERSION_base(4, 8, 0)
+import Data.Monoid (Monoid(..))
+#endif
+#if !MIN_VERSION_base(4, 11, 0)
+import Data.Semigroup (Semigroup(..))
+#endif
 import Data.String (IsString(..))
 import Data.Text (Text)
 
@@ -149,7 +156,7 @@ instance IsString Formula where
 infix  9 #
 infix  8 ===
 infix  8 =/=
-infixl 7 /\
+infixl 7 /\ --
 infixl 6 \/
 infix  5 ==>
 infixl 5 <=>
