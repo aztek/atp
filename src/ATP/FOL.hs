@@ -360,6 +360,7 @@ instance Semigroup Conjunction where
 
 instance Monoid Conjunction where
   mempty = Conjunction tautology
+  mappend = (<>)
 
 -- | Build the conjunction of formulas in a list.
 conjunction :: [Formula] -> Formula
@@ -374,6 +375,7 @@ instance Semigroup Disjunction where
 
 instance Monoid Disjunction where
   mempty = Disjunction falsum
+  mappend = (<>)
 
 -- | Build the disjunction of formulas in a list.
 disjunction :: [Formula] -> Formula
@@ -388,6 +390,7 @@ instance Semigroup Equivalence where
 
 instance Monoid Equivalence where
   mempty = Equivalence tautology
+  mappend = (<>)
 
 -- | Build the equivalence of formulas in a list.
 equivalence :: [Formula] -> Formula
@@ -402,6 +405,7 @@ instance Semigroup Inequivalence where
 
 instance Monoid Inequivalence where
   mempty = Inequivalence falsum
+  mappend = (<>)
 
 -- | Build the inequivalence of formulas in a list.
 inequivalence :: [Formula] -> Formula
