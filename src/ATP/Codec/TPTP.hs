@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -16,6 +17,9 @@ module ATP.Codec.TPTP (
 ) where
 
 import Data.List (genericIndex)
+#if !MIN_VERSION_base(4, 11, 0)
+import Data.Semigroup ((<>))
+#endif
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.TPTP as TPTP

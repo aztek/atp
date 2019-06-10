@@ -75,9 +75,9 @@ module ATP.FOL (
   (|-)
 ) where
 
-import Data.Foldable (Foldable)
 import qualified Data.Foldable as Foldable (toList)
 #if !MIN_VERSION_base(4, 8, 0)
+import Data.Foldable (Foldable)
 import Data.Monoid (Monoid(..))
 #endif
 #if !MIN_VERSION_base(4, 11, 0)
@@ -184,7 +184,9 @@ tautology :: Formula
 tautology = Atomic (Constant True)
 
 -- | The logical truth.
+#if __GLASGOW_HASKELL__ >= 710
 pattern Tautology :: Formula
+#endif
 pattern Tautology = Atomic (Constant True)
 
 -- | The logical false.
@@ -192,7 +194,9 @@ falsum :: Formula
 falsum = Atomic (Constant False)
 
 -- | The logical false.
+#if __GLASGOW_HASKELL__ >= 710
 pattern Falsum :: Formula
+#endif
 pattern Falsum = Atomic (Constant False)
 
 -- | A smart constructor for equality.
