@@ -168,13 +168,13 @@ infixl 5 <~>
 -- 'Application' allows ('#') to be used for both terms, literals and formulas
 -- and avoids introducing three separate helper functions.
 class Application a where
-  (#) :: Symbol -> [Term] -> a
+  (#) :: Foldable f => Symbol -> f Term -> a
 
 instance Application Term where
-  (#) = Function
+  f # ts = Function f (Foldable.toList ts)
 
 instance Application Literal where
-  (#) = Predicate
+  p # ts = Predicate p (Foldable.toList ts)
 
 instance Application Formula where
   p # ts = Atomic (p # ts)
@@ -363,8 +363,8 @@ instance Monoid Conjunction where
   mappend = (<>)
 
 -- | Build the conjunction of formulas in a list.
-conjunction :: [Formula] -> Formula
-conjunction = getConjunction . mconcat . fmap Conjunction
+conjunction :: Foldable f => f Formula -> Formula
+conjunction = getConjunction . mconcat . fmap Conjunction . Foldable.toList
 
 -- | The ('falsum', '\/') monoid.
 newtype Disjunction = Disjunction { getDisjunction :: Formula }
@@ -378,8 +378,8 @@ instance Monoid Disjunction where
   mappend = (<>)
 
 -- | Build the disjunction of formulas in a list.
-disjunction :: [Formula] -> Formula
-disjunction = getDisjunction . mconcat . fmap Disjunction
+disjunction :: Foldable f => f Formula -> Formula
+disjunction = getDisjunction . mconcat . fmap Disjunction . Foldable.toList
 
 -- | The ('tautology', '<=>') monoid.
 newtype Equivalence = Equivalence { getEquivalence :: Formula }
@@ -393,8 +393,8 @@ instance Monoid Equivalence where
   mappend = (<>)
 
 -- | Build the equivalence of formulas in a list.
-equivalence :: [Formula] -> Formula
-equivalence = getEquivalence . mconcat . fmap Equivalence
+equivalence :: Foldable f => f Formula -> Formula
+equivalence = getEquivalence . mconcat . fmap Equivalence . Foldable.toList
 
 -- | The ('falsum', '<~>') monoid.
 newtype Inequivalence = Inequivalence { getInequivalence :: Formula }
@@ -408,8 +408,8 @@ instance Monoid Inequivalence where
   mappend = (<>)
 
 -- | Build the inequivalence of formulas in a list.
-inequivalence :: [Formula] -> Formula
-inequivalence = getInequivalence . mconcat . fmap Inequivalence
+inequivalence :: Foldable f => f Formula -> Formula
+inequivalence = getInequivalence . mconcat . fmap Inequivalence . Foldable.toList
 
 
 -- * Theorems
