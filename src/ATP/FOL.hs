@@ -351,7 +351,7 @@ exists = quantifiedHOAS Exists
 
 -- * Monoids of first-order formulas
 
--- | Monoid under ('/\').
+-- | The ('tautology', '/\') monoid.
 newtype Conjunction = Conjunction { getConjunction :: Formula }
   deriving (Show, Eq, Ord)
 
@@ -366,7 +366,7 @@ instance Monoid Conjunction where
 conjunction :: [Formula] -> Formula
 conjunction = getConjunction . mconcat . fmap Conjunction
 
--- | Monoid under ('\/').
+-- | The ('falsum', '\/') monoid.
 newtype Disjunction = Disjunction { getDisjunction :: Formula }
   deriving (Show, Eq, Ord)
 
@@ -381,7 +381,7 @@ instance Monoid Disjunction where
 disjunction :: [Formula] -> Formula
 disjunction = getDisjunction . mconcat . fmap Disjunction
 
--- | Monoid under ('<=>').
+-- | The ('tautology', '<=>') monoid.
 newtype Equivalence = Equivalence { getEquivalence :: Formula }
   deriving (Show, Eq, Ord)
 
@@ -396,7 +396,7 @@ instance Monoid Equivalence where
 equivalence :: [Formula] -> Formula
 equivalence = getEquivalence . mconcat . fmap Equivalence
 
--- | Monoid under ('<~>').
+-- | The ('falsum', '<~>') monoid.
 newtype Inequivalence = Inequivalence { getInequivalence :: Formula }
   deriving (Show, Eq, Ord)
 
