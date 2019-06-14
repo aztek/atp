@@ -17,7 +17,7 @@ Consider the following classical logical syllogism.
 
 /All humans are mortal. Socrates is a human. Therefore, Socrates is mortal./
 
-It can be formalized in first-order logic and expressed in Haskell as follows.
+We can formalize it in first-order logic and express in Haskell as follows.
 
 > humansAreMortal :: Formula
 > humansAreMortal = forall $ \x -> "human" # [x] ==> "mortal" # [x]
