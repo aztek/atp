@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 {-|
 Module       : ATP.FOL
@@ -79,7 +80,7 @@ module ATP.FOL (
   (==>),
   (<=>),
   (<~>),
-  quantified,
+  Binder(..),
   forall,
   exists,
 
@@ -110,7 +111,9 @@ import Data.String (IsString(..))
 import Data.Text (Text)
 
 -- $setup
+-- >>> :set -XOverloadedStrings
 -- >>> :load QuickCheckSpec.Generators
+-- >>> let eq = binaryPredicate "eq"
 
 
 -- * Formulas
@@ -377,42 +380,54 @@ f <~> Falsum = f
 Connected f Xor g <~> h = f <~> (g <~> h)
 f <~> g = Connected f Xor g
 
--- | A smart constructor for quantified formulas.
-quantified :: Quantifier -> Var -> Formula -> Formula
-quantified _ _ Tautology = tautology
-quantified _ _ Falsum    = falsum
-quantified q v f = Quantified q v f
-
--- | A smart constructor for quantified formulas.
--- Provides a higher-order abstract syntax for the binding of
--- a quantified variable.
+-- | A class of binders for quantified variables.
 --
--- See <https://emilaxelsson.github.io/documents/axelsson2013using.pdf>
--- for details.
-quantifiedHOAS :: Quantifier -> (Term -> Formula) -> Formula
-quantifiedHOAS q p = quantified q v f
-  where
-    f = p (Variable v)
-    v = 1 + maximalVariable f
+-- This class and its instances provides machinery for using polyvariadic
+-- functions as higher-order abstract syntax for bindings of
+-- quantified variables.
+--
+-- > eq = binaryPredicate "eq"
+--
+-- >>> quantified Forall $ \x -> x `eq` x
+-- Quantified Forall 1 (Atomic (Predicate "eq" [Variable 1,Variable 1]))
+--
+-- >>> quantified Forall $ \x y -> x `eq` y ==> y `eq` x
+-- Quantified Forall 2 (Quantified Forall 1 (Connected (Atomic (Predicate "eq" [Variable 2,Variable 1])) Implies (Atomic (Predicate "eq" [Variable 1,Variable 2]))))
+class Binder b where
+  -- | A smart constructor for quantified formulas.
+  quantified :: Quantifier -> b -> Formula
 
-    maximalVariable :: Formula -> Var
-    maximalVariable = \case
-      Atomic{} -> 0
-      Negate g -> maximalVariable g
-      Connected g _ h -> maximalVariable g `max` maximalVariable h
-      Quantified _ w _ -> w
+-- | The degenerate instance - no variable is bound.
+instance Binder Formula where
+  quantified _ f = f
+
+-- | The recursive instance for polyvariadic bindings of quantified variables.
+-- This is a generalized version of
+-- <https://emilaxelsson.github.io/documents/axelsson2013using.pdf>.
+instance Binder b => Binder (Term -> b) where
+  quantified q b = Quantified q v f
+    where
+      f = quantified q (b (Variable v))
+      v = 1 + maxvar f
+
+      maxvar :: Formula -> Var
+      maxvar = \case
+        Atomic{} -> 0
+        Negate g -> maxvar g
+        Connected g _ h -> maxvar g `max` maxvar h
+        Quantified _ w _ -> w
 
 -- | A smart constructor for universally quantified formulas.
--- Provides a higher-order abstract syntax for the binding of
--- a universally quantified variable.
-forall :: (Term -> Formula) -> Formula
-forall = quantifiedHOAS Forall
+-- Provides a polyvariadic higher-order abstract syntax for the bindings of
+-- universally quantified variables.
+forall :: Binder b => b -> Formula
+forall = quantified Forall
 
 -- | A smart constructor for existentially quantified formulas.
--- Provides a higher-order abstract syntax for the binding of
--- an existentially quantified variable.
-exists :: (Term -> Formula) -> Formula
-exists = quantifiedHOAS Exists
+-- Provides a polyvariadic higher-order abstract syntax for the bindings of
+-- existentially quantified variables.
+exists :: Binder b => b -> Formula
+exists = quantified Exists
 
 
 -- * Monoids of first-order formulas
