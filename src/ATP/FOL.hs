@@ -19,14 +19,21 @@ Consider the following classical logical syllogism.
 
 We can formalize it in first-order logic and express in Haskell as follows.
 
+> human, mortal :: UnaryPredicate
+> human = unaryPredicate "human"
+> mortal = unaryPredicate "mortal"
+>
+> socrates :: Constant
+> socrates = "socrates"
+>
 > humansAreMortal :: Formula
-> humansAreMortal = forall $ \x -> "human" # [x] ==> "mortal" # [x]
+> humansAreMortal = forall $ \x -> human x ==> mortal x
 >
 > socratesIsHuman :: Formula
-> socratesIsHuman = "human" # ["socrates"]
+> socratesIsHuman = human socrates
 >
 > socratesIsMortal :: Formula
-> socratesIsMortal = "mortal" # ["socrates"]
+> socratesIsMortal = mortal socrates
 >
 > syllogism :: Theorem
 > syllogism = [humansAreMortal, socratesIsHuman] |- socratesIsMortal
@@ -43,7 +50,23 @@ module ATP.FOL (
   Formula(..),
 
   -- * Smart constructors
-  Application(..),
+  Function,
+  Constant,
+  UnaryFunction,
+  BinaryFunction,
+  TernaryFunction,
+  function,
+  unaryFunction,
+  binaryFunction,
+  ternaryFunction,
+  Predicate,
+  UnaryPredicate,
+  BinaryPredicate,
+  TernaryPredicate,
+  predicate,
+  unaryPredicate,
+  binaryPredicate,
+  ternaryPredicate,
   tautology,
   pattern Tautology,
   falsum,
@@ -153,7 +176,6 @@ instance IsString Formula where
 
 -- * Smart constructors
 
-infix  9 #
 infix  8 ===
 infix  8 =/=
 infixl 7 /\ --
@@ -162,22 +184,66 @@ infix  5 ==>
 infixl 5 <=>
 infixl 5 <~>
 
--- | A helper type class with the single operator ('#') that represents the
--- application of a function or predicate symbol to a list of terms.
---
--- 'Application' allows ('#') to be used for both terms, literals and formulas
--- and avoids introducing three separate helper functions.
-class Application a where
-  (#) :: Foldable f => Symbol -> f Term -> a
+-- | The type of a function symbol - a mapping from zero or more terms
+-- to a term.
+type Function = [Term] -> Term
 
-instance Application Term where
-  f # ts = Function f (Foldable.toList ts)
+-- | The type of a constant symbol.
+type Constant = Term
 
-instance Application Literal where
-  p # ts = Predicate p (Foldable.toList ts)
+-- | The type of a function symbol with one argument.
+type UnaryFunction = Term -> Term
 
-instance Application Formula where
-  p # ts = Atomic (p # ts)
+-- | The type of a function symbol with two arguments.
+type BinaryFunction = Term -> Term -> Term
+
+-- | The type of a function symbol with three arguments.
+type TernaryFunction = Term -> Term -> Term -> Term
+
+-- | Build a function from a function symbol.
+function :: Symbol -> Function
+function = Function
+
+-- | Build a unary function from a function symbol.
+unaryFunction :: Symbol -> UnaryFunction
+unaryFunction f a = Function f [a]
+
+-- | Build a binary function from a function symbol.
+binaryFunction :: Symbol -> BinaryFunction
+binaryFunction f a b = Function f [a, b]
+
+-- | Build a ternary function from a function symbol.
+ternaryFunction :: Symbol -> TernaryFunction
+ternaryFunction f a b c = Function f [a, b, c]
+
+-- | The type of a predicate symbol - a mapping from zero or more terms
+-- to a formula.
+type Predicate = [Term] -> Formula
+
+-- | The type of a predicate symbol with one argument.
+type UnaryPredicate = Term -> Formula
+
+-- | The type of a predicate symbol with two arguments.
+type BinaryPredicate = Term -> Term -> Formula
+
+-- | The type of a function symbol with three arguments.
+type TernaryPredicate = Term -> Term -> Term -> Formula
+
+-- | Build a predicate from a predicate symbol.
+predicate :: Symbol -> Predicate
+predicate p as = Atomic (Predicate p as)
+
+-- | Build a unary predicate from a predicate symbol.
+unaryPredicate :: Symbol -> UnaryPredicate
+unaryPredicate p a = Atomic (Predicate p [a])
+
+-- | Build a binary predicate from a predicate symbol.
+binaryPredicate :: Symbol -> BinaryPredicate
+binaryPredicate p a b = Atomic (Predicate p [a, b])
+
+-- | Build a ternary predicate from a predicate symbol.
+ternaryPredicate :: Symbol -> TernaryPredicate
+ternaryPredicate p a b c = Atomic (Predicate p [a, b, c])
 
 -- | The logical truth.
 tautology :: Formula
