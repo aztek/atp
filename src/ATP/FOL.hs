@@ -84,6 +84,10 @@ module ATP.FOL (
   forall,
   exists,
 
+  -- * Variables
+  FirstOrder(..),
+  closed,
+
   -- * Monoids of first-order formulas
   Conjunction(..),
   conjunction,
@@ -107,6 +111,8 @@ import Data.Monoid (Monoid(..))
 #if !MIN_VERSION_base(4, 11, 0)
 import Data.Semigroup (Semigroup(..))
 #endif
+import qualified Data.Set as S (empty, singleton, insert, delete, union, unions, member, null)
+import Data.Set (Set)
 import Data.String (IsString(..))
 import Data.Text (Text)
 
@@ -428,6 +434,138 @@ forall = quantified Forall
 -- existentially quantified variables.
 exists :: Binder b => b -> Formula
 exists = quantified Exists
+
+
+-- * Variables
+
+-- | A class of first-order expressions, i.e. expressions that might contain
+-- variables. @'Formula'@s, @'Literal'@s and @'Term'@s are first-order expressions.
+--
+-- A variable can occur both as free and bound, therefore
+-- @'free' e@ and @'bound' e@ are not necessarily disjoint and
+-- @v `freeIn` e@ and @v `boundIn` e@ are not necessarily musually exclusive.
+--
+-- @'vars'@, @'free'@ and @'bound'@ are connected by the following property.
+--
+-- > free e `S.union` bound e == vars e
+--
+-- @'occursIn'@, @'freeIn'@ and @'boundIn'@ are connected by the following property.
+--
+-- > v `freeIn` e || v `boundIn` e == v `occursIn` e
+--
+class FirstOrder e where
+  -- | The set of all variables that occur anywhere in the given expression.
+  vars :: e -> Set Var
+
+  -- | The set of variables that occur freely in the given expression,
+  -- i.e. are not bound by any quantifier inside the expression.
+  free :: e -> Set Var
+
+  -- | The set of variables that occur bound in the given expression,
+  -- i.e. are bound by a quantifier inside the expression.
+  bound :: e -> Set Var
+
+  -- | Check whether the given variable occurs anywhere in the given expression.
+  occursIn :: Var -> e -> Bool
+  v `occursIn` e = v `S.member` vars e
+
+  -- | Check whether the given variable occurs freely anywhere in the given expression.
+  freeIn :: Var -> e -> Bool
+  v `freeIn` e = v `S.member` free e
+
+  -- | Check whether the given variable occurs bound anywhere in the given expression.
+  boundIn :: Var -> e -> Bool
+  v `boundIn` e = v `S.member` bound e
+
+  -- | Check whether the given expression is ground, i.e. does not contain
+  -- any variables.
+  --
+  -- Note that /ground formula/ is sometimes understood as /formula that does/
+  -- /not contain any free variables/. In this library such formulas are called
+  -- @'closed'@.
+  ground :: e -> Bool
+  ground = S.null . vars
+
+  -- | @'substitute' v t e@ substitutes each free occurrence of the variable
+  -- 'v' in the expression 'e' with the term 't'.
+  -- 'substitute' has the following properties.
+  --
+  -- __Idempotence__
+  --
+  -- > not (v `occursIn` t) ==> substitute v t (substitute v t e) == substitute v t e
+  --
+  -- __Commutativity__
+  --
+  -- > v /= w && not (v `occursIn` s) && not (w `occursIn` t) ==>
+  -- >   substitute v t (substitute w s e) == substitute w s (substitute v t e)
+  --
+  -- __Fixed point__
+  --
+  -- > not (v `freeIn` e) ==> substitute v t e == e
+  --
+  -- __Elimination__
+  --
+  -- > not (v `occursIn` t) ==> not (v `freeIn` substitute v t e)
+  --
+  substitute :: Var -> Term -> e -> e
+
+instance FirstOrder Formula where
+  vars = \case
+    Atomic l         -> vars l
+    Negate f         -> vars f
+    Connected f _ g  -> vars f `S.union` vars g
+    Quantified _ _ f -> vars f
+
+  free = \case
+    Atomic l         -> vars l
+    Negate f         -> free f
+    Connected f _ g  -> free f `S.union` free g
+    Quantified _ v f -> S.delete v (free f)
+
+  bound = \case
+    Atomic{}         -> S.empty
+    Negate f         -> bound f
+    Connected f _ g  -> bound f `S.union` bound g
+    Quantified _ v f -> if v `freeIn` f then S.insert v (bound f) else bound f
+
+  substitute v t = \case
+    Atomic l         -> Atomic (substitute v t l)
+    Negate f         -> Negate (substitute v t f)
+    Connected f c g  -> Connected (substitute v t f) c (substitute v t g)
+    Quantified q w f -> Quantified q w (if w == v then f else substitute v t f)
+
+instance FirstOrder Literal where
+  vars = \case
+    Constant{}     -> S.empty
+    Predicate _ ts -> S.unions (fmap vars ts)
+    Equality a b   -> vars a `S.union` vars b
+
+  free = vars
+
+  bound _ = S.empty
+
+  substitute v t = \case
+    Constant b     -> Constant b
+    Predicate p ts -> Predicate p (fmap (substitute v t) ts)
+    Equality a b   -> Equality (substitute v t a) (substitute v t b)
+
+instance FirstOrder Term where
+  vars = \case
+    Variable v    -> S.singleton v
+    Function _ ts -> S.unions (fmap vars ts)
+
+  free = vars
+
+  bound _ = S.empty
+
+  substitute v t = \case
+    Variable w    -> if w == v then t else Variable w
+    Function f ts -> Function f (fmap (substitute v t) ts)
+
+-- | Check whether the given formula is closed, i.e. does not contain any free
+-- variables.
+closed :: Formula -> Bool
+closed = S.null . free
 
 
 -- * Monoids of first-order formulas
