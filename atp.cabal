@@ -54,17 +54,23 @@ library
       -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns
       -Wredundant-constraints
 
-test-suite test-suite
+test-suite quickcheck-suite
   type: exitcode-stdio-1.0
   hs-source-dirs: test
   default-language: Haskell2010
-  main-is: Main.hs
+  main-is: QuickCheckSpec/Main.hs
+  other-modules:
+    QuickCheckSpec.Generators
   ghc-options:
     -Wall -threaded
   if flag(Werror)
     ghc-options: -Werror
   build-depends:
     base,
+    containers,
+    text,
+    generic-random >= 1.2.0.0 && < 1.3,
+    QuickCheck     >= 2.4     && < 3.0,
     atp
 
 test-suite doctests
