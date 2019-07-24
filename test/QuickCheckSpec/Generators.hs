@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE CPP #-}
 
 {-|
 Module       : QuickCheckSpec.Generators
@@ -13,6 +14,10 @@ Stability    : experimental
 -}
 
 module QuickCheckSpec.Generators () where
+
+#if !MIN_VERSION_base(4, 8, 0)
+import Control.Applicative (pure, (<$>), (<*>))
+#endif
 
 import GHC.Generics (Generic)
 import Generic.Random (genericArbitraryU, genericArbitraryRec, (%))
