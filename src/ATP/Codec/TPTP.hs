@@ -26,12 +26,27 @@ import qualified Data.TPTP as TPTP
 
 import ATP.FOL
 
+
 -- | Encode a variable in TPTP.
+--
+-- >>> encodeVar 0
+-- Var "X"
+--
+-- >>> encodeVar 1
+-- Var "Y"
+--
+-- >>> encodeVar 7
+-- Var "X1"
+--
 encodeVar :: Var -> TPTP.Var
 encodeVar = TPTP.Var . genericIndex variables
   where
     variables :: [Text]
-    variables = concatMap (\n -> fmap (prime n) letters) [0..]
+    variables = concatMap (\n -> fmap (prime n) "XYZPQRT") [0..]
+
+    prime :: Integer -> Char -> Text
+    prime 0 v = T.singleton v
+    prime n v = T.cons v $ T.pack (show n)
 
     letters :: [Text]
     letters = ["X", "Y", "Z", "P", "Q", "R", "T"]
