@@ -407,11 +407,18 @@ class Binder b where
 instance Binder Formula where
   quantified _ f = f
 
+-- | The trivial instance - binder of the varible with the given name.
+instance Binder (Var, Formula) where
+  quantified q (v, f) = case f of
+    Tautology -> f
+    Falsum    -> f
+    _         -> Quantified q v f
+
 -- | The recursive instance for polyvariadic bindings of quantified variables.
 -- This is a generalized version of
 -- <https://emilaxelsson.github.io/documents/axelsson2013using.pdf>.
 instance Binder b => Binder (Term -> b) where
-  quantified q b = Quantified q v f
+  quantified q b = quantified q (v, f)
     where
       f = quantified q (b (Variable v))
       v = 1 + maxvar f
