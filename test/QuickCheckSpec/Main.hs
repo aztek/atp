@@ -40,6 +40,8 @@ prop_freeBoundVarsTerm = freeBoundVars
 
 -- * Substitutions
 
+-- ** Substitution is idempotent
+
 substituteIdempotence :: (Eq e, Show e, FirstOrder e)
                       => Var -> Term -> e -> Property
 substituteIdempotence v t e =
@@ -54,6 +56,8 @@ prop_substituteIdempotenceLiteral = substituteIdempotence
 
 prop_substituteIdempotenceTerm :: Var -> Term -> Term -> Property
 prop_substituteIdempotenceTerm = substituteIdempotence
+
+-- ** Substitution is commutative
 
 substituteCommutativity :: (Eq e, Show e, FirstOrder e)
                         => Var -> Term -> Var -> Term -> e -> Property
@@ -70,6 +74,8 @@ prop_substituteCommutativityLiteral = substituteCommutativity
 prop_substituteCommutativityTerm :: Var -> Term -> Var -> Term -> Term -> Property
 prop_substituteCommutativityTerm = substituteCommutativity
 
+-- ** Substitution has a fixed point
+
 substituteFixedPoint :: (Eq e, Show e, FirstOrder e)
                      => Var -> Term -> e -> Property
 substituteFixedPoint v t e =
@@ -84,6 +90,8 @@ prop_substituteFixedPointLiteral = substituteFixedPoint
 
 prop_substituteFixedPointTerm :: Var -> Term -> Term -> Property
 prop_substituteFixedPointTerm = substituteFixedPoint
+
+-- ** Substitution can eliminate free variables
 
 substituteElimination :: (Eq e, Show e, FirstOrder e)
                       => Var -> Term -> e -> Property
