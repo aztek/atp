@@ -43,69 +43,69 @@ prop_freeBoundVarsTerm = freeBoundVars
 -- ** Substitution is idempotent
 
 substituteIdempotence :: (Eq e, Show e, FirstOrder e)
-                      => Var -> Term -> e -> Property
-substituteIdempotence v t e =
+                      => Substitution -> e -> Property
+substituteIdempotence s@(v, t) e =
   not (v `occursIn` t) ==>
-    substitute v t (substitute v t e) === substitute v t e
+    substitute s (substitute s e) === substitute s e
 
-prop_substituteIdempotenceFormula :: Var -> Term -> Formula -> Property
+prop_substituteIdempotenceFormula :: Substitution -> Formula -> Property
 prop_substituteIdempotenceFormula = substituteIdempotence
 
-prop_substituteIdempotenceLiteral :: Var -> Term -> Literal -> Property
+prop_substituteIdempotenceLiteral :: Substitution -> Literal -> Property
 prop_substituteIdempotenceLiteral = substituteIdempotence
 
-prop_substituteIdempotenceTerm :: Var -> Term -> Term -> Property
+prop_substituteIdempotenceTerm :: Substitution -> Term -> Property
 prop_substituteIdempotenceTerm = substituteIdempotence
 
 -- ** Substitution is commutative
 
 substituteCommutativity :: (Eq e, Show e, FirstOrder e)
-                        => Var -> Term -> Var -> Term -> e -> Property
-substituteCommutativity v t w s e =
+                        => Substitution -> Substitution -> e -> Property
+substituteCommutativity s1@(v, t) s2@(w, s) e =
   v /= w && not (v `occursIn` s) && not (w `occursIn` t) ==>
-    substitute v t (substitute w s e) === substitute w s (substitute v t e)
+    substitute s1 (substitute s2 e) === substitute s2 (substitute s1 e)
 
-prop_substituteCommutativityFormula :: Var -> Term -> Var -> Term -> Formula -> Property
+prop_substituteCommutativityFormula :: Substitution -> Substitution -> Formula -> Property
 prop_substituteCommutativityFormula = substituteCommutativity
 
-prop_substituteCommutativityLiteral :: Var -> Term -> Var -> Term -> Literal -> Property
+prop_substituteCommutativityLiteral :: Substitution -> Substitution -> Literal -> Property
 prop_substituteCommutativityLiteral = substituteCommutativity
 
-prop_substituteCommutativityTerm :: Var -> Term -> Var -> Term -> Term -> Property
+prop_substituteCommutativityTerm :: Substitution -> Substitution -> Term -> Property
 prop_substituteCommutativityTerm = substituteCommutativity
 
 -- ** Substitution has a fixed point
 
 substituteFixedPoint :: (Eq e, Show e, FirstOrder e)
-                     => Var -> Term -> e -> Property
-substituteFixedPoint v t e =
+                     => Substitution -> e -> Property
+substituteFixedPoint s@(v, _) e =
   not (v `freeIn` e) ==>
-    substitute v t e === e
+    substitute s e === e
 
-prop_substituteFixedPointFormula :: Var -> Term -> Formula -> Property
+prop_substituteFixedPointFormula :: Substitution -> Formula -> Property
 prop_substituteFixedPointFormula = substituteFixedPoint
 
-prop_substituteFixedPointLiteral :: Var -> Term -> Literal -> Property
+prop_substituteFixedPointLiteral :: Substitution -> Literal -> Property
 prop_substituteFixedPointLiteral = substituteFixedPoint
 
-prop_substituteFixedPointTerm :: Var -> Term -> Term -> Property
+prop_substituteFixedPointTerm :: Substitution -> Term -> Property
 prop_substituteFixedPointTerm = substituteFixedPoint
 
 -- ** Substitution can eliminate free variables
 
 substituteElimination :: (Eq e, Show e, FirstOrder e)
-                      => Var -> Term -> e -> Property
-substituteElimination v t e =
+                      => Substitution -> e -> Property
+substituteElimination s@(v, t) e =
   not (v `occursIn` t) ==>
-    not (v `freeIn` substitute v t e)
+    not (v `freeIn` substitute s e)
 
-prop_substituteEliminationFormula :: Var -> Term -> Formula -> Property
+prop_substituteEliminationFormula :: Substitution -> Formula -> Property
 prop_substituteEliminationFormula = substituteElimination
 
-prop_substituteEliminationLiteral :: Var -> Term -> Literal -> Property
+prop_substituteEliminationLiteral :: Substitution -> Literal -> Property
 prop_substituteEliminationLiteral = substituteElimination
 
-prop_substituteEliminationTerm :: Var -> Term -> Term -> Property
+prop_substituteEliminationTerm :: Substitution -> Term -> Property
 prop_substituteEliminationTerm = substituteElimination
 
 

@@ -85,6 +85,7 @@ module ATP.FOL (
   exists,
 
   -- * Variables
+  Substitution,
   FirstOrder(..),
   closed,
 
@@ -445,6 +446,9 @@ exists = quantified Exists
 
 -- * Variables
 
+-- | The substitution of a variable with a term.
+type Substitution = (Var, Term)
+
 -- | A class of first-order expressions, i.e. expressions that might contain
 -- variables. @'Formula'@s, @'Literal'@s and @'Term'@s are first-order expressions.
 --
@@ -493,28 +497,8 @@ class FirstOrder e where
   ground :: e -> Bool
   ground = S.null . vars
 
-  -- | @'substitute' v t e@ substitutes each free occurrence of the variable
-  -- 'v' in the expression 'e' with the term 't'.
-  -- 'substitute' has the following properties.
-  --
-  -- __Idempotence__
-  --
-  -- > not (v `occursIn` t) ==> substitute v t (substitute v t e) == substitute v t e
-  --
-  -- __Commutativity__
-  --
-  -- > v /= w && not (v `occursIn` s) && not (w `occursIn` t) ==>
-  -- >   substitute v t (substitute w s e) == substitute w s (substitute v t e)
-  --
-  -- __Fixed point__
-  --
-  -- > not (v `freeIn` e) ==> substitute v t e == e
-  --
-  -- __Elimination__
-  --
-  -- > not (v `occursIn` t) ==> not (v `freeIn` substitute v t e)
-  --
-  substitute :: Var -> Term -> e -> e
+  -- | Apply the given substitution to the given expression.
+  substitute :: Substitution -> e -> e
 
 instance FirstOrder Formula where
   vars = \case
@@ -535,11 +519,11 @@ instance FirstOrder Formula where
     Connected f _ g  -> bound f `S.union` bound g
     Quantified _ v f -> if v `freeIn` f then S.insert v (bound f) else bound f
 
-  substitute v t = \case
-    Atomic l         -> Atomic (substitute v t l)
-    Negate f         -> Negate (substitute v t f)
-    Connected f c g  -> Connected (substitute v t f) c (substitute v t g)
-    Quantified q w f -> Quantified q w (if w == v then f else substitute v t f)
+  substitute s@(v, _) = \case
+    Atomic l         -> Atomic (substitute s l)
+    Negate f         -> Negate (substitute s f)
+    Connected f c g  -> Connected (substitute s f) c (substitute s g)
+    Quantified q w f -> Quantified q w (if w == v then f else substitute s f)
 
 instance FirstOrder Literal where
   vars = \case
@@ -551,10 +535,10 @@ instance FirstOrder Literal where
 
   bound _ = S.empty
 
-  substitute v t = \case
+  substitute s = \case
     Constant b     -> Constant b
-    Predicate p ts -> Predicate p (fmap (substitute v t) ts)
-    Equality a b   -> Equality (substitute v t a) (substitute v t b)
+    Predicate p ts -> Predicate p (fmap (substitute s) ts)
+    Equality a b   -> Equality (substitute s a) (substitute s b)
 
 instance FirstOrder Term where
   vars = \case
@@ -565,9 +549,9 @@ instance FirstOrder Term where
 
   bound _ = S.empty
 
-  substitute v t = \case
+  substitute s@(v, t) = \case
     Variable w    -> if w == v then t else Variable w
-    Function f ts -> Function f (fmap (substitute v t) ts)
+    Function f ts -> Function f (fmap (substitute s) ts)
 
 -- | Check whether the given formula is closed, i.e. does not contain any free
 -- variables.
