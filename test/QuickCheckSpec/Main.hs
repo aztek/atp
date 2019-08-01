@@ -40,13 +40,11 @@ prop_freeBoundVarsTerm = freeBoundVars
 
 -- * Substitutions
 
--- ** Substitution is idempotent
+-- ** Some substitutions are idempotent
 
-substituteIdempotence :: (Eq e, Show e, FirstOrder e)
-                      => Substitution -> e -> Property
-substituteIdempotence s@(v, t) e =
-  not (v `occursIn` t) ==>
-    substitute s (substitute s e) === substitute s e
+substituteIdempotence :: (Eq e, Show e, FirstOrder e) => Substitution -> e -> Property
+substituteIdempotence s e =
+  eliminatesVariables s ==> substitute s (substitute s e) === substitute s e
 
 prop_substituteIdempotenceFormula :: Substitution -> Formula -> Property
 prop_substituteIdempotenceFormula = substituteIdempotence
@@ -57,13 +55,13 @@ prop_substituteIdempotenceLiteral = substituteIdempotence
 prop_substituteIdempotenceTerm :: Substitution -> Term -> Property
 prop_substituteIdempotenceTerm = substituteIdempotence
 
--- ** Substitution is commutative
+-- ** Some substitutions are commutative
 
 substituteCommutativity :: (Eq e, Show e, FirstOrder e)
                         => Substitution -> Substitution -> e -> Property
-substituteCommutativity s1@(v, t) s2@(w, s) e =
-  v /= w && not (v `occursIn` s) && not (w `occursIn` t) ==>
-    substitute s1 (substitute s2 e) === substitute s2 (substitute s1 e)
+substituteCommutativity s s' e =
+  independent s s' ==>
+    substitute s (substitute s' e) === substitute s' (substitute s e)
 
 prop_substituteCommutativityFormula :: Substitution -> Substitution -> Formula -> Property
 prop_substituteCommutativityFormula = substituteCommutativity
@@ -74,13 +72,10 @@ prop_substituteCommutativityLiteral = substituteCommutativity
 prop_substituteCommutativityTerm :: Substitution -> Substitution -> Term -> Property
 prop_substituteCommutativityTerm = substituteCommutativity
 
--- ** Substitution has a fixed point
+-- ** Some substitutions have a fixed point
 
-substituteFixedPoint :: (Eq e, Show e, FirstOrder e)
-                     => Substitution -> e -> Property
-substituteFixedPoint s@(v, _) e =
-  not (v `freeIn` e) ==>
-    substitute s e === e
+substituteFixedPoint :: (Eq e, Show e, FirstOrder e) => Substitution -> e -> Property
+substituteFixedPoint s e = not (effective s e) ==> substitute s e === e
 
 prop_substituteFixedPointFormula :: Substitution -> Formula -> Property
 prop_substituteFixedPointFormula = substituteFixedPoint
@@ -91,22 +86,36 @@ prop_substituteFixedPointLiteral = substituteFixedPoint
 prop_substituteFixedPointTerm :: Substitution -> Term -> Property
 prop_substituteFixedPointTerm = substituteFixedPoint
 
--- ** Substitution can eliminate free variables
+-- ** Some substitution can eliminate free variables
 
 substituteElimination :: (Eq e, Show e, FirstOrder e)
-                      => Substitution -> e -> Property
-substituteElimination s@(v, t) e =
-  not (v `occursIn` t) ==>
-    not (v `freeIn` substitute s e)
+                      => Var -> Substitution -> e -> Property
+substituteElimination v s e =
+  eliminatesVariable v s ==> not (v `freeIn` substitute s e)
 
-prop_substituteEliminationFormula :: Substitution -> Formula -> Property
+prop_substituteEliminationFormula :: Var -> Substitution -> Formula -> Property
 prop_substituteEliminationFormula = substituteElimination
 
-prop_substituteEliminationLiteral :: Substitution -> Literal -> Property
+prop_substituteEliminationLiteral :: Var -> Substitution -> Literal -> Property
 prop_substituteEliminationLiteral = substituteElimination
 
-prop_substituteEliminationTerm :: Substitution -> Term -> Property
+prop_substituteEliminationTerm :: Var -> Substitution -> Term -> Property
 prop_substituteEliminationTerm = substituteElimination
+
+-- ** Some substitutions are only effective once
+
+substituteEffective :: (Eq e, Show e, FirstOrder e) => Substitution -> e -> Property
+substituteEffective s e =
+  eliminatesVariables s ==> not $ effective s (substitute s e)
+
+prop_substituteEffectiveFormula :: Substitution -> Formula -> Property
+prop_substituteEffectiveFormula = substituteEffective
+
+prop_substituteEffectiveLiteral :: Substitution -> Literal -> Property
+prop_substituteEffectiveLiteral = substituteEffective
+
+prop_substituteEffectiveTerm :: Substitution -> Term -> Property
+prop_substituteEffectiveTerm = substituteEffective
 
 
 -- * Runner

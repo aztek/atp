@@ -86,6 +86,10 @@ module ATP.FOL (
 
   -- * Variables
   Substitution,
+  effective,
+  eliminatesVariable,
+  eliminatesVariables,
+  independent,
   FirstOrder(..),
   closed,
 
@@ -109,10 +113,12 @@ import qualified Data.Foldable as Foldable (toList)
 import Data.Foldable (Foldable)
 import Data.Monoid (Monoid(..))
 #endif
+import qualified Data.Map as M (findWithDefault, member, keys, keysSet, elems, delete)
+import Data.Map (Map)
 #if !MIN_VERSION_base(4, 11, 0)
 import Data.Semigroup (Semigroup(..))
 #endif
-import qualified Data.Set as S (empty, singleton, insert, delete, union, unions, member, null)
+import qualified Data.Set as S (empty, singleton, insert, delete, union, unions, member, null, disjoint)
 import Data.Set (Set)
 import Data.String (IsString(..))
 import Data.Text (Text)
@@ -446,8 +452,42 @@ exists = quantified Exists
 
 -- * Variables
 
--- | The substitution of a variable with a term.
-type Substitution = (Var, Term)
+-- | The parallel substitution of a set of variables.
+type Substitution = Map Var Term
+
+-- | @'eliminatesVariable' v s@ is true iff 's' substituted the variable 'v'
+-- with a term where 'v' does not occur.
+--
+-- > eliminatesVariable v s ==> not (v `freeIn` substitute s e)
+--
+eliminatesVariable :: Var -> Substitution -> Bool
+eliminatesVariable v s = M.member v s && not (any (freeIn v) (M.elems s))
+
+-- | @'effective' s e@ checks whether 's' substitutes any of the variables
+-- that occur freely in 'e'.
+--
+-- > not (effective s e) ==> substitute s e === e
+--
+effective :: FirstOrder e => Substitution -> e -> Bool
+effective s e = any (`freeIn` e) (M.keys s)
+
+-- | @'eliminatesVariables' s@ is true iff 's' substitutes each of its variables
+-- /v/ with a term where /v/ does not occur.
+--
+-- > eliminatesVariables s ==> not $ effective s (substitute s e)
+--
+eliminatesVariables :: Substitution -> Bool
+eliminatesVariables s = all (not . effective s) (M.elems s)
+
+-- | Checks whether two substitutions are independent.
+--
+-- > independent s s' ==> substitute s (substitute s' e) === substitute s' (substitute s e)
+--
+independent :: Substitution -> Substitution -> Bool
+independent s1 s2 =
+  S.disjoint (M.keysSet s1) (M.keysSet s2) &&
+  all (`eliminatesVariable` s2) (M.keys s1) &&
+  all (`eliminatesVariable` s1) (M.keys s2)
 
 -- | A class of first-order expressions, i.e. expressions that might contain
 -- variables. @'Formula'@s, @'Literal'@s and @'Term'@s are first-order expressions.
@@ -519,11 +559,11 @@ instance FirstOrder Formula where
     Connected f _ g  -> bound f `S.union` bound g
     Quantified _ v f -> if v `freeIn` f then S.insert v (bound f) else bound f
 
-  substitute s@(v, _) = \case
+  substitute s = \case
     Atomic l         -> Atomic (substitute s l)
     Negate f         -> Negate (substitute s f)
     Connected f c g  -> Connected (substitute s f) c (substitute s g)
-    Quantified q w f -> Quantified q w (if w == v then f else substitute s f)
+    Quantified q v f -> Quantified q v (substitute (M.delete v s) f)
 
 instance FirstOrder Literal where
   vars = \case
@@ -549,8 +589,8 @@ instance FirstOrder Term where
 
   bound _ = S.empty
 
-  substitute s@(v, t) = \case
-    Variable w    -> if w == v then t else Variable w
+  substitute s = \case
+    Variable v    -> M.findWithDefault (Variable v) v s
     Function f ts -> Function f (fmap (substitute s) ts)
 
 -- | Check whether the given formula is closed, i.e. does not contain any free
