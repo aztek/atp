@@ -84,6 +84,9 @@ module ATP.FOL (
   forall,
   exists,
 
+  -- * Simplification
+  simplify,
+
   -- * Variables
   Substitution,
   effective,
@@ -448,6 +451,45 @@ forall = quantified Forall
 -- existentially quantified variables.
 exists :: Binder b => b -> Formula
 exists = quantified Exists
+
+
+-- * Simplification
+
+-- | Simplifies the given formula by replacing each of its constructors with
+-- corresponding smart constructors. The effects of simplification are the following.
+--
+-- * @'simplify' f@ is either @'tautology'@, @'falsum'@ or does not contain
+--   occurrences of either of them.
+-- * @'simplify' f@ does not contain nested negations.
+-- * All chained applications of any binary connective inside @'simplify' f@ are
+--   right-associative.
+--
+-- Any formula build only using smart constructors is simplified by construction.
+--
+-- >>> simplify (Connected tautology Or (Atomic (Predicate "p" [])))
+-- Atomic (Constant True)
+--
+-- >>> simplify (Negate (Negate (Atomic (Predicate "p" []))))
+-- Atomic (Predicate "p" [])
+--
+-- >>> simplify (Connected (Connected (Atomic (Predicate "p" [])) And (Atomic (Predicate "q" []))) And (Atomic (Predicate "r" [])))
+-- Connected (Atomic (Predicate "p" [])) And (Connected (Atomic (Predicate "q" [])) And (Atomic (Predicate "r" [])))
+--
+simplify :: Formula -> Formula
+simplify = \case
+  Atomic l         -> Atomic l
+  Negate f         -> neg (simplify f)
+  Connected f c g  -> simplify f # simplify g where (#) = smartConnective c
+  Quantified q v f -> quantified q (v, simplify f)
+
+-- | Convert a connective to its corresponding smart constructor.
+smartConnective :: Connective -> Formula -> Formula -> Formula
+smartConnective = \case
+  And        -> (/\)
+  Or         -> (\/)
+  Implies    -> (==>)
+  Equivalent -> (<=>)
+  Xor        -> (<~>)
 
 
 -- * Variables

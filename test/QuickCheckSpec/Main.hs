@@ -118,6 +118,12 @@ prop_substituteEffectiveTerm :: Substitution -> Term -> Property
 prop_substituteEffectiveTerm = substituteEffective
 
 
+-- * Simplification
+
+prop_simplifyIdempotent :: Formula -> Property
+prop_simplifyIdempotent f = simplify (simplify f) === simplify f
+
+
 -- * Runner
 
 return []
