@@ -38,22 +38,30 @@ import ATP.FOL
 -- >>> encodeVar 7
 -- Var "X1"
 --
+-- >>> encodeVar (-1)
+-- Var "YY"
+--
+-- >>> encodeVar (-7)
+-- Var "XX1"
+--
+-- 'encodeVar' is injective.
+--
+-- prop> (v == v') == (encodeVar v == encodeVar v')
+--
 encodeVar :: Var -> TPTP.Var
-encodeVar = TPTP.Var . genericIndex variables
+encodeVar v
+  | v >= 0    = TPTP.Var (genericIndex variables v)
+  | otherwise = TPTP.Var (genericIndex variables' (abs v))
   where
     variables :: [Text]
     variables = concatMap (\n -> fmap (prime n) "XYZPQRT") [0..]
 
+    variables' :: [Text]
+    variables' = [T.cons (T.head w) w | w <- variables]
+
     prime :: Integer -> Char -> Text
-    prime 0 v = T.singleton v
-    prime n v = T.cons v $ T.pack (show n)
-
-    letters :: [Text]
-    letters = ["X", "Y", "Z", "P", "Q", "R", "T"]
-
-    prime :: Integer -> Text -> Text
-    prime 0 v = v
-    prime n v = v <> T.pack (show n)
+    prime 0 w = T.singleton w
+    prime n w = T.cons w $ T.pack (show n)
 
 -- | Encode a function symbol in TPTP.
 encodeFunction :: Symbol -> TPTP.Name TPTP.Function
