@@ -22,8 +22,16 @@ import Test.QuickCheck (
   )
 
 import ATP.FOL hiding ((===), (==>))
+import ATP.Codec.TPTP (encodeFormula, decodeFormula)
 
 import QuickCheckSpec.Generators ()
+
+
+-- * Helper functions
+
+-- | Like '(==)', but modulo alpha equivalence.
+(~==) :: (Eq e, Show e, FirstOrder e) => e -> e -> Property
+a ~== b = counterexample (show a ++ " ~/= " ++ show b) (a `alphaEquivalent` b)
 
 
 -- * Free and bound variables
@@ -216,6 +224,12 @@ prop_alphaEquivalenceTransitivityTerm = alphaEquivalenceTransitivity
 
 prop_simplifyIdempotent :: Formula -> Property
 prop_simplifyIdempotent f = simplify (simplify f) === simplify f
+
+
+-- * Codec
+
+prop_codec :: Formula -> Property
+prop_codec f = simplify f ~== decodeFormula (encodeFormula f)
 
 
 -- * Runner
