@@ -11,10 +11,13 @@ Stability    : experimental
 
 module Main (main) where
 
+import Data.List (nub)
+import qualified Data.Map as M (elems)
+import Data.Maybe (isJust, fromJust)
 import qualified Data.Set as S (union)
 
 import Test.QuickCheck (
-    Property, (===), (==>),
+    Property, (===), (==>), whenFail, counterexample,
     forAllProperties, quickCheckWithResult, stdArgs, Args(..)
   )
 
@@ -116,6 +119,97 @@ prop_substituteEffectiveLiteral = substituteEffective
 
 prop_substituteEffectiveTerm :: Substitution -> Term -> Property
 prop_substituteEffectiveTerm = substituteEffective
+
+
+-- * Alpha conversions
+
+-- ** Renamings are injective
+
+alphaInjective :: (Eq e, Show e, FirstOrder e) => e -> e -> Property
+alphaInjective a b =
+  whenFail (print $ alpha a b) $
+    isJust (alpha a b) ==> injective (fromJust $ alpha a b)
+  where
+    injective r = nub (M.elems r) == M.elems r
+
+prop_alphaInjectiveFormula :: Formula -> Formula -> Property
+prop_alphaInjectiveFormula = alphaInjective
+
+prop_alphaInjectiveLiteral :: Literal -> Literal -> Property
+prop_alphaInjectiveLiteral = alphaInjective
+
+prop_alphaInjectiveTerm :: Term -> Term -> Property
+prop_alphaInjectiveTerm = alphaInjective
+
+-- ** Alpha conversion is a renaming
+
+alphaRename :: (Eq e, Show e, FirstOrder e) => e -> e -> Property
+alphaRename a b =
+  whenFail (print $ alpha a b) $
+    isJust (alpha a b) ==> rename (fromJust $ alpha a b) a === b
+
+prop_alphaRenameFormula :: Formula -> Formula -> Property
+prop_alphaRenameFormula = alphaRename
+
+prop_alphaRenameLiteral :: Literal -> Literal -> Property
+prop_alphaRenameLiteral = alphaRename
+
+prop_alphaRenameTerm :: Term -> Term -> Property
+prop_alphaRenameTerm = alphaRename
+
+-- ** Alpha equivalence is symmetric
+
+alphaEquivalenceSymmetry :: (Eq e, Show e, FirstOrder e) => e -> Property
+alphaEquivalenceSymmetry e =
+  whenFail (print $ alpha e e) $
+    e `alphaEquivalent` e
+
+prop_alphaEquivalenceSymmetryFormula :: Formula -> Property
+prop_alphaEquivalenceSymmetryFormula = alphaEquivalenceSymmetry
+
+prop_alphaEquivalenceSymmetryLiteral :: Literal -> Property
+prop_alphaEquivalenceSymmetryLiteral = alphaEquivalenceSymmetry
+
+prop_alphaEquivalenceSymmetryTerm :: Term -> Property
+prop_alphaEquivalenceSymmetryTerm = alphaEquivalenceSymmetry
+
+-- ** Alpha equivalence is reflexive
+
+alphaEquivalenceReflexivity :: (Eq e, Show e, FirstOrder e) => e -> e -> Property
+alphaEquivalenceReflexivity a b =
+  whenFail (print $ alpha a b) $
+    whenFail (print $ alpha b a) $
+      a `alphaEquivalent` b == b `alphaEquivalent` a
+
+prop_alphaEquivalenceReflexivityFormula :: Formula -> Formula -> Property
+prop_alphaEquivalenceReflexivityFormula = alphaEquivalenceReflexivity
+
+prop_alphaEquivalenceReflexivityLiteral :: Literal -> Literal -> Property
+prop_alphaEquivalenceReflexivityLiteral = alphaEquivalenceReflexivity
+
+prop_alphaEquivalenceReflexivityTerm :: Term -> Term -> Property
+prop_alphaEquivalenceReflexivityTerm = alphaEquivalenceReflexivity
+
+-- ** Alpha equivalence is transitive
+
+alphaEquivalenceTransitivity :: (Eq e, Show e, FirstOrder e)
+                             => e -> e -> e -> Property
+alphaEquivalenceTransitivity a b c =
+  whenFail (print $ alpha a b) $
+    whenFail (print $ alpha b c) $
+      whenFail (print $ alpha a c) $
+        a `alphaEquivalent` b ==>
+          b `alphaEquivalent` c ==>
+            a `alphaEquivalent` c
+
+prop_alphaEquivalenceTransitivityFormula :: Formula -> Formula -> Formula -> Property
+prop_alphaEquivalenceTransitivityFormula = alphaEquivalenceTransitivity
+
+prop_alphaEquivalenceTransitivityLiteral :: Literal -> Literal -> Literal -> Property
+prop_alphaEquivalenceTransitivityLiteral = alphaEquivalenceTransitivity
+
+prop_alphaEquivalenceTransitivityTerm :: Term -> Term -> Term -> Property
+prop_alphaEquivalenceTransitivityTerm = alphaEquivalenceTransitivity
 
 
 -- * Simplification

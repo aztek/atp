@@ -111,17 +111,20 @@ module ATP.FOL (
   (|-)
 ) where
 
+import Control.Monad (foldM, zipWithM, liftM2, guard)
 import qualified Data.Foldable as Foldable (toList)
 #if !MIN_VERSION_base(4, 8, 0)
 import Data.Foldable (Foldable)
 import Data.Monoid (Monoid(..))
 #endif
-import qualified Data.Map as M (findWithDefault, member, keys, keysSet, elems, delete)
+import Data.Functor (($>))
+import qualified Data.Map as M
 import Data.Map (Map)
+import Data.Maybe (isJust)
 #if !MIN_VERSION_base(4, 11, 0)
 import Data.Semigroup (Semigroup(..))
 #endif
-import qualified Data.Set as S (empty, singleton, insert, delete, union, unions, member, null, disjoint)
+import qualified Data.Set as S
 import Data.Set (Set)
 import Data.String (IsString(..))
 import Data.Text (Text)
@@ -531,6 +534,9 @@ independent s1 s2 =
   all (`eliminatesVariable` s2) (M.keys s1) &&
   all (`eliminatesVariable` s1) (M.keys s2)
 
+-- | Renaming is an injective mapping of variables.
+type Renaming = Map Var Var
+
 -- | A class of first-order expressions, i.e. expressions that might contain
 -- variables. @'Formula'@s, @'Literal'@s and @'Term'@s are first-order expressions.
 --
@@ -582,6 +588,44 @@ class FirstOrder e where
   -- | Apply the given substitution to the given expression.
   substitute :: Substitution -> e -> e
 
+  -- | Apply the given renaming to the given expression, i.e. subsitute in
+  -- parallel all variables in it.
+  rename :: Renaming -> e -> e
+
+  -- | @'alpha' a b@ returns 'Nothing' if 'a' cannot be alpha converted to 'b'
+  -- and 'Just r', where 'r' is a renaming, otherwise.
+  --
+  -- > isJust (alpha a b) ==> rename (fromJust $ alpha a b) a === b
+  --
+  alpha :: e -> e -> Maybe Renaming
+
+  -- | Check whether two given expressions are alpha-equivalent, that is
+  -- equivalent up to renaming of variables.
+  --
+  -- 'alphaEquivalent' is an equivalence relation.
+  --
+  -- __Symmetry__
+  --
+  -- > e `alphaEquivalent` e
+  --
+  -- __Reflexivity__
+  --
+  -- > a `alphaEquivalent` b == b `alphaEquivalent` a
+  --
+  -- __Transitivity__
+  --
+  -- > a `alphaEquivalent` b && b `alphaEquivalent` c ==> a `alphaEquivalent` c
+  --
+  alphaEquivalent :: e -> e -> Bool
+  alphaEquivalent a b = isJust (alpha a b)
+
+insertRenaming :: Renaming -> (Var, Var) -> Maybe Renaming
+insertRenaming r (v, v') = guard p $> M.insert v v' r
+  where p = maybe (v' `notElem` M.elems r) (== v') (M.lookup v r)
+
+mergeRenamings :: Renaming -> Renaming -> Maybe Renaming
+mergeRenamings r = foldM insertRenaming r . M.toList
+
 instance FirstOrder Formula where
   vars = \case
     Atomic l         -> vars l
@@ -607,6 +651,20 @@ instance FirstOrder Formula where
     Connected f c g  -> Connected (substitute s f) c (substitute s g)
     Quantified q v f -> Quantified q v (substitute (M.delete v s) f)
 
+  rename r = \case
+    Atomic l         -> Atomic (rename r l)
+    Negate f         -> Negate (rename r f)
+    Connected f c g  -> Connected (rename r f) c (rename r g)
+    Quantified q v f -> Quantified q (M.findWithDefault v v r) (rename r f)
+
+  alpha (Atomic l) (Atomic l') = alpha l l'
+  alpha (Negate f) (Negate f') = alpha f f'
+  alpha (Connected f c g) (Connected f' c' g') | c == c' =
+    uncurry mergeRenamings =<< liftM2 (,) (alpha f f') (alpha g g')
+  alpha (Quantified q v f) (Quantified q' v' f') | q == q' =
+    uncurry mergeRenamings =<< liftM2 (,) (alpha f f') (Just $ M.singleton v v')
+  alpha _ _ = Nothing
+
 instance FirstOrder Literal where
   vars = \case
     Constant{}     -> S.empty
@@ -622,6 +680,15 @@ instance FirstOrder Literal where
     Predicate p ts -> Predicate p (fmap (substitute s) ts)
     Equality a b   -> Equality (substitute s a) (substitute s b)
 
+  rename = substitute . fmap Variable
+
+  alpha (Constant b) (Constant b') | b == b' = Just M.empty
+  alpha (Predicate p ts) (Predicate p' ts') | p == p', length ts == length ts' =
+    foldM mergeRenamings M.empty =<< zipWithM alpha ts ts'
+  alpha (Equality a b) (Equality a' b') =
+    uncurry mergeRenamings =<< liftM2 (,) (alpha a a') (alpha b b')
+  alpha _ _ = Nothing
+
 instance FirstOrder Term where
   vars = \case
     Variable v    -> S.singleton v
@@ -634,6 +701,13 @@ instance FirstOrder Term where
   substitute s = \case
     Variable v    -> M.findWithDefault (Variable v) v s
     Function f ts -> Function f (fmap (substitute s) ts)
+
+  rename = substitute . fmap Variable
+
+  alpha (Variable v) (Variable v') = Just (M.singleton v v')
+  alpha (Function f ts) (Function f' ts') | f == f', length ts == length ts' =
+    foldM mergeRenamings M.empty =<< zipWithM alpha ts ts'
+  alpha _ _ = Nothing
 
 -- | Check whether the given formula is closed, i.e. does not contain any free
 -- variables.
