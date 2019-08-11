@@ -24,9 +24,6 @@ import Control.Monad.State (State, evalState, get, modify)
 import Data.List (genericIndex)
 import Data.Map (Map)
 import qualified Data.Map as M (empty, elems, lookup, insert)
-#if !MIN_VERSION_base(4, 11, 0)
-import Data.Semigroup ((<>))
-#endif
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.TPTP as TPTP
