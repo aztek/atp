@@ -64,3 +64,11 @@ instance Arbitrary Formula where
     Negate f         -> f : (Negate <$> shrink f)
     Connected f c g  -> f : g : (Connected <$> shrink f <*> pure c <*> shrink g)
     Quantified q v f -> f : (Quantified q v <$> shrink f)
+
+
+-- * Theorems
+
+deriving instance Generic Theorem
+instance Arbitrary Theorem where
+  arbitrary = genericArbitraryU
+  shrink (Theorem as c) = Theorem <$> shrinkList shrink as <*> shrink c
