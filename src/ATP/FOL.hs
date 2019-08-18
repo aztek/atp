@@ -47,6 +47,7 @@ module ATP.FOL (
   Term(..),
   Literal(..),
   Connective(..),
+  isAssociative,
   Quantifier(..),
   Formula(..),
 
@@ -183,6 +184,21 @@ data Connective
   | Equivalent -- ^ Equivalence.
   | Xor        -- ^ Exclusive or.
   deriving (Show, Eq, Ord, Enum, Bounded)
+
+-- | Check associativity of a given connective.
+--
+-- >>> isAssociative Implies
+-- False
+--
+-- >>> isAssociative And
+-- True
+isAssociative :: Connective -> Bool
+isAssociative = \case
+  And        -> True
+  Or         -> True
+  Implies    -> False
+  Equivalent -> False
+  Xor        -> False
 
 -- | The formula in first-order logic.
 data Formula
