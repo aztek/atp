@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 {-|
@@ -221,6 +222,38 @@ prop_alphaEquivalenceTransitivityTerm = alphaEquivalenceTransitivity
 
 
 -- * Simplification
+
+prop_simplifyEliminatesDoubleNegation :: Formula -> Property
+prop_simplifyEliminatesDoubleNegation f =
+  whenFail (print g) $
+    not (containsDoubleNegation g)
+      where g = simplify f
+
+containsDoubleNegation :: Formula -> Bool
+containsDoubleNegation = \case
+  Tautology -> False
+  Falsum    -> False
+  Atomic{}  -> False
+  Negate Negate{} -> True
+  Negate f -> containsDoubleNegation f
+  Connected f _ g  -> containsDoubleNegation f || containsDoubleNegation g
+  Quantified _ _ f -> containsDoubleNegation f
+
+prop_simplifyEliminatesLeftAssocitivity :: Formula -> Property
+prop_simplifyEliminatesLeftAssocitivity f =
+  whenFail (print g) $
+    not (containsLeftAssocitivity g)
+      where g = simplify f
+
+containsLeftAssocitivity :: Formula -> Bool
+containsLeftAssocitivity = \case
+  Tautology -> False
+  Falsum    -> False
+  Atomic{}  -> False
+  Negate f -> containsLeftAssocitivity f
+  Connected (Connected _ c' _) c _ | c' == c && isAssociative c -> True
+  Connected f _ g  -> containsLeftAssocitivity f || containsLeftAssocitivity g
+  Quantified _ _ f -> containsLeftAssocitivity f
 
 prop_simplifyIdempotent :: Formula -> Property
 prop_simplifyIdempotent f = simplify (simplify f) === simplify f

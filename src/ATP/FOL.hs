@@ -477,8 +477,6 @@ exists = quantified Exists
 -- | Simplifies the given formula by replacing each of its constructors with
 -- corresponding smart constructors. The effects of simplification are the following.
 --
--- * @'simplify' f@ is either @'tautology'@, @'falsum'@ or does not contain
---   occurrences of either of them.
 -- * @'simplify' f@ does not contain nested negations.
 -- * All chained applications of any binary connective inside @'simplify' f@ are
 --   right-associative.
