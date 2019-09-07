@@ -53,19 +53,16 @@ import ATP.FOL
 -- prop> (v == v') == (encodeVar v == encodeVar v')
 --
 encodeVar :: Var -> TPTP.Var
-encodeVar v
-  | v >= 0    = TPTP.Var (genericIndex variables v)
-  | otherwise = TPTP.Var (genericIndex variables' (abs v))
+encodeVar v = TPTP.Var $ genericIndex variables (abs v)
   where
     variables :: [Text]
-    variables = concatMap (\n -> fmap (prime n) "XYZPQRT") [0..]
+    variables = liftA2 prime [0..] ["X", "Y", "Z", "P", "Q", "R", "T"]
 
-    variables' :: [Text]
-    variables' = [T.cons (T.head w) w | w <- variables]
-
-    prime :: Integer -> Char -> Text
-    prime 0 w = T.singleton w
-    prime n w = T.cons w $ T.pack (show n)
+    prime :: Integer -> Text -> Text
+    prime n w = letter <> index
+      where
+        letter = if v >= 0 then w else w <> w
+        index  = if n == 0 then T.empty else T.pack (show n)
 
 type Substitutions = State (Map TPTP.Var Var)
 
