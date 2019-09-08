@@ -20,6 +20,7 @@ module ATP.Codec.TPTP (
   encodeTheorem
 ) where
 
+import Control.Applicative (liftA2)
 import Control.Monad.State (State, evalState, get, modify)
 import Data.List (genericIndex)
 import Data.Map (Map)
