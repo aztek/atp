@@ -12,6 +12,9 @@ import Control.Applicative (liftA2)
 import Data.Char (digitToInt)
 import Data.List (genericIndex)
 import Data.List.NonEmpty (NonEmpty(..), nonEmpty)
+#if !MIN_VERSION_base(4, 11, 0)
+import Data.Semigroup (Semigroup(..))
+#endif
 import Data.Text as T (unpack)
 
 import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
