@@ -109,7 +109,8 @@ module ATP.FOL (
 
   -- * Theorems
   Theorem(..),
-  (|-)
+  (|-),
+  claim
 ) where
 
 import Control.Monad (foldM, zipWithM, liftM2, guard)
@@ -805,3 +806,7 @@ infix 2 |-
 -- | Syntactic sugar, a synonym for 'Theorem'.
 (|-) :: Foldable f => f Formula -> Formula -> Theorem
 as |- c = Theorem (Foldable.toList as) c
+
+-- | Build a logical claim - a conjecture entailed by the empty set of premises.
+claim :: Formula -> Theorem
+claim f = [] |- f
