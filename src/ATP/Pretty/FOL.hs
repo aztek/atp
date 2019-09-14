@@ -72,8 +72,8 @@ instance Pretty Term where
 
 instance Pretty Literal where
   pretty = \case
-    Constant True  -> red "⟙"
-    Constant False -> red "⟘"
+    Constant True  -> blue "⟙"
+    Constant False -> blue "⟘"
     Predicate p ts -> prettyApplication (prettyPredicate p) (fmap pretty ts)
     Equality a b   -> pretty a <+> "=" <+> pretty b
 
