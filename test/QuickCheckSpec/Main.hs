@@ -12,6 +12,7 @@ Stability    : experimental
 
 module Main (main) where
 
+import Data.Function (on)
 import Data.List (nub)
 import qualified Data.Map as M (elems)
 import Data.Maybe (isJust, fromJust)
@@ -30,9 +31,17 @@ import QuickCheckSpec.Generators ()
 
 -- * Helper functions
 
--- | Like '(==)', but modulo alpha equivalence.
+-- | Like '(===)', but for alpha equivalence.
 (~==) :: (Eq e, Show e, FirstOrder e) => e -> e -> Property
 a ~== b = counterexample (show a ++ " ~/= " ++ show b) (a `alphaEquivalent` b)
+
+-- | Like '(===)', but modulo simplification.
+(==~) :: Formula -> Formula -> Property
+(==~) = (===) `on` simplify
+
+-- | Like '(===)', but for alpha equivalence and modulo simplification.
+(~==~) :: Formula -> Formula -> Property
+(~==~) = (~==) `on` simplify
 
 
 -- * Free and bound variables
@@ -256,13 +265,13 @@ containsLeftAssocitivity = \case
   Quantified _ _ f -> containsLeftAssocitivity f
 
 prop_simplifyIdempotent :: Formula -> Property
-prop_simplifyIdempotent f = simplify (simplify f) === simplify f
+prop_simplifyIdempotent f = simplify f ==~ f
 
 
 -- * Codec
 
 prop_codec :: Formula -> Property
-prop_codec f = simplify f ~== decodeFormula (encodeFormula f)
+prop_codec f = f ~==~ decodeFormula (encodeFormula f)
 
 
 -- * Runner

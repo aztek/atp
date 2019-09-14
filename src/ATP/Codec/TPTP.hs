@@ -149,14 +149,14 @@ encodeConnective = \case
 
 decodeConnected :: TPTP.Connective -> Formula -> Formula -> Formula
 decodeConnected = \case
-  TPTP.Conjunction -> (/\)
-  TPTP.Disjunction -> (\/)
-  TPTP.Implication -> (==>)
-  TPTP.Equivalence -> (<=>)
-  TPTP.ExclusiveOr -> (<~>)
-  TPTP.NegatedConjunction  -> \f g -> neg (f /\ g)
-  TPTP.NegatedDisjunction  -> \f g -> neg (f \/ g)
-  TPTP.ReversedImplication -> flip (==>)
+  TPTP.Conjunction -> \f g -> Connected f And g
+  TPTP.Disjunction -> \f g -> Connected f Or g
+  TPTP.Implication -> \f g -> Connected f Implies g
+  TPTP.Equivalence -> \f g -> Connected f Equivalent g
+  TPTP.ExclusiveOr -> \f g -> Connected f Xor g
+  TPTP.NegatedConjunction  -> \f g -> Negate (Connected f And g)
+  TPTP.NegatedDisjunction  -> \f g -> Negate (Connected f Or g)
+  TPTP.ReversedImplication -> \f g -> Connected g Implies f
 
 -- | Encode a quantifier in TPTP.
 encodeQuantifier :: Quantifier -> TPTP.Quantifier
@@ -185,7 +185,7 @@ decodeFormula = flip evalState M.empty . decodeFormulaS
 decodeFormulaS :: TPTP.UnsortedFirstOrder -> Substitutions Formula
 decodeFormulaS = \case
   TPTP.Atomic l          -> decodeLiteral l
-  TPTP.Negated f         -> neg <$> decodeFormulaS f
+  TPTP.Negated f         -> Negate <$> decodeFormulaS f
   TPTP.Connected f c g   -> decodeConnected c
                         <$> decodeFormulaS f <*> decodeFormulaS g
   TPTP.Quantified q vs f -> foldr (curry $ quantified (decodeQuantifier q))
