@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE CPP #-}
@@ -13,7 +14,9 @@ Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
 -}
 
-module QuickCheckSpec.Generators () where
+module QuickCheckSpec.Generators (
+  Simplified(..)
+) where
 
 #if !MIN_VERSION_base(4, 8, 0)
 import Control.Applicative (pure, (<$>), (<*>))
@@ -26,6 +29,21 @@ import Data.Text (Text, pack)
 import Test.QuickCheck (Arbitrary(..), shrinkList, listOf1, choose)
 
 import ATP.FOL
+
+
+-- * Helper type wrappers
+
+newtype Simplified a = Simplified { getSimplified :: a }
+  deriving (Show, Eq, Ord)
+
+instance Arbitrary (Simplified Formula) where
+  arbitrary = Simplified . simplify <$> arbitrary
+
+instance Arbitrary (Simplified Theorem) where
+  arbitrary = do
+    as <- fmap getSimplified <$> arbitrary
+    c <- getSimplified <$> arbitrary
+    return $ Simplified (Theorem as c)
 
 
 -- * Formulas
