@@ -23,7 +23,7 @@ import GHC.Generics (Generic)
 import Generic.Random (genericArbitraryU, genericArbitraryRec, (%))
 
 import Data.Text (Text, pack)
-import Test.QuickCheck (Arbitrary(..), shrinkList, ASCIIString(..))
+import Test.QuickCheck (Arbitrary(..), shrinkList, listOf1, choose)
 
 import ATP.FOL
 
@@ -31,18 +31,18 @@ import ATP.FOL
 -- * Formulas
 
 instance Arbitrary Text where
-  arbitrary = pack . getASCIIString <$> arbitrary
+  arbitrary = pack <$> listOf1 (choose ('a', 'z'))
 
 deriving instance Generic Term
 instance Arbitrary Term where
-  arbitrary = genericArbitraryRec (2 % 1 % ())
+  arbitrary = genericArbitraryRec (1 % 1 % ())
   shrink = \case
     Variable _    -> []
     Function f ts -> ts ++ (Function f <$> shrinkList shrink ts)
 
 deriving instance Generic Literal
 instance Arbitrary Literal where
-  arbitrary = genericArbitraryRec (3 % 1 % 2 % ())
+  arbitrary = genericArbitraryRec (1 % 1 % 1 % ())
   shrink = \case
     Constant _     -> []
     Predicate p ts -> Predicate p <$> shrinkList shrink ts
