@@ -17,14 +17,16 @@ module ATP.Codec.TPTP (
   encodeFormula,
   decodeFormula,
   decodeClause,
-  encodeTheorem
+  encodeTheorem,
+  decodeRefutation
 ) where
 
 import Control.Applicative (liftA2)
+import Control.Monad (when)
 import Control.Monad.State (State, evalState, get, modify)
 import Data.List (genericIndex)
 import Data.Map (Map)
-import qualified Data.Map as M (empty, elems, lookup, insert)
+import qualified Data.Map as M (empty, lookup, insert, member)
 #if !MIN_VERSION_base(4, 11, 0)
 import Data.Semigroup (Semigroup(..))
 #endif
@@ -33,7 +35,7 @@ import qualified Data.Text as T
 import qualified Data.TPTP as TPTP
 
 import ATP.FOL
-import ATP.Proof (Inference(..), Derivation(..), Proof'(..), Proof)
+import ATP.Proof (Inference(..), Derivation(..), Refutation(..))
 
 
 -- * Helpers
@@ -234,3 +236,68 @@ encodeTheorem (Theorem as c) = TPTP.TPTP units
     units = unit TPTP.Conjecture 0 c : zipWith (unit TPTP.Axiom) [1..] as
     unit r n f = TPTP.Unit (Right n) (formula r f) Nothing
     formula r f = TPTP.Formula (TPTP.Standard r) (encode f)
+
+-- | Decode a proof by refutation.
+decodeRefutation :: TPTP.TPTP -> Refutation Integer
+decodeRefutation (TPTP.TPTP units) = case reverse (decodeDerivations units) of
+  Derivation inference Falsum : derivations -> Refutation inference derivations
+  _:_ -> error "decodeProof: malformed input: refutation not found"
+  []  -> error "decodeProof: malformed input: empty proof"
+
+decodeDerivations :: [TPTP.Unit] -> [Derivation Integer]
+decodeDerivations = evalEnumeration . mapM decodeDerivationS
+
+decodeDerivationS :: TPTP.Unit -> Enumeration TPTP.UnitName (Derivation Integer)
+decodeDerivationS = \case
+  TPTP.Unit name (TPTP.Formula role formula) (Just (source, _)) -> do
+    (label, relabeling) <- get
+    when (M.member name relabeling)
+         (error "decodeDerivationS: malformed input: non-unique units")
+    register name
+    let antecedents = fmap (decodeUnitName relabeling) (collectParents source)
+    let inference = decodeInference source role antecedents label
+    return $ Derivation inference (decode formula)
+  _ -> error "decodeDerivationS: malformed input: expected unit"
+
+collectParents :: TPTP.Source -> [TPTP.UnitName]
+collectParents = \case
+  TPTP.File{}        -> []
+  TPTP.Theory{}      -> []
+  TPTP.Creator{}     -> []
+  TPTP.Introduced{}  -> []
+  TPTP.Inference _ _ ps -> concatMap (\(TPTP.Parent p _) -> collectParents p) ps
+  TPTP.UnitSource p  -> [p]
+  TPTP.UnknownSource -> []
+
+decodeUnitName :: Map TPTP.UnitName l -> TPTP.UnitName -> l
+decodeUnitName relabeling name
+  | Just label <- M.lookup name relabeling = label
+  | otherwise = error "decodeUnitName: malformed input: unrecognized unit"
+
+decodeInference :: TPTP.Source -> TPTP.Reserved TPTP.Role -> [f] -> f -> Inference f
+decodeInference source role antecedents = case source of
+  TPTP.Theory{}      -> error "decodeInference: unsupported unit source"
+  TPTP.Creator{}     -> error "decodeInference: unsupported unit source"
+  TPTP.UnitSource{}  -> error "decodeInference: unsupported unit source"
+  TPTP.Introduced{}  -> Axiom
+  TPTP.UnknownSource -> Unknown antecedents
+  TPTP.File{} -> case (role, antecedents) of
+    (TPTP.Standard TPTP.Axiom,      []) -> Axiom
+    (TPTP.Standard TPTP.Conjecture, []) -> Conjecture
+    _ -> error $ "decodeInference: unrecognized unit role " ++ show role
+  TPTP.Inference (TPTP.Atom rule) _ _ -> case (rule, antecedents) of
+    ("negated_conjecture",         [f]) -> NegatedConjecture       f
+    ("assume_negation",            [f]) -> NegatedConjecture       f
+    ("flattening",                 [f]) -> Flattening              f
+    ("skolemisation",              [f]) -> Skolemisation           f
+    ("skolemize",                  [f]) -> Skolemisation           f
+    ("ennf_transformation",        [f]) -> EnnfTransformation      f
+    ("nnf_transformation",         [f]) -> NnfTransformation       f
+    ("cnf_transformation",         [f]) -> Clausification          f
+    ("trivial_inequality_removal", [f]) -> TrivialInequality       f
+    ("superposition",           [f, g]) -> Superposition         f g
+    ("resolution",              [f, g]) -> Resolution            f g
+    ("subsumption_resolution",  [f, g]) -> SubsumptionResolution f g
+    ("forward_demodulation",    [f, g]) -> ForwardDemodulation   f g
+    ("backward_demodulation",   [f, g]) -> BackwardDemodulation  f g
+    _ -> Other rule antecedents
