@@ -13,9 +13,6 @@ import Control.Applicative (liftA2)
 import Data.Char (digitToInt)
 import Data.List (genericIndex)
 import Data.List.NonEmpty (NonEmpty(..), nonEmpty, toList)
-#if !MIN_VERSION_base(4, 11, 0)
-import Data.Semigroup (Semigroup(..))
-#endif
 import Data.Text as T (unpack)
 
 import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
@@ -41,9 +38,9 @@ prettyVar v = cyan . text $ genericIndex variables (abs v)
     variables = liftA2 prime [0..] ["v", "x", "y", "z", "t"]
 
     prime :: Integer -> String -> String
-    prime n w = letter <> index
+    prime n w = letter ++ index
       where
-        letter = if v >= 0 then w  else w <> "′"
+        letter = if v >= 0 then w  else w ++ "′"
         index  = if n == 0 then "" else fmap ("₀₁₂₃₄₅₆₇₈₉" !!) (digits n)
         digits = fmap digitToInt . show
 
