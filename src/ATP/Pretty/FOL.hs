@@ -12,7 +12,7 @@ module ATP.Pretty.FOL (
 import Control.Applicative (liftA2)
 import Data.Char (digitToInt)
 import Data.List (genericIndex)
-import Data.List.NonEmpty (NonEmpty(..), nonEmpty)
+import Data.List.NonEmpty (NonEmpty(..), nonEmpty, toList)
 #if !MIN_VERSION_base(4, 11, 0)
 import Data.Semigroup (Semigroup(..))
 #endif
@@ -21,6 +21,8 @@ import Data.Text as T (unpack)
 import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
 
 import ATP.FOL
+import ATP.Proof
+import ATP.Prover (Prover(..))
 
 
 -- * Helper functions
@@ -118,7 +120,49 @@ under c = \case
 
 instance Pretty Theorem where
   pretty = \case
-    Theorem as c -> vsep (zipWith prettyAxiom [1..] as ++ [prettyConjecture]) <> line
+    Theorem as c -> vsep (zipWith axiom [1..] as ++ [conclusion c]) <> line
       where
-        prettyAxiom i a = bold ("Axiom" <+> integer i <> dot) <+> pretty a
-        prettyConjecture = bold ("Conjecture" <> dot) <+> pretty c
+        axiom i = sequent ("Axiom" <+> integer i)
+        conclusion = sequent "Conjecture"
+        sequent h f = bold (h <> dot) <+> pretty f
+
+
+-- * Pretty printer for proofs
+
+instance Pretty l => Pretty (Inference l) where
+  pretty i
+    | Just as <- nonEmpty (antecedents i) =
+        prettyRule i <+> commaSep (fmap (bold . pretty) as)
+    | otherwise = prettyRule i
+
+prettyRule :: Inference l -> Doc
+prettyRule = \case
+  Conjecture{}            -> yellow "conjecture"
+  NegatedConjecture{}     -> yellow "negated conjecture"
+  Axiom{}                 -> yellow "axiom"
+  Flattening{}            -> yellow "flattening"
+  Skolemisation{}         -> yellow "skolemisation"
+  TrivialInequality{}     -> yellow "trivial inequality"
+  EnnfTransformation{}    -> yellow "ennf transformation"
+  NnfTransformation{}     -> yellow "nnf transformation"
+  Clausification{}        -> yellow "clausification"
+  Superposition{}         -> yellow "superposition"
+  Resolution{}            -> yellow "resolution"
+  SubsumptionResolution{} -> yellow "subsumption resolution"
+  ForwardDemodulation{}   -> yellow "forward demodulation"
+  BackwardDemodulation{}  -> yellow "backward demodulation"
+  Unknown{}               -> red "unknown"
+  Other name _ _          -> text (T.unpack name)
+
+instance Pretty l => Pretty (Derivation l) where
+  pretty (Derivation i f) =  bold (pretty (consequent i) <> dot) <+> pretty f
+                         <+> brackets (pretty i)
+
+instance Pretty l => Pretty (Refutation l) where
+  pretty p = vsep (toList . fmap pretty $ derivations p) <> line
+
+instance Pretty Proof where
+  pretty (Proof p r) = vsep [green meta, pretty r]
+    where
+      meta = "Found a proof by contradiction using" <+> name <> "."
+      name = text (T.unpack $ proverName p)
