@@ -36,6 +36,7 @@ library
     ATP.Codec.TPTP
     ATP.FOL
     ATP.Pretty.FOL
+    ATP.Prover
   ghc-options:
     -Wall
   if flag(Werror)
