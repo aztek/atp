@@ -29,6 +29,7 @@ import Data.Text (Text, pack)
 import Test.QuickCheck (Arbitrary(..), shrinkList, listOf1, choose)
 
 import ATP.FOL
+import ATP.Proof
 
 
 -- * Helper type wrappers
@@ -44,6 +45,16 @@ instance Arbitrary (Simplified Theorem) where
     as <- fmap getSimplified <$> arbitrary
     c <- getSimplified <$> arbitrary
     return $ Simplified (Theorem as c)
+
+instance Arbitrary l => Arbitrary (Simplified (Derivation l)) where
+  arbitrary = do
+    d <- Derivation <$> arbitrary <*> fmap getSimplified arbitrary
+    return (Simplified d)
+
+instance Arbitrary l => Arbitrary (Simplified (Refutation l)) where
+  arbitrary = do
+    r <- Refutation <$> arbitrary <*> fmap (fmap getSimplified) arbitrary
+    return (Simplified r)
 
 
 -- * Formulas
@@ -90,3 +101,20 @@ deriving instance Generic Theorem
 instance Arbitrary Theorem where
   arbitrary = genericArbitraryU
   shrink (Theorem as c) = Theorem <$> shrinkList shrink as <*> shrink c
+
+
+-- * Proofs
+
+deriving instance Generic (Inference f)
+instance Arbitrary f => Arbitrary (Inference f) where
+  arbitrary = genericArbitraryU
+
+deriving instance Generic (Derivation l)
+instance Arbitrary l => Arbitrary (Derivation l) where
+  arbitrary = genericArbitraryU
+  shrink (Derivation i f) = Derivation i <$> shrink f
+
+deriving instance Generic (Refutation l)
+instance Arbitrary l => Arbitrary (Refutation l) where
+  arbitrary = genericArbitraryU
+  shrink (Refutation i ds) = Refutation i <$> shrinkList shrink ds
