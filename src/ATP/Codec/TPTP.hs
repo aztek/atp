@@ -21,7 +21,7 @@ module ATP.Codec.TPTP (
 ) where
 
 import Control.Applicative (liftA2)
-import Control.Monad.State (State, evalState, get, put)
+import Control.Monad.State (State, evalState, get, modify)
 import Data.List (genericIndex)
 import Data.Map (Map)
 import qualified Data.Map as M (empty, elems, lookup, insert)
@@ -33,7 +33,21 @@ import qualified Data.Text as T
 import qualified Data.TPTP as TPTP
 
 import ATP.FOL
+import ATP.Proof (Inference(..), Derivation(..), Proof'(..), Proof)
 
+
+-- * Helpers
+
+type Enumeration a = State (Integer, Map a Integer)
+
+evalEnumeration :: Enumeration a e -> e
+evalEnumeration = flip evalState (1, M.empty)
+
+register :: Ord a => a -> Enumeration a ()
+register a = modify $ \(i, m) -> (i + 1, M.insert a i m)
+
+
+-- * Coding and decoding
 
 -- | Encode a variable in TPTP.
 --
@@ -68,19 +82,15 @@ encodeVar v = TPTP.Var $ genericIndex variables (abs v)
         letter = if v >= 0 then w else w <> w
         index  = if n == 0 then T.empty else T.pack (show n)
 
-type Substitutions = State (Var, Map TPTP.Var Var)
-
-evalSubstitutions :: Substitutions a -> a
-evalSubstitutions = flip evalState (0, M.empty)
+type Substitutions = Enumeration TPTP.Var
 
 -- | Decode a variable from TPTP.
 decodeVar :: TPTP.Var -> Substitutions Var
 decodeVar v = do
-  (upper, substitutions) <- get
-  case M.lookup v substitutions of
+  (i, s) <- get
+  case M.lookup v s of
     Just w  -> return w
-    Nothing -> put (fresh, M.insert v fresh substitutions) >> return fresh
-      where fresh = upper + 1
+    Nothing -> register v >> return i
 
 -- | Encode a function symbol in TPTP.
 encodeFunction :: Symbol -> TPTP.Name TPTP.Function
@@ -182,7 +192,7 @@ encodeFormula = \case
 
 -- | Decode a formula in unsorted first-order logic from TPTP.
 decodeFormula :: TPTP.UnsortedFirstOrder -> Formula
-decodeFormula = evalSubstitutions . decodeFormulaS
+decodeFormula = evalEnumeration . decodeFormulaS
 
 decodeFormulaS :: TPTP.UnsortedFirstOrder -> Substitutions Formula
 decodeFormulaS = \case
@@ -207,7 +217,7 @@ decode = \case
 
 -- | Decode a clause in unsorted first-order logic from TPTP.
 decodeClause :: TPTP.Clause -> Formula
-decodeClause = evalSubstitutions . decodeClauseS
+decodeClause = evalEnumeration . decodeClauseS
 
 decodeClauseS :: TPTP.Clause -> Substitutions Formula
 decodeClauseS (TPTP.Clause ls) = disjunction <$> traverse decodeSignedLiteral ls
