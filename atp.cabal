@@ -20,6 +20,9 @@ tested-with:
   GHC == 8.4.4,
   GHC == 8.6.5
 
+extra-source-files:
+  test/**/*.hs
+
 source-repository head
   type: git
   location: git://github.com/aztek/tptp.git
