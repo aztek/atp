@@ -36,6 +36,7 @@ library
     ATP.Codec.TPTP
     ATP.FOL
     ATP.Pretty.FOL
+    ATP.Proof
     ATP.Prover
   ghc-options:
     -Wall
