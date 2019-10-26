@@ -7,6 +7,10 @@ Copyright    : (c) Evgenii Kotelnikov, 2019
 License      : GPL-3
 Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
+
+All humans are mortal.
+Socrates is a human.
+Therefore, Socrates is mortal.
 -}
 
 module Syllogism where

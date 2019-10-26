@@ -7,6 +7,8 @@ Copyright    : (c) Evgenii Kotelnikov, 2019
 License      : GPL-3
 Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
+
+If all elements in a group have order 2, then the group is commutative.
 -}
 
 module GroupTheory where
