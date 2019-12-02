@@ -5,8 +5,6 @@ Haskell bindings to automated theorem provers
 
 Express theorems in first-order logic and automatically prove them using third-party reasoning tools.
 
-Consider the following classical logical syllogism.
-
 > All humans are mortal.
 >
 > Socrates is a human.
@@ -35,6 +33,8 @@ socratesIsMortal = mortal socrates
 syllogism :: Theorem
 syllogism = [humansAreMortal, socratesIsHuman] |- socratesIsMortal
 ```
+
+`pprint` pretty-prints theorems and proofs.
 
 ```
 λ: pprint syllogism
