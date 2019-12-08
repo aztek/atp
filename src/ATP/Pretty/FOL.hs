@@ -5,6 +5,7 @@
 
 module ATP.Pretty.FOL (
   Pretty(..),
+  hPutDoc,
   putDoc,
   pprint
 ) where
