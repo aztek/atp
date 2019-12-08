@@ -237,12 +237,15 @@ encodeTheorem (Theorem as c) = TPTP.TPTP units
     unit r n f = TPTP.Unit (Right n) (formula r f) Nothing
     formula r f = TPTP.Formula (TPTP.Standard r) (encode f)
 
--- | Decode a proof by refutation.
-decodeRefutation :: TPTP.TPTP -> Refutation Integer
-decodeRefutation (TPTP.TPTP units) = case reverse (decodeDerivations units) of
-  Derivation inference Falsum : derivations -> Refutation inference derivations
-  _:_ -> error "decodeProof: malformed input: refutation not found"
-  []  -> error "decodeProof: malformed input: empty proof"
+-- | Decode a proof by refutation from a TSTP output.
+decodeRefutation :: TPTP.TSTP -> Refutation Integer
+decodeRefutation (TPTP.TSTP szs units)
+  | TPTP.SZS (Just _status) (Just _dataform) <- szs =
+    case reverse (decodeDerivations units) of
+      Derivation inference Falsum : derivations -> Refutation inference derivations
+      _:_ -> error "decodeRefutation: malformed input: refutation not found"
+      []  -> error "decodeRefutation: malformed input: empty proof"
+  | otherwise = error "decodeRefutation: malformed input: missing SZS ontologies"
 
 decodeDerivations :: [TPTP.Unit] -> [Derivation Integer]
 decodeDerivations = evalEnumeration . mapM decodeDerivationS
