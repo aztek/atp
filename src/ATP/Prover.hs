@@ -31,4 +31,4 @@ eprover = Prover "E" "eprover" ["-p", "-s"]
 
 -- | The <https://vprover.github.io/ Vampire> theorem prover.
 vampire :: Prover
-vampire = Prover "Vampire" "vampire" ["-p", "tptp"]
+vampire = Prover "Vampire" "vampire" ["-p", "tptp", "-stat", "none"]
