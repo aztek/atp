@@ -5,9 +5,8 @@
 
 module ATP.Pretty.FOL (
   Pretty(..),
-  hPutDoc,
-  putDoc,
-  pprint
+  pprint,
+  hprint
 ) where
 
 import Control.Applicative (liftA2)
@@ -15,6 +14,7 @@ import Data.Char (digitToInt)
 import Data.List (genericIndex)
 import Data.List.NonEmpty (NonEmpty(..), nonEmpty, toList)
 import Data.Text as T (unpack)
+import System.IO (Handle)
 
 import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
 
@@ -28,6 +28,10 @@ import ATP.Prover (Prover(..))
 -- | Pretty print to the standard output.
 pprint :: Pretty a => a -> IO ()
 pprint = putDoc . pretty
+
+-- | Pretty print to an IO handle.
+hprint :: Pretty a => Handle -> a -> IO ()
+hprint h = hPutDoc h . pretty
 
 
 -- * Pretty printer for formulas
