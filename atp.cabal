@@ -53,7 +53,7 @@ library
     containers     >= 0.5.11  && < 0.7,
     mtl            >= 2.2     && < 3.0,
     ansi-wl-pprint >= 0.6.6   && < 0.7,
-    process        >= 1.6.5   && < 1.7
+    process        >= 1.6.3   && < 1.7
   if impl(ghc < 8)
     ghc-options:
       -fwarn-incomplete-record-updates -fwarn-incomplete-uni-patterns
