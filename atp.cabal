@@ -1,4 +1,4 @@
-cabal-version: 2.4
+cabal-version: 3.0
 name: atp
 version: 0.1.0.0
 synopsis: Bindings to automated theorem provers
@@ -40,6 +40,7 @@ library
     ATP.FOL
     ATP.Pretty.FOL
     ATP.Proof
+    ATP.Prove
     ATP.Prover
   ghc-options:
     -Wall
@@ -51,7 +52,8 @@ library
     tptp           >= 0.1.1   && < 0.2,
     containers     >= 0.5.11  && < 0.7,
     mtl            >= 2.2     && < 3.0,
-    ansi-wl-pprint >= 0.6.6   && < 0.7
+    ansi-wl-pprint >= 0.6.6   && < 0.7,
+    process        >= 1.6.5   && < 1.7
   if impl(ghc < 8)
     ghc-options:
       -fwarn-incomplete-record-updates -fwarn-incomplete-uni-patterns
