@@ -482,7 +482,7 @@ exists = quantified Exists
 -- * All chained applications of any binary connective inside @'simplify' f@ are
 --   right-associative.
 --
--- Any formula build only using smart constructors is simplified by construction.
+-- Any formula built only using smart constructors is simplified by construction.
 --
 -- >>> simplify (Connected tautology Or (Atomic (Predicate "p" [])))
 -- Atomic (Constant True)
@@ -500,7 +500,7 @@ simplify = \case
   Connected f c g  -> simplify f # simplify g where (#) = smartConnective c
   Quantified q v f -> quantified q (v, simplify f)
 
--- | Convert a connective to its corresponding smart constructor.
+-- | Convert a binary connective to its corresponding smart constructor.
 smartConnective :: Connective -> Formula -> Formula -> Formula
 smartConnective = \case
   And        -> (/\)
