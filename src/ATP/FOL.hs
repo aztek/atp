@@ -627,7 +627,7 @@ effective s e = any (`freeIn` e) (M.keys s)
 -- > eliminatesVariables s ==> not $ effective s (substitute s e)
 --
 eliminatesVariables :: Substitution -> Bool
-eliminatesVariables s = all (not . effective s) (M.elems s)
+eliminatesVariables s = not $ any (effective s) (M.elems s)
 
 -- | Checks whether two substitutions are independent.
 --
