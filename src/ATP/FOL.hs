@@ -573,7 +573,10 @@ smartConnective = \case
 
 -- | Convert a clause to a full first-order formula.
 liftClause :: Clause -> Formula
-liftClause = close . disjunction . fmap liftSignedLiteral . unClause
+liftClause = close
+           . foldl (\f g -> Connected f Or g) falsum
+           . fmap liftSignedLiteral
+           . unClause
 
 -- | Try to convert a first-order formula /f/ to a clause.
 -- This function succeeds if /f/ is a tree of disjunctions of
