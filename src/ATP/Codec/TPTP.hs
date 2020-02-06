@@ -25,6 +25,7 @@ import Control.Applicative (liftA2)
 import Control.Monad (when)
 import Control.Monad.State (State, evalState, get, modify)
 import Data.List (genericIndex)
+import qualified Data.List.NonEmpty as NE (toList)
 import Data.Map (Map)
 import qualified Data.Map as M (empty, lookup, insert, member)
 #if !MIN_VERSION_base(4, 11, 0)
@@ -132,25 +133,23 @@ encodeLiteral = \case
     where p = if b then TPTP.Tautology else TPTP.Falsum
 
 -- | Decode a literal from TPTP.
-decodeLiteral :: TPTP.Literal -> Substitutions Formula
+decodeLiteral :: TPTP.Literal -> Substitutions (Signed Literal)
 decodeLiteral = \case
-  TPTP.Predicate p ts -> decodePredicate p <$> traverse decodeTermS ts
-  TPTP.Equality a s b -> decodeSign s <$> decodeTermS a <*> decodeTermS b
+  TPTP.Predicate p ts -> Signed Positive . decodePredicate p <$> traverse decodeTermS ts
+  TPTP.Equality a s b -> decodeEquality s <$> decodeTermS a <*> decodeTermS b
 
-decodePredicate :: TPTP.Name TPTP.Predicate -> [Term] -> Formula
+decodePredicate :: TPTP.Name TPTP.Predicate -> [Term] -> Literal
 decodePredicate = \case
-  TPTP.Defined  (TPTP.Atom p)                  -> predicate p
-  TPTP.Reserved (TPTP.Standard TPTP.Tautology) -> const tautology
-  TPTP.Reserved (TPTP.Standard TPTP.Falsum)    -> const falsum
+  TPTP.Defined  (TPTP.Atom p)                  -> Predicate p
+  TPTP.Reserved (TPTP.Standard TPTP.Tautology) -> const (Constant True)
+  TPTP.Reserved (TPTP.Standard TPTP.Falsum)    -> const (Constant False)
   TPTP.Reserved TPTP.Standard{} ->
     error "decodePredicate: unsupported standard reserved predicate"
   TPTP.Reserved TPTP.Extended{} ->
     error "decodePredicate: extended reserved predicates are not supported"
 
-decodeSign :: TPTP.Sign -> Term -> Term -> Formula
-decodeSign = \case
-  TPTP.Positive -> (===)
-  TPTP.Negative -> (=/=)
+decodeEquality :: TPTP.Sign -> Term -> Term -> Signed Literal
+decodeEquality s a b = Signed (decodeSign s) (Equality a b)
 
 -- | Encode a logical connective in TPTP.
 encodeConnective :: Connective -> TPTP.Connective
@@ -198,7 +197,7 @@ decodeFormula = evalEnumeration . decodeFormulaS
 
 decodeFormulaS :: TPTP.UnsortedFirstOrder -> Substitutions Formula
 decodeFormulaS = \case
-  TPTP.Atomic l          -> decodeLiteral l
+  TPTP.Atomic l          -> liftSignedLiteral <$> decodeLiteral l
   TPTP.Negated f         -> Negate <$> decodeFormulaS f
   TPTP.Connected f c g   -> decodeConnected c
                         <$> decodeFormulaS f <*> decodeFormulaS g
@@ -213,21 +212,24 @@ encode = TPTP.FOF . encodeFormula
 decode :: TPTP.Formula -> Formula
 decode = \case
   TPTP.FOF f  -> decodeFormula f
-  TPTP.CNF c  -> decodeClause  c
+  TPTP.CNF c  -> liftClause (decodeClause c)
   TPTP.TFF0{} -> error "decode: formulas in TFF0 are not supported"
   TPTP.TFF1{} -> error "decode: formulas in TFF1 are not supported"
 
 -- | Decode a clause in unsorted first-order logic from TPTP.
-decodeClause :: TPTP.Clause -> Formula
+decodeClause :: TPTP.Clause -> Clause
 decodeClause = evalEnumeration . decodeClauseS
 
-decodeClauseS :: TPTP.Clause -> Substitutions Formula
-decodeClauseS (TPTP.Clause ls) = disjunction <$> traverse decodeSignedLiteral ls
+decodeClauseS :: TPTP.Clause -> Substitutions Clause
+decodeClauseS (TPTP.Clause ls) = Literals <$> traverse decodeSignedLiteralS (NE.toList ls)
 
-decodeSignedLiteral :: (TPTP.Sign, TPTP.Literal) -> Substitutions Formula
-decodeSignedLiteral = uncurry $ \case
-  TPTP.Positive -> decodeLiteral
-  TPTP.Negative -> fmap neg . decodeLiteral
+decodeSign :: TPTP.Sign -> Sign
+decodeSign = \case
+  TPTP.Positive -> Positive
+  TPTP.Negative -> Negative
+
+decodeSignedLiteralS :: (TPTP.Sign, TPTP.Literal) -> Substitutions (Signed Literal)
+decodeSignedLiteralS (s, l) = sign (decodeSign s) <$> decodeLiteral l
 
 -- | Encode a theorem in unsorted first-order logic in TPTP.
 encodeTheorem :: Theorem -> TPTP.TPTP

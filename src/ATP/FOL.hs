@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveFunctor, DeriveTraversable, DeriveFoldable #-}
 
 {-|
 Module       : ATP.FOL
@@ -46,6 +47,10 @@ module ATP.FOL (
   Symbol,
   Term(..),
   Literal(..),
+  Sign(..),
+  Signed(..),
+  sign,
+  Clause(..),
   Connective(..),
   isAssociative,
   Quantifier(..),
@@ -96,6 +101,8 @@ module ATP.FOL (
   independent,
   FirstOrder(..),
   closed,
+  close,
+  unprefix,
 
   -- * Monoids of first-order formulas
   Conjunction(..),
@@ -106,6 +113,12 @@ module ATP.FOL (
   equivalence,
   Inequivalence(..),
   inequivalence,
+
+  -- * Conversions
+  liftSignedLiteral,
+  unliftSignedLiteral,
+  liftClause,
+  unliftClause,
 
   -- * Theorems
   Theorem(..),
@@ -119,6 +132,7 @@ import qualified Data.Foldable as Foldable (toList)
 import Data.Foldable (Foldable)
 import Data.Monoid (Monoid(..))
 #endif
+import Data.Function (on)
 import Data.Functor (($>))
 import qualified Data.Map as M
 import Data.Map (Map)
@@ -170,6 +184,51 @@ data Literal
 
 instance IsString Literal where
   fromString = flip Predicate [] . fromString
+
+-- | The sign of a logical expression is either positive or negative.
+data Sign
+  = Positive
+  | Negative
+  deriving (Eq, Show, Ord, Enum, Bounded)
+
+instance Semigroup Sign where
+  Negative <> Positive = Negative
+  Positive <> Negative = Negative
+  Negative <> Negative = Positive
+  Positive <> Positive = Positive
+
+instance Monoid Sign where
+  mempty = Positive
+  mappend = (<>)
+
+-- | A signed expression is that annotated with a 'Sign'.
+data Signed e = Signed {
+  signof :: Sign,
+  unsign :: e
+} deriving (Eq, Show, Ord, Functor, Foldable, Traversable)
+
+-- | Juxtapose a given signed expression with a given sign.
+sign :: Sign -> Signed e -> Signed e
+sign s (Signed z e) = Signed (s <> z) e
+
+instance Applicative Signed where
+  pure = Signed Positive
+  Signed s f <*> e = sign s (fmap f e)
+
+instance Monad Signed where
+  Signed s e >>= f = sign s (f e)
+
+-- | The first-order clause - an explicitly universally-quantified disjunction
+-- of positive or negative literals, represented as a list of signed literals.
+newtype Clause = Literals { unClause :: [Signed Literal] }
+  deriving (Show, Eq, Ord)
+
+instance Semigroup Clause where
+  Literals ls <> Literals ms = Literals (ls <> ms)
+
+instance Monoid Clause where
+  mempty = Literals []
+  mappend = (<>)
 
 -- | The quantifier in first-order logic.
 data Quantifier
@@ -510,6 +569,37 @@ smartConnective = \case
   Xor        -> (<~>)
 
 
+-- * Conversions
+
+-- | Convert a clause to a full first-order formula.
+liftClause :: Clause -> Formula
+liftClause = close . disjunction . fmap liftSignedLiteral . unClause
+
+-- | Try to convert a first-order formula /f/ to a clause.
+-- This function succeeds if /f/ is a tree of disjunctions of
+-- (negated) atomic formula.
+unliftClause :: Formula -> Maybe Clause
+unliftClause = unlift . unprefix
+  where
+    unlift = \case
+      Connected f Or g -> mappend <$> unlift f <*> unlift g
+      f -> fmap (\l -> Literals [l]) (unliftSignedLiteral f)
+
+-- | Convert a signed literal to a (negated) atomic formula.
+liftSignedLiteral :: Signed Literal -> Formula
+liftSignedLiteral (Signed s l) = case s of
+  Positive -> Atomic l
+  Negative -> Negate (Atomic l)
+
+-- | Try to convert a first-order formula /f/ to a signed literal.
+-- This function succeeds if /f/ is a (negated) atomic formula.
+unliftSignedLiteral :: Formula -> Maybe (Signed Literal)
+unliftSignedLiteral = \case
+  Atomic l -> Just (Signed Positive l)
+  Negate f -> sign Negative <$> unliftSignedLiteral f
+  _ -> Nothing
+
+
 -- * Variables
 
 -- | The parallel substitution of a set of variables.
@@ -680,6 +770,35 @@ instance FirstOrder Formula where
     uncurry mergeRenamings =<< liftM2 (,) (alpha f f') (Just $ M.singleton v v')
   alpha _ _ = Nothing
 
+instance FirstOrder Clause where
+  vars  = S.unions . fmap vars . unClause
+  free  = S.unions . fmap vars . unClause
+  bound = S.unions . fmap vars . unClause
+
+  substitute s = Literals . fmap (substitute s) . unClause
+  rename     r = Literals . fmap (rename     r) . unClause
+
+  alpha (Literals ls) (Literals ls') | length ls == length ls' =
+    foldM mergeRenamings M.empty =<< zipWithM alpha ls ls'
+  alpha _ _ = Nothing
+
+instance FirstOrder e => FirstOrder (Signed e) where
+  vars  = vars  . unsign
+  free  = free  . unsign
+  bound = bound . unsign
+
+  occursIn v = occursIn v . unsign
+  freeIn   v = freeIn   v . unsign
+  boundIn  v = boundIn  v . unsign
+
+  ground = ground . unsign
+
+  substitute = fmap . substitute
+  rename     = fmap . rename
+
+  alpha = alpha `on` unsign
+  alphaEquivalent = alphaEquivalent `on` unsign
+
 instance FirstOrder Literal where
   vars = \case
     Constant{}     -> S.empty
@@ -728,6 +847,21 @@ instance FirstOrder Term where
 -- variables.
 closed :: Formula -> Bool
 closed = S.null . free
+
+-- | Make any given formula closed by adding a top-level universal quantifier
+-- for each of its free variables.
+close :: Formula -> Formula
+close f = foldl (flip $ Quantified Forall) f (free f)
+
+-- | Remove the top-level quantifiers.
+--
+-- >>> unprefix (Quantified Forall 1 (Quantified Exists 2 (Atomic (Equality (Variable 1) (Variable 2)))))
+-- Atomic (Equality (Variable 1) (Variable 2))
+--
+unprefix :: Formula -> Formula
+unprefix = \case
+  Quantified _ _ f -> unprefix f
+  f -> f
 
 
 -- * Monoids of first-order formulas

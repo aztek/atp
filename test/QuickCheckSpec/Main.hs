@@ -52,6 +52,9 @@ freeBoundVars e = free e `S.union` bound e === vars e
 prop_freeBoundVarsFormula :: Formula -> Property
 prop_freeBoundVarsFormula = freeBoundVars
 
+prop_freeBoundVarsClause :: Clause -> Property
+prop_freeBoundVarsClause = freeBoundVars
+
 prop_freeBoundVarsLiteral :: Literal -> Property
 prop_freeBoundVarsLiteral = freeBoundVars
 
@@ -70,6 +73,9 @@ substituteIdempotence s e =
 prop_substituteIdempotenceFormula :: Substitution -> Formula -> Property
 prop_substituteIdempotenceFormula = substituteIdempotence
 
+prop_substituteIdempotenceClause :: Substitution -> Clause -> Property
+prop_substituteIdempotenceClause = substituteIdempotence
+
 prop_substituteIdempotenceLiteral :: Substitution -> Literal -> Property
 prop_substituteIdempotenceLiteral = substituteIdempotence
 
@@ -87,6 +93,9 @@ substituteCommutativity s s' e =
 prop_substituteCommutativityFormula :: Substitution -> Substitution -> Formula -> Property
 prop_substituteCommutativityFormula = substituteCommutativity
 
+prop_substituteCommutativityClause :: Substitution -> Substitution -> Clause -> Property
+prop_substituteCommutativityClause = substituteCommutativity
+
 prop_substituteCommutativityLiteral :: Substitution -> Substitution -> Literal -> Property
 prop_substituteCommutativityLiteral = substituteCommutativity
 
@@ -100,6 +109,9 @@ substituteFixedPoint s e = not (effective s e) ==> substitute s e === e
 
 prop_substituteFixedPointFormula :: Substitution -> Formula -> Property
 prop_substituteFixedPointFormula = substituteFixedPoint
+
+prop_substituteFixedPointClause :: Substitution -> Clause -> Property
+prop_substituteFixedPointClause = substituteFixedPoint
 
 prop_substituteFixedPointLiteral :: Substitution -> Literal -> Property
 prop_substituteFixedPointLiteral = substituteFixedPoint
@@ -117,6 +129,9 @@ substituteElimination v s e =
 prop_substituteEliminationFormula :: Var -> Substitution -> Formula -> Property
 prop_substituteEliminationFormula = substituteElimination
 
+prop_substituteEliminationClause :: Var -> Substitution -> Clause -> Property
+prop_substituteEliminationClause = substituteElimination
+
 prop_substituteEliminationLiteral :: Var -> Substitution -> Literal -> Property
 prop_substituteEliminationLiteral = substituteElimination
 
@@ -131,6 +146,9 @@ substituteEffective s e =
 
 prop_substituteEffectiveFormula :: Substitution -> Formula -> Property
 prop_substituteEffectiveFormula = substituteEffective
+
+prop_substituteEffectiveClause :: Substitution -> Clause -> Property
+prop_substituteEffectiveClause = substituteEffective
 
 prop_substituteEffectiveLiteral :: Substitution -> Literal -> Property
 prop_substituteEffectiveLiteral = substituteEffective
@@ -153,6 +171,9 @@ alphaInjective a b =
 prop_alphaInjectiveFormula :: Formula -> Formula -> Property
 prop_alphaInjectiveFormula = alphaInjective
 
+prop_alphaInjectiveClause :: Clause -> Clause -> Property
+prop_alphaInjectiveClause = alphaInjective
+
 prop_alphaInjectiveLiteral :: Literal -> Literal -> Property
 prop_alphaInjectiveLiteral = alphaInjective
 
@@ -168,6 +189,9 @@ alphaRename a b =
 
 prop_alphaRenameFormula :: Formula -> Formula -> Property
 prop_alphaRenameFormula = alphaRename
+
+prop_alphaRenameClause :: Clause -> Clause -> Property
+prop_alphaRenameClause = alphaRename
 
 prop_alphaRenameLiteral :: Literal -> Literal -> Property
 prop_alphaRenameLiteral = alphaRename
@@ -185,6 +209,9 @@ alphaEquivalenceSymmetry e =
 prop_alphaEquivalenceSymmetryFormula :: Formula -> Property
 prop_alphaEquivalenceSymmetryFormula = alphaEquivalenceSymmetry
 
+prop_alphaEquivalenceSymmetryClause :: Clause -> Property
+prop_alphaEquivalenceSymmetryClause = alphaEquivalenceSymmetry
+
 prop_alphaEquivalenceSymmetryLiteral :: Literal -> Property
 prop_alphaEquivalenceSymmetryLiteral = alphaEquivalenceSymmetry
 
@@ -201,6 +228,9 @@ alphaEquivalenceReflexivity a b =
 
 prop_alphaEquivalenceReflexivityFormula :: Formula -> Formula -> Property
 prop_alphaEquivalenceReflexivityFormula = alphaEquivalenceReflexivity
+
+prop_alphaEquivalenceReflexivityClause :: Formula -> Formula -> Property
+prop_alphaEquivalenceReflexivityClause = alphaEquivalenceReflexivity
 
 prop_alphaEquivalenceReflexivityLiteral :: Literal -> Literal -> Property
 prop_alphaEquivalenceReflexivityLiteral = alphaEquivalenceReflexivity
@@ -222,6 +252,9 @@ alphaEquivalenceTransitivity a b c =
 
 prop_alphaEquivalenceTransitivityFormula :: Formula -> Formula -> Formula -> Property
 prop_alphaEquivalenceTransitivityFormula = alphaEquivalenceTransitivity
+
+prop_alphaEquivalenceTransitivityClause :: Clause -> Clause -> Clause -> Property
+prop_alphaEquivalenceTransitivityClause = alphaEquivalenceTransitivity
 
 prop_alphaEquivalenceTransitivityLiteral :: Literal -> Literal -> Literal -> Property
 prop_alphaEquivalenceTransitivityLiteral = alphaEquivalenceTransitivity
@@ -266,6 +299,15 @@ containsLeftAssocitivity = \case
 
 prop_simplifyIdempotent :: Formula -> Property
 prop_simplifyIdempotent f = simplify f ==~ f
+
+
+-- * Conversions
+
+prop_liftUnliftSignedLiteral :: Signed Literal -> Property
+prop_liftUnliftSignedLiteral s = unliftSignedLiteral (liftSignedLiteral s) === Just s
+
+prop_liftUnliftClause :: Clause -> Property
+prop_liftUnliftClause c = unliftClause (liftClause c) === Just c
 
 
 -- * Codec

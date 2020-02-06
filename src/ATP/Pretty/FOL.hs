@@ -2,6 +2,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module ATP.Pretty.FOL (
   Pretty(..),
@@ -56,6 +57,9 @@ prettyFunction, prettyPredicate :: Symbol -> Doc
 prettyFunction  = prettySymbol
 prettyPredicate = prettySymbol
 
+sepBy :: Doc -> NonEmpty Doc -> Doc
+sepBy s = foldl1 (\a b -> a <+> s <+> b)
+
 commaSep :: NonEmpty Doc -> Doc
 commaSep (d :| ds) = align $ d <> mconcat (fmap (comma <+>) ds)
 
@@ -80,6 +84,17 @@ instance Pretty Literal where
     Constant False -> blue "⟘"
     Predicate p ts -> prettyApplication (prettyPredicate p) (fmap pretty ts)
     Equality a b   -> pretty a <+> "=" <+> pretty b
+
+instance Pretty (Signed Literal) where
+  pretty = \case
+    Signed Negative (Equality a b) -> pretty a <+> "!=" <+> pretty b
+    Signed Negative l -> blue "￢" <> pretty l
+    Signed Positive l -> pretty l
+
+instance Pretty Clause where
+  pretty (Literals ls) = case nonEmpty ls of
+    Nothing  -> pretty (Constant False)
+    Just nls -> sepBy (pretty Or) (fmap pretty nls)
 
 instance Pretty Connective where
   pretty = blue . \case

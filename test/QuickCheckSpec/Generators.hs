@@ -77,6 +77,20 @@ instance Arbitrary Literal where
     Predicate p ts -> Predicate p <$> shrinkList shrink ts
     Equality _ _   -> []
 
+deriving instance Generic Sign
+instance Arbitrary Sign where
+  arbitrary = genericArbitraryU
+
+deriving instance Generic (Signed a)
+instance Arbitrary a => Arbitrary (Signed a) where
+  arbitrary = genericArbitraryU
+  shrink (Signed s a) = Signed s <$> shrink a
+
+deriving instance Generic Clause
+instance Arbitrary Clause where
+  arbitrary = genericArbitraryU
+  shrink (Literals ls) = Literals <$> shrink ls
+
 deriving instance Generic Quantifier
 instance Arbitrary Quantifier where
   arbitrary = genericArbitraryU
