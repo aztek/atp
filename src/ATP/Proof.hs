@@ -91,7 +91,7 @@ antecedents = fst . sequents
 consequent :: Inference f -> f
 consequent = snd . sequents
 
-data Derivation l = Derivation (Inference l) Formula
+data Derivation l = Derivation (Inference l) LogicalExpression
   deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
 
 data Refutation l = Refutation (Inference l) [Derivation l]
@@ -99,11 +99,11 @@ data Refutation l = Refutation (Inference l) [Derivation l]
 
 -- | List all derivations that lead to the refutation.
 derivations :: Refutation l -> NonEmpty (Derivation l)
-derivations (Refutation i ds) = Derivation i falsum :| ds
+derivations (Refutation i ds) = Derivation i (Clause emptyClause) :| ds
 
 -- | Construct a mapping between inference labels and their correspondent
 -- formulas.
-labeling :: Ord l => Refutation l -> Map l Formula
+labeling :: Ord l => Refutation l -> Map l LogicalExpression
 labeling = M.fromList . toList
          . fmap (\(Derivation i f) -> (consequent i, f))
          . derivations

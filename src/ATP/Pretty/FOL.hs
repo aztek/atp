@@ -132,6 +132,11 @@ under c = \case
   Quantified{} -> False
   f -> unitary f
 
+instance Pretty LogicalExpression where
+  pretty = \case
+    Clause  c -> pretty c
+    Formula f -> pretty f
+
 
 -- * Pretty printer for theorems
 

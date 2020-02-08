@@ -55,6 +55,7 @@ module ATP.FOL (
   isAssociative,
   Quantifier(..),
   Formula(..),
+  LogicalExpression(..),
 
   -- * Smart constructors
   Function,
@@ -74,6 +75,8 @@ module ATP.FOL (
   unaryPredicate,
   binaryPredicate,
   ternaryPredicate,
+  emptyClause,
+  pattern EmptyClause,
   tautology,
   pattern Tautology,
   falsum,
@@ -271,6 +274,12 @@ data Formula
 instance IsString Formula where
   fromString = Atomic . fromString
 
+-- | A logical expression is either a 'Clause' or a 'Formula'.
+data LogicalExpression
+  = Clause Clause
+  | Formula Formula
+  deriving (Show, Eq, Ord)
+
 
 -- * Smart constructors
 
@@ -343,6 +352,17 @@ binaryPredicate p a b = Atomic (Predicate p [a, b])
 ternaryPredicate :: Symbol -> TernaryPredicate
 ternaryPredicate p a b c = Atomic (Predicate p [a, b, c])
 
+-- | The empty clause.
+-- 'emptyClause' is semantically (but not syntactically) equivalent to 'falsum'.
+emptyClause :: Clause
+emptyClause = Literals []
+
+-- | The empty clause.
+#if __GLASGOW_HASKELL__ >= 710
+pattern EmptyClause :: Clause
+#endif
+pattern EmptyClause = Literals []
+
 -- | The logical truth.
 tautology :: Formula
 tautology = Atomic (Constant True)
@@ -354,6 +374,7 @@ pattern Tautology :: Formula
 pattern Tautology = Atomic (Constant True)
 
 -- | The logical false.
+-- 'falsum' is semantically (but not syntactically) equivalent to 'emptyClause'.
 falsum :: Formula
 falsum = Atomic (Constant False)
 
@@ -573,10 +594,9 @@ smartConnective = \case
 
 -- | Convert a clause to a full first-order formula.
 liftClause :: Clause -> Formula
-liftClause = close
-           . foldl (Connected Or) falsum
-           . fmap liftSignedLiteral
-           . unClause
+liftClause = \case
+  EmptyClause -> falsum
+  Literals ls -> close . foldl1 (Connected Or) . fmap liftSignedLiteral $ ls
 
 -- | Try to convert a first-order formula /f/ to a clause.
 -- This function succeeds if /f/ is a tree of disjunctions of
@@ -726,6 +746,47 @@ class FirstOrder e where
   --
   alphaEquivalent :: e -> e -> Bool
   alphaEquivalent a b = isJust (alpha a b)
+
+instance FirstOrder LogicalExpression where
+  vars = \case
+    Clause  c -> vars c
+    Formula f -> vars f
+
+  free = \case
+    Clause  c -> free c
+    Formula f -> free f
+
+  bound = \case
+    Clause  c -> bound c
+    Formula f -> bound f
+
+  occursIn v = \case
+    Clause  c -> occursIn v c
+    Formula f -> occursIn v f
+
+  freeIn v = \case
+    Clause  c -> freeIn v c
+    Formula f -> freeIn v f
+
+  boundIn v = \case
+    Clause  c -> boundIn v c
+    Formula f -> boundIn v f
+
+  ground = \case
+    Clause  c -> ground c
+    Formula f -> ground f
+
+  substitute s = \case
+    Clause  c -> Clause  (substitute s c)
+    Formula f -> Formula (substitute s f)
+
+  rename r = \case
+    Clause  c -> Clause  (rename r c)
+    Formula f -> Formula (rename r f)
+
+  alpha (Clause  c) (Clause  c') = alpha c c'
+  alpha (Formula f) (Formula f') = alpha f f'
+  alpha _           _            = Nothing
 
 insertRenaming :: Renaming -> (Var, Var) -> Maybe Renaming
 insertRenaming r (v, v') = guard p $> M.insert v v' r

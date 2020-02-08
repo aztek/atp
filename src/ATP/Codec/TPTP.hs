@@ -34,6 +34,7 @@ import Data.Semigroup (Semigroup(..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.TPTP as TPTP
+import Debug.Trace
 
 import ATP.FOL
 import ATP.Proof (Inference(..), Derivation(..), Refutation(..))
@@ -212,10 +213,10 @@ encode :: Formula -> TPTP.Formula
 encode = TPTP.FOF . encodeFormula
 
 -- | Decode a formula in unsorted first-order logic from TPTP.
-decode :: TPTP.Formula -> Formula
+decode :: TPTP.Formula -> LogicalExpression
 decode = \case
-  TPTP.FOF f  -> decodeFormula f
-  TPTP.CNF c  -> liftClause (decodeClause c)
+  TPTP.FOF f  -> Formula (decodeFormula f)
+  TPTP.CNF c  -> Clause  (decodeClause  c)
   TPTP.TFF0{} -> error "decode: formulas in TFF0 are not supported"
   TPTP.TFF1{} -> error "decode: formulas in TFF1 are not supported"
 
@@ -247,10 +248,17 @@ decodeRefutation :: TPTP.TSTP -> Refutation Integer
 decodeRefutation (TPTP.TSTP szs units)
   | TPTP.SZS (Just _status) (Just _dataform) <- szs =
     case reverse (decodeDerivations units) of
-      Derivation inference Falsum : derivations -> Refutation inference derivations
+      Derivation inference conclusion : derivations
+        | isContradiction conclusion -> Refutation inference derivations
       _:_ -> error "decodeRefutation: malformed input: refutation not found"
       []  -> error "decodeRefutation: malformed input: empty proof"
   | otherwise = error "decodeRefutation: malformed input: missing SZS ontologies"
+
+isContradiction :: LogicalExpression -> Bool
+isContradiction = \case
+  Clause c | Falsum <- liftClause c -> True
+  Formula Falsum -> True
+  _ -> False
 
 decodeDerivations :: [TPTP.Unit] -> [Derivation Integer]
 decodeDerivations = evalEnumeration . mapM decodeDerivationS

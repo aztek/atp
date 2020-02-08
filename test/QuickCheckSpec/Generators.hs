@@ -108,6 +108,13 @@ instance Arbitrary Formula where
     Connected  c f g -> f : g : (Connected c <$> shrink f <*> shrink g)
     Quantified q v f -> f : (Quantified q v <$> shrink f)
 
+deriving instance Generic LogicalExpression
+instance Arbitrary LogicalExpression where
+  arbitrary = genericArbitraryU
+  shrink = \case
+    Clause  c -> Clause  (shrink c)
+    Formula f -> Formula (shrink f)
+
 
 -- * Theorems
 
