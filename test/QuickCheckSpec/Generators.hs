@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE CPP #-}
 
@@ -26,7 +27,7 @@ import GHC.Generics (Generic)
 import Generic.Random (genericArbitraryU, genericArbitraryRec, (%))
 
 import Data.Text (Text, pack)
-import Test.QuickCheck (Arbitrary(..), shrinkList, listOf1, choose)
+import Test.QuickCheck (Arbitrary(..), shrinkList, listOf1, choose, oneof)
 
 import ATP.FOL
 import ATP.Proof
@@ -35,10 +36,16 @@ import ATP.Proof
 -- * Helper type wrappers
 
 newtype Simplified a = Simplified { getSimplified :: a }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Functor)
 
 instance Arbitrary (Simplified Formula) where
   arbitrary = Simplified . simplify <$> arbitrary
+
+instance Arbitrary (Simplified LogicalExpression) where
+  arbitrary = oneof [
+      Simplified . Clause <$> arbitrary,
+      fmap Formula <$> arbitrary
+    ]
 
 instance Arbitrary (Simplified Theorem) where
   arbitrary = do
@@ -112,8 +119,8 @@ deriving instance Generic LogicalExpression
 instance Arbitrary LogicalExpression where
   arbitrary = genericArbitraryU
   shrink = \case
-    Clause  c -> Clause  (shrink c)
-    Formula f -> Formula (shrink f)
+    Clause  c -> Clause  <$> shrink c
+    Formula f -> Formula <$> shrink f
 
 
 -- * Theorems
