@@ -264,7 +264,7 @@ isAssociative = \case
 data Formula
   = Atomic Literal
   | Negate Formula
-  | Connected Formula Connective Formula
+  | Connected Connective Formula Formula
   | Quantified Quantifier Var Formula
   deriving (Show, Eq, Ord)
 
@@ -399,8 +399,8 @@ Falsum    /\ _ = falsum
 Tautology /\ g = g
 _ /\ Falsum    = falsum
 f /\ Tautology = f
-Connected f And g /\ h = f /\ (g /\ h)
-f /\ g = Connected f And g
+Connected And f g /\ h = f /\ (g /\ h)
+f /\ g = Connected And f g
 
 -- | A smart constructor for the 'Or' connective.
 -- ('\/') has the following properties.
@@ -422,8 +422,8 @@ Tautology \/ _ = tautology
 Falsum    \/ g = g
 _ \/ Tautology = tautology
 f \/ Falsum    = f
-Connected f Or g \/ h = f \/ (g \/ h)
-f \/ g = Connected f Or g
+Connected Or f g \/ h = f \/ (g \/ h)
+f \/ g = Connected Or f g
 
 -- | A smart constructor for the 'Implies' connective.
 (==>) :: Formula -> Formula -> Formula
@@ -431,7 +431,7 @@ Tautology ==> g = g
 Falsum    ==> _ = tautology
 _ ==> Tautology = tautology
 f ==> Falsum    = neg f
-f ==> g = Connected f Implies g
+f ==> g = Connected Implies f g
 
 -- | A smart constructor for the 'Equivalent' connective.
 -- ('<=>') has the following properties.
@@ -451,8 +451,8 @@ f ==> g = Connected f Implies g
 (<=>) :: Formula -> Formula -> Formula
 Tautology <=> g = g
 f <=> Tautology = f
-Connected f Equivalent g <=> h = f <=> (g <=> h)
-f <=> g = Connected f Equivalent g
+Connected Equivalent f g <=> h = f <=> (g <=> h)
+f <=> g = Connected Equivalent f g
 
 -- | A smart constructor for the 'Xor' connective.
 -- ('<~>') has the following properties.
@@ -472,8 +472,8 @@ f <=> g = Connected f Equivalent g
 (<~>) :: Formula -> Formula -> Formula
 Falsum <~> g = g
 f <~> Falsum = f
-Connected f Xor g <~> h = f <~> (g <~> h)
-f <~> g = Connected f Xor g
+Connected Xor f g <~> h = f <~> (g <~> h)
+f <~> g = Connected Xor f g
 
 -- | A class of binders for quantified variables.
 --
@@ -487,7 +487,7 @@ f <~> g = Connected f Xor g
 -- Quantified Forall 1 (Atomic (Predicate "eq" [Variable 1,Variable 1]))
 --
 -- >>> quantified Forall $ \x y -> x `eq` y ==> y `eq` x
--- Quantified Forall 2 (Quantified Forall 1 (Connected (Atomic (Predicate "eq" [Variable 2,Variable 1])) Implies (Atomic (Predicate "eq" [Variable 1,Variable 2]))))
+-- Quantified Forall 2 (Quantified Forall 1 (Connected Implies (Atomic (Predicate "eq" [Variable 2,Variable 1])) (Atomic (Predicate "eq" [Variable 1,Variable 2]))))
 class Binder b where
   -- | A smart constructor for quantified formulas.
   quantified :: Quantifier -> b -> Formula
@@ -516,7 +516,7 @@ instance Binder b => Binder (Term -> b) where
       maxvar = \case
         Atomic{} -> 0
         Negate g -> maxvar g
-        Connected g _ h -> maxvar g `max` maxvar h
+        Connected _ g h -> maxvar g `max` maxvar h
         Quantified _ w _ -> w
 
 -- | A smart constructor for universally quantified formulas.
@@ -543,20 +543,20 @@ exists = quantified Exists
 --
 -- Any formula built only using smart constructors is simplified by construction.
 --
--- >>> simplify (Connected tautology Or (Atomic (Predicate "p" [])))
+-- >>> simplify (Connected Or tautology (Atomic (Predicate "p" [])))
 -- Atomic (Constant True)
 --
 -- >>> simplify (Negate (Negate (Atomic (Predicate "p" []))))
 -- Atomic (Predicate "p" [])
 --
--- >>> simplify (Connected (Connected (Atomic (Predicate "p" [])) And (Atomic (Predicate "q" []))) And (Atomic (Predicate "r" [])))
--- Connected (Atomic (Predicate "p" [])) And (Connected (Atomic (Predicate "q" [])) And (Atomic (Predicate "r" [])))
+-- >>> simplify (Connected And (Connected And (Atomic (Predicate "p" [])) (Atomic (Predicate "q" []))) (Atomic (Predicate "r" [])))
+-- Connected And (Atomic (Predicate "p" [])) (Connected And (Atomic (Predicate "q" [])) (Atomic (Predicate "r" [])))
 --
 simplify :: Formula -> Formula
 simplify = \case
   Atomic l         -> Atomic l
   Negate f         -> neg (simplify f)
-  Connected f c g  -> simplify f # simplify g where (#) = smartConnective c
+  Connected  c f g -> simplify f # simplify g where (#) = smartConnective c
   Quantified q v f -> quantified q (v, simplify f)
 
 -- | Convert a binary connective to its corresponding smart constructor.
@@ -574,7 +574,7 @@ smartConnective = \case
 -- | Convert a clause to a full first-order formula.
 liftClause :: Clause -> Formula
 liftClause = close
-           . foldl (\f g -> Connected f Or g) falsum
+           . foldl (Connected Or) falsum
            . fmap liftSignedLiteral
            . unClause
 
@@ -585,7 +585,7 @@ unliftClause :: Formula -> Maybe Clause
 unliftClause = unlift . unprefix
   where
     unlift = \case
-      Connected f Or g -> mappend <$> unlift f <*> unlift g
+      Connected Or f g -> mappend <$> unlift f <*> unlift g
       f -> fmap (\l -> Literals [l]) (unliftSignedLiteral f)
 
 -- | Convert a signed literal to a (negated) atomic formula.
@@ -738,36 +738,36 @@ instance FirstOrder Formula where
   vars = \case
     Atomic l         -> vars l
     Negate f         -> vars f
-    Connected f _ g  -> vars f `S.union` vars g
+    Connected  _ f g -> vars f `S.union` vars g
     Quantified _ _ f -> vars f
 
   free = \case
     Atomic l         -> vars l
     Negate f         -> free f
-    Connected f _ g  -> free f `S.union` free g
+    Connected  _ f g -> free f `S.union` free g
     Quantified _ v f -> S.delete v (free f)
 
   bound = \case
     Atomic{}         -> S.empty
     Negate f         -> bound f
-    Connected f _ g  -> bound f `S.union` bound g
+    Connected  _ f g -> bound f `S.union` bound g
     Quantified _ v f -> if v `freeIn` f then S.insert v (bound f) else bound f
 
   substitute s = \case
     Atomic l         -> Atomic (substitute s l)
     Negate f         -> Negate (substitute s f)
-    Connected f c g  -> Connected (substitute s f) c (substitute s g)
+    Connected  c f g -> Connected c (substitute s f) (substitute s g)
     Quantified q v f -> Quantified q v (substitute (M.delete v s) f)
 
   rename r = \case
     Atomic l         -> Atomic (rename r l)
     Negate f         -> Negate (rename r f)
-    Connected f c g  -> Connected (rename r f) c (rename r g)
+    Connected  c f g -> Connected c (rename r f) (rename r g)
     Quantified q v f -> Quantified q (M.findWithDefault v v r) (rename r f)
 
   alpha (Atomic l) (Atomic l') = alpha l l'
   alpha (Negate f) (Negate f') = alpha f f'
-  alpha (Connected f c g) (Connected f' c' g') | c == c' =
+  alpha (Connected c f g) (Connected c' f' g') | c == c' =
     uncurry mergeRenamings =<< liftM2 (,) (alpha f f') (alpha g g')
   alpha (Quantified q v f) (Quantified q' v' f') | q == q' =
     uncurry mergeRenamings =<< liftM2 (,) (alpha f f') (Just $ M.singleton v v')

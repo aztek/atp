@@ -278,7 +278,7 @@ containsDoubleNegation = \case
   Atomic{}  -> False
   Negate Negate{} -> True
   Negate f -> containsDoubleNegation f
-  Connected f _ g  -> containsDoubleNegation f || containsDoubleNegation g
+  Connected  _ f g -> containsDoubleNegation f || containsDoubleNegation g
   Quantified _ _ f -> containsDoubleNegation f
 
 prop_simplifyEliminatesLeftAssocitivity :: Formula -> Property
@@ -292,9 +292,9 @@ containsLeftAssocitivity = \case
   Tautology -> False
   Falsum    -> False
   Atomic{}  -> False
-  Negate f -> containsLeftAssocitivity f
-  Connected (Connected _ c' _) c _ | c' == c && isAssociative c -> True
-  Connected f _ g  -> containsLeftAssocitivity f || containsLeftAssocitivity g
+  Negate f  -> containsLeftAssocitivity f
+  Connected  c (Connected c' _ _) _ | c' == c && isAssociative c -> True
+  Connected  _ f g -> containsLeftAssocitivity f || containsLeftAssocitivity g
   Quantified _ _ f -> containsLeftAssocitivity f
 
 prop_simplifyIdempotent :: Formula -> Property

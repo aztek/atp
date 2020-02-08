@@ -105,7 +105,7 @@ instance Arbitrary Formula where
   shrink = \case
     Atomic l         -> Atomic <$> shrink l
     Negate f         -> f : (Negate <$> shrink f)
-    Connected f c g  -> f : g : (Connected <$> shrink f <*> pure c <*> shrink g)
+    Connected  c f g -> f : g : (Connected c <$> shrink f <*> shrink g)
     Quantified q v f -> f : (Quantified q v <$> shrink f)
 
 

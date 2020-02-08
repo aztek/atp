@@ -162,14 +162,17 @@ encodeConnective = \case
 
 decodeConnected :: TPTP.Connective -> Formula -> Formula -> Formula
 decodeConnected = \case
-  TPTP.Conjunction -> \f g -> Connected f And g
-  TPTP.Disjunction -> \f g -> Connected f Or g
-  TPTP.Implication -> \f g -> Connected f Implies g
-  TPTP.Equivalence -> \f g -> Connected f Equivalent g
-  TPTP.ExclusiveOr -> \f g -> Connected f Xor g
-  TPTP.NegatedConjunction  -> \f g -> Negate (Connected f And g)
-  TPTP.NegatedDisjunction  -> \f g -> Negate (Connected f Or g)
-  TPTP.ReversedImplication -> \f g -> Connected g Implies f
+  TPTP.Conjunction -> Connected And
+  TPTP.Disjunction -> Connected Or
+  TPTP.Implication -> Connected Implies
+  TPTP.Equivalence -> Connected Equivalent
+  TPTP.ExclusiveOr -> Connected Xor
+  TPTP.NegatedConjunction  -> Negate .: Connected And
+  TPTP.NegatedDisjunction  -> Negate .: Connected Or
+  TPTP.ReversedImplication -> flip (Connected Implies)
+  where
+    (.:) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
+    (.:) = (.) . (.)
 
 -- | Encode a quantifier in TPTP.
 encodeQuantifier :: Quantifier -> TPTP.Quantifier
@@ -188,7 +191,7 @@ encodeFormula :: Formula -> TPTP.UnsortedFirstOrder
 encodeFormula = \case
   Atomic l         -> TPTP.Atomic (encodeLiteral l)
   Negate f         -> TPTP.Negated (encodeFormula f)
-  Connected f c g  -> TPTP.Connected (encodeFormula f) (encodeConnective c) (encodeFormula g)
+  Connected  c f g -> TPTP.Connected (encodeFormula f) (encodeConnective c) (encodeFormula g)
   Quantified q v f -> TPTP.quantified (encodeQuantifier q) [(encodeVar v, TPTP.Unsorted ())] (encodeFormula f)
 
 -- | Decode a formula in unsorted first-order logic from TPTP.

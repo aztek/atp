@@ -114,7 +114,7 @@ instance Pretty Formula where
     Atomic l -> pretty l
     Negate (Atomic (Equality a b)) -> pretty a <+> "!=" <+> pretty b
     Negate f -> blue "￢" <> prettyParens unitary f
-    Connected f c g  -> prettyParens (under c) f <+> pretty c
+    Connected  c f g -> prettyParens (under c) f <+> pretty c
                     <+> prettyParens (under c) g
     Quantified q v f -> pretty q <+> prettyVar v <+> dot
                     <+> prettyParens unitary f
@@ -128,7 +128,7 @@ unitary = \case
 
 under :: Connective -> Formula -> Bool
 under c = \case
-  Connected _ c' _ | c == c' && isAssociative c -> True
+  Connected c' _ _ | c == c' && isAssociative c -> True
   Quantified{} -> False
   f -> unitary f
 
