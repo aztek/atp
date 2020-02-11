@@ -19,10 +19,6 @@ module QuickCheckSpec.Generators (
   Simplified(..)
 ) where
 
-#if !MIN_VERSION_base(4, 8, 0)
-import Control.Applicative (pure, (<$>), (<*>))
-#endif
-
 import GHC.Generics (Generic)
 import Generic.Random (genericArbitraryU, genericArbitraryRec, (%))
 

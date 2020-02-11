@@ -131,10 +131,6 @@ module ATP.FOL (
 
 import Control.Monad (foldM, zipWithM, liftM2, guard)
 import qualified Data.Foldable as Foldable (toList)
-#if !MIN_VERSION_base(4, 8, 0)
-import Data.Foldable (Foldable)
-import Data.Monoid (Monoid(..))
-#endif
 import Data.Function (on)
 import Data.Functor (($>))
 import qualified Data.Map as M
