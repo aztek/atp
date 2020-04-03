@@ -20,7 +20,6 @@ module ATP.Prove (
 ) where
 
 import Control.Monad (when)
-import qualified Data.Text as T (strip)
 import qualified Data.Text.IO as TIO (hGetContents, putStrLn)
 import Data.TPTP.Parse.Text (parseTSTPOnly)
 import Data.TPTP.Pretty (pretty)
@@ -75,7 +74,7 @@ proveWith ProvingOptions{prover, displayTPTP, displayTSTP} theorem = do
 
   when displayTSTP (TIO.putStrLn output)
 
-  case parseTSTPOnly (T.strip output) of
+  case parseTSTPOnly output of
     Left err   -> error $ "proveWith: malformed proof: " ++ err
     Right tstp -> return $ Proof prover (decodeRefutation tstp)
 
