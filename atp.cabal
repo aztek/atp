@@ -95,9 +95,8 @@ test-suite doctests
     -Wall -threaded
   if flag(Werror)
     ghc-options: -Werror
-  -- TODO: Make it work for older GHCs
-  if impl(ghc < 8.4)
-    buildable: False
+  -- TODO: Make it work
+  buildable: False
   build-depends:
     base,
     containers,
