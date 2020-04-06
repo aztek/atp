@@ -71,7 +71,8 @@ test-suite quickcheck-suite
   default-language: Haskell2010
   main-is: QuickCheckSpec/Main.hs
   other-modules:
-    QuickCheckSpec.Generators
+    QuickCheckSpec.Generators.FOL
+    QuickCheckSpec.Generators.Simplified
   ghc-options:
     -Wall -threaded
   if flag(Werror)

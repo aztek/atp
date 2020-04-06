@@ -2,22 +2,19 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE CPP #-}
 
 {-|
 Module       : QuickCheckSpec.Generators
-Description  : QuickCheck generators of first-order formulas.
-Copyright    : (c) Evgenii Kotelnikov, 2019
+Description  : QuickCheck generators of first-order formulas, theorems and proofs.
+Copyright    : (c) Evgenii Kotelnikov, 2020
 License      : GPL-3
 Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
 -}
 
-module QuickCheckSpec.Generators (
-  Simplified(..)
-) where
+module QuickCheckSpec.Generators.FOL () where
 
 import GHC.Generics (Generic)
 import Generic.Random (genericArbitraryU, genericArbitraryRec, (%))
@@ -27,37 +24,6 @@ import Test.QuickCheck (Arbitrary(..), shrinkList, listOf1, choose, oneof)
 
 import ATP.FOL
 import ATP.Proof
-
-
--- * Helper type wrappers
-
-newtype Simplified a = Simplified { getSimplified :: a }
-  deriving (Show, Eq, Ord, Functor)
-
-instance Arbitrary (Simplified Formula) where
-  arbitrary = Simplified . simplify <$> arbitrary
-
-instance Arbitrary (Simplified LogicalExpression) where
-  arbitrary = oneof [
-      Simplified . Clause <$> arbitrary,
-      fmap Formula <$> arbitrary
-    ]
-
-instance Arbitrary (Simplified Theorem) where
-  arbitrary = do
-    as <- fmap getSimplified <$> arbitrary
-    c <- getSimplified <$> arbitrary
-    return $ Simplified (Theorem as c)
-
-instance Arbitrary l => Arbitrary (Simplified (Derivation l)) where
-  arbitrary = do
-    d <- Derivation <$> arbitrary <*> fmap getSimplified arbitrary
-    return (Simplified d)
-
-instance Arbitrary l => Arbitrary (Simplified (Refutation l)) where
-  arbitrary = do
-    r <- Refutation <$> arbitrary <*> fmap (fmap getSimplified) arbitrary
-    return (Simplified r)
 
 
 -- * Formulas
