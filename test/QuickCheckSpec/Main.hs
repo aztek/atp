@@ -14,9 +14,6 @@ module Main (main) where
 
 import Control.Monad (unless)
 import Data.Function (on)
-import Data.List (nub)
-import qualified Data.Map as M (elems)
-import Data.Maybe (isJust, fromJust)
 import qualified Data.Set as S (union)
 import System.Exit (exitFailure)
 
