@@ -12,11 +12,13 @@ Stability    : experimental
 
 module Main (main) where
 
+import Control.Monad (unless)
 import Data.Function (on)
 import Data.List (nub)
 import qualified Data.Map as M (elems)
 import Data.Maybe (isJust, fromJust)
 import qualified Data.Set as S (union)
+import System.Exit (exitFailure)
 
 import Test.QuickCheck (
     Property, (===), (==>), whenFail, counterexample,
@@ -280,5 +282,7 @@ prop_codec f = f ~==~ decodeFormula (encodeFormula f)
 
 return []
 
-main :: IO Bool
-main = $forAllProperties $ quickCheckWithResult stdArgs{maxSuccess=1000}
+main :: IO ()
+main = do
+  success <- $forAllProperties $ quickCheckWithResult stdArgs{maxSuccess=1000}
+  unless success exitFailure
