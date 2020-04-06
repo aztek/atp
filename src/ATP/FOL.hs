@@ -814,9 +814,11 @@ instance FirstOrder Formula where
   alpha _ _ = Nothing
 
 instance FirstOrder Clause where
-  vars  = S.unions . fmap vars . unClause
-  free  = S.unions . fmap vars . unClause
-  bound = S.unions . fmap vars . unClause
+  vars = S.unions . fmap vars . unClause
+
+  free = vars
+
+  bound _ = S.empty
 
   substitute s = Literals . fmap (substitute s) . unClause
 
