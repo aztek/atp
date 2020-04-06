@@ -712,10 +712,6 @@ class FirstOrder e where
   -- | Apply the given substitution to the given expression.
   substitute :: Substitution -> e -> e
 
-  -- | Apply the given renaming to the given expression, i.e. subsitute in
-  -- parallel all variables in it.
-  rename :: Renaming -> e -> e
-
   -- | @'alpha' a b@ returns 'Nothing' if 'a' cannot be alpha converted to 'b'
   -- and 'Just r', where 'r' is a renaming, otherwise.
   alpha :: e -> e -> Maybe Renaming
@@ -773,10 +769,6 @@ instance FirstOrder LogicalExpression where
     Clause  c -> Clause  (substitute s c)
     Formula f -> Formula (substitute s f)
 
-  rename r = \case
-    Clause  c -> Clause  (rename r c)
-    Formula f -> Formula (rename r f)
-
   alpha (Clause  c) (Clause  c') = alpha c c'
   alpha (Formula f) (Formula f') = alpha f f'
   alpha _           _            = Nothing
@@ -813,12 +805,6 @@ instance FirstOrder Formula where
     Connected  c f g -> Connected c (substitute s f) (substitute s g)
     Quantified q v f -> Quantified q v (substitute (M.delete v s) f)
 
-  rename r = \case
-    Atomic l         -> Atomic (rename r l)
-    Negate f         -> Negate (rename r f)
-    Connected  c f g -> Connected c (rename r f) (rename r g)
-    Quantified q v f -> Quantified q (M.findWithDefault v v r) (rename r f)
-
   alpha (Atomic l) (Atomic l') = alpha l l'
   alpha (Negate f) (Negate f') = alpha f f'
   alpha (Connected c f g) (Connected c' f' g') | c == c' =
@@ -833,7 +819,6 @@ instance FirstOrder Clause where
   bound = S.unions . fmap vars . unClause
 
   substitute s = Literals . fmap (substitute s) . unClause
-  rename     r = Literals . fmap (rename     r) . unClause
 
   alpha (Literals ls) (Literals ls') | length ls == length ls' =
     foldM mergeRenamings M.empty =<< zipWithM alpha ls ls'
@@ -851,7 +836,6 @@ instance FirstOrder e => FirstOrder (Signed e) where
   ground = ground . unsign
 
   substitute = fmap . substitute
-  rename     = fmap . rename
 
   alpha = alpha `on` unsign
   alphaEquivalent = alphaEquivalent `on` unsign
@@ -870,8 +854,6 @@ instance FirstOrder Literal where
     Constant b     -> Constant b
     Predicate p ts -> Predicate p (fmap (substitute s) ts)
     Equality a b   -> Equality (substitute s a) (substitute s b)
-
-  rename = substitute . fmap Variable
 
   alpha (Constant b) (Constant b') | b == b' = Just M.empty
   alpha (Predicate p ts) (Predicate p' ts') | p == p', length ts == length ts' =
@@ -892,8 +874,6 @@ instance FirstOrder Term where
   substitute s = \case
     Variable v    -> M.findWithDefault (Variable v) v s
     Function f ts -> Function f (fmap (substitute s) ts)
-
-  rename = substitute . fmap Variable
 
   alpha (Variable v) (Variable v') = Just (M.singleton v v')
   alpha (Function f ts) (Function f' ts') | f == f', length ts == length ts' =
