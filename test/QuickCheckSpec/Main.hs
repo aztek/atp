@@ -159,46 +159,6 @@ prop_substituteEffectiveTerm = substituteEffective
 
 -- * Alpha conversions
 
--- ** Renamings are injective
-
-alphaInjective :: (Eq e, Show e, FirstOrder e) => e -> e -> Property
-alphaInjective a b =
-  whenFail (print $ alpha a b) $
-    isJust (alpha a b) ==> injective (fromJust $ alpha a b)
-  where
-    injective r = nub (M.elems r) == M.elems r
-
-prop_alphaInjectiveFormula :: Formula -> Formula -> Property
-prop_alphaInjectiveFormula = alphaInjective
-
-prop_alphaInjectiveClause :: Clause -> Clause -> Property
-prop_alphaInjectiveClause = alphaInjective
-
-prop_alphaInjectiveLiteral :: Literal -> Literal -> Property
-prop_alphaInjectiveLiteral = alphaInjective
-
-prop_alphaInjectiveTerm :: Term -> Term -> Property
-prop_alphaInjectiveTerm = alphaInjective
-
--- ** Alpha conversion is a renaming
-
-alphaRename :: (Eq e, Show e, FirstOrder e) => e -> e -> Property
-alphaRename a b =
-  whenFail (print $ alpha a b) $
-    isJust (alpha a b) ==> rename (fromJust $ alpha a b) a === b
-
-prop_alphaRenameFormula :: Formula -> Formula -> Property
-prop_alphaRenameFormula = alphaRename
-
-prop_alphaRenameClause :: Clause -> Clause -> Property
-prop_alphaRenameClause = alphaRename
-
-prop_alphaRenameLiteral :: Literal -> Literal -> Property
-prop_alphaRenameLiteral = alphaRename
-
-prop_alphaRenameTerm :: Term -> Term -> Property
-prop_alphaRenameTerm = alphaRename
-
 -- ** Alpha equivalence is symmetric
 
 alphaEquivalenceSymmetry :: (Eq e, Show e, FirstOrder e) => e -> Property

@@ -718,9 +718,6 @@ class FirstOrder e where
 
   -- | @'alpha' a b@ returns 'Nothing' if 'a' cannot be alpha converted to 'b'
   -- and 'Just r', where 'r' is a renaming, otherwise.
-  --
-  -- > isJust (alpha a b) ==> rename (fromJust $ alpha a b) a === b
-  --
   alpha :: e -> e -> Maybe Renaming
 
   -- | Check whether two given expressions are alpha-equivalent, that is
