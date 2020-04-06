@@ -158,44 +158,44 @@ prop_substituteEffectiveTerm = substituteEffective
 
 -- * Alpha conversions
 
--- ** Alpha equivalence is symmetric
+-- ** Alpha equivalence is reflexive
 
-alphaEquivalenceSymmetry :: (Eq e, Show e, FirstOrder e) => e -> Property
-alphaEquivalenceSymmetry e =
+alphaEquivalenceReflexivity :: (Eq e, Show e, FirstOrder e) => e -> Property
+alphaEquivalenceReflexivity e =
   whenFail (print $ alpha e e) $
     e `alphaEquivalent` e
 
-prop_alphaEquivalenceSymmetryFormula :: Formula -> Property
-prop_alphaEquivalenceSymmetryFormula = alphaEquivalenceSymmetry
+prop_alphaEquivalenceReflexivityFormula :: Formula -> Property
+prop_alphaEquivalenceReflexivityFormula = alphaEquivalenceReflexivity
 
-prop_alphaEquivalenceSymmetryClause :: Clause -> Property
-prop_alphaEquivalenceSymmetryClause = alphaEquivalenceSymmetry
+prop_alphaEquivalenceReflexivityClause :: Clause -> Property
+prop_alphaEquivalenceReflexivityClause = alphaEquivalenceReflexivity
 
-prop_alphaEquivalenceSymmetryLiteral :: Literal -> Property
-prop_alphaEquivalenceSymmetryLiteral = alphaEquivalenceSymmetry
+prop_alphaEquivalenceReflexivityLiteral :: Literal -> Property
+prop_alphaEquivalenceReflexivityLiteral = alphaEquivalenceReflexivity
 
-prop_alphaEquivalenceSymmetryTerm :: Term -> Property
-prop_alphaEquivalenceSymmetryTerm = alphaEquivalenceSymmetry
+prop_alphaEquivalenceReflexivityTerm :: Term -> Property
+prop_alphaEquivalenceReflexivityTerm = alphaEquivalenceReflexivity
 
--- ** Alpha equivalence is reflexive
+-- ** Alpha equivalence is symmetric
 
-alphaEquivalenceReflexivity :: (Eq e, Show e, FirstOrder e) => e -> e -> Property
-alphaEquivalenceReflexivity a b =
+alphaEquivalenceSymmetry :: (Eq e, Show e, FirstOrder e) => e -> e -> Property
+alphaEquivalenceSymmetry a b =
   whenFail (print $ alpha a b) $
     whenFail (print $ alpha b a) $
       a `alphaEquivalent` b == b `alphaEquivalent` a
 
-prop_alphaEquivalenceReflexivityFormula :: Formula -> Formula -> Property
-prop_alphaEquivalenceReflexivityFormula = alphaEquivalenceReflexivity
+prop_alphaEquivalenceSymmetryFormula :: Formula -> Formula -> Property
+prop_alphaEquivalenceSymmetryFormula = alphaEquivalenceSymmetry
 
-prop_alphaEquivalenceReflexivityClause :: Formula -> Formula -> Property
-prop_alphaEquivalenceReflexivityClause = alphaEquivalenceReflexivity
+prop_alphaEquivalenceSymmetryClause :: Formula -> Formula -> Property
+prop_alphaEquivalenceSymmetryClause = alphaEquivalenceSymmetry
 
-prop_alphaEquivalenceReflexivityLiteral :: Literal -> Literal -> Property
-prop_alphaEquivalenceReflexivityLiteral = alphaEquivalenceReflexivity
+prop_alphaEquivalenceSymmetryLiteral :: Literal -> Literal -> Property
+prop_alphaEquivalenceSymmetryLiteral = alphaEquivalenceSymmetry
 
-prop_alphaEquivalenceReflexivityTerm :: Term -> Term -> Property
-prop_alphaEquivalenceReflexivityTerm = alphaEquivalenceReflexivity
+prop_alphaEquivalenceSymmetryTerm :: Term -> Term -> Property
+prop_alphaEquivalenceSymmetryTerm = alphaEquivalenceSymmetry
 
 -- ** Alpha equivalence is transitive
 
