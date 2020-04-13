@@ -180,9 +180,7 @@ instance FirstOrder Formula where
 
 instance FirstOrder Clause where
   vars = S.unions . fmap vars . unClause
-
   free = vars
-
   bound _ = S.empty
 
   alpha (Literals ls) (Literals ls') | length ls == length ls' =
@@ -210,7 +208,6 @@ instance FirstOrder Literal where
     Equality a b   -> vars a `S.union` vars b
 
   free = vars
-
   bound _ = S.empty
 
   alpha (Constant b) (Constant b') | b == b' = Just M.empty
@@ -226,7 +223,6 @@ instance FirstOrder Term where
     Function _ ts -> S.unions (fmap vars ts)
 
   free = vars
-
   bound _ = S.empty
 
   alpha (Variable v) (Variable v') = Just (M.singleton v v')
@@ -241,6 +237,8 @@ closed = S.null . free
 
 -- | Make any given formula closed by adding a top-level universal quantifier
 -- for each of its free variables.
+--
+-- @'close'@ and @'unprefix'@ are connected by the following property.
 --
 -- prop> unprefix (close f) === f
 --
