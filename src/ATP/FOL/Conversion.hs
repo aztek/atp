@@ -11,8 +11,6 @@ Stability    : experimental
 
 module ATP.FOL.Conversion (
   -- * Conversions
-  close,
-  unprefix,
   liftSignedLiteral,
   unliftSignedLiteral,
   liftClause,
@@ -24,21 +22,6 @@ import ATP.FOL.Occurrence
 
 
 -- * Conversions
-
--- | Make any given formula closed by adding a top-level universal quantifier
--- for each of its free variables.
-close :: Formula -> Formula
-close f = foldl (flip $ Quantified Forall) f (free f)
-
--- | Remove the top-level quantifiers.
---
--- >>> unprefix (Quantified Forall 1 (Quantified Exists 2 (Atomic (Equality (Variable 1) (Variable 2)))))
--- Atomic (Equality (Variable 1) (Variable 2))
---
-unprefix :: Formula -> Formula
-unprefix = \case
-  Quantified _ _ f -> unprefix f
-  f -> f
 
 -- | Convert a clause to a full first-order formula.
 liftClause :: Clause -> Formula

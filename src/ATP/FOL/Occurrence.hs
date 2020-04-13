@@ -12,7 +12,9 @@ Stability    : experimental
 module ATP.FOL.Occurrence (
   -- * Occurrence
   FirstOrder(..),
-  closed
+  closed,
+  close,
+  unprefix
 ) where
 
 import Control.Monad (foldM, zipWithM, liftM2, guard)
@@ -25,6 +27,9 @@ import qualified Data.Set as S
 import Data.Set (Set)
 
 import ATP.FOL.Formula
+
+-- $setup
+-- >>> :load QuickCheckSpec.Generators
 
 
 -- * Occurrence
@@ -231,3 +236,21 @@ instance FirstOrder Term where
 -- variables.
 closed :: Formula -> Bool
 closed = S.null . free
+
+-- | Make any given formula closed by adding a top-level universal quantifier
+-- for each of its free variables.
+--
+-- prop> unprefix (close f) === f
+--
+close :: Formula -> Formula
+close f = foldl (flip $ Quantified Forall) f (free f)
+
+-- | Remove the top-level quantifiers.
+--
+-- >>> unprefix (Quantified Forall 1 (Quantified Exists 2 (Atomic (Equality (Variable 1) (Variable 2)))))
+-- Atomic (Equality (Variable 1) (Variable 2))
+--
+unprefix :: Formula -> Formula
+unprefix = \case
+  Quantified _ _ f -> unprefix f
+  f -> f
