@@ -37,6 +37,8 @@ import ATP.FOL.Formula
 -- | Renaming is an injective mapping of variables.
 type Renaming = Map Var Var
 
+infix 5 ~=
+
 -- | A class of first-order expressions, i.e. expressions that might contain
 -- variables. @'Formula'@s, @'Literal'@s and @'Term'@s are first-order expressions.
 --
@@ -92,22 +94,22 @@ class FirstOrder e where
   -- | Check whether two given expressions are alpha-equivalent, that is
   -- equivalent up to renaming of variables.
   --
-  -- 'alphaEquivalent' is an equivalence relation.
+  -- '(~=)' is an equivalence relation.
   --
   -- __Symmetry__
   --
-  -- > e `alphaEquivalent` e
+  -- > e ~= e
   --
   -- __Reflexivity__
   --
-  -- > a `alphaEquivalent` b == b `alphaEquivalent` a
+  -- > a ~= b == b ~= a
   --
   -- __Transitivity__
   --
-  -- > a `alphaEquivalent` b && b `alphaEquivalent` c ==> a `alphaEquivalent` c
+  -- > a ~= b && b ~= c ==> a ~= c
   --
-  alphaEquivalent :: e -> e -> Bool
-  alphaEquivalent a b = isJust (alpha a b)
+  (~=) :: e -> e -> Bool
+  a ~= b = isJust (alpha a b)
 
 instance FirstOrder LogicalExpression where
   vars = \case
@@ -199,7 +201,7 @@ instance FirstOrder e => FirstOrder (Signed e) where
   ground = ground . unsign
 
   alpha = alpha `on` unsign
-  alphaEquivalent = alphaEquivalent `on` unsign
+  (~=) = (~=) `on` unsign
 
 instance FirstOrder Literal where
   vars = \case

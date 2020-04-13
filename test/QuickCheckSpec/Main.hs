@@ -32,7 +32,7 @@ import QuickCheckSpec.Generators.FOL ()
 
 -- | Like '(===)', but for alpha equivalence.
 (~==) :: (Eq e, Show e, FirstOrder e) => e -> e -> Property
-a ~== b = counterexample (show a ++ " ~/= " ++ show b) (a `alphaEquivalent` b)
+a ~== b = counterexample (show a ++ " ~/= " ++ show b) (a ~= b)
 
 -- | Like '(===)', but modulo simplification.
 (==~) :: Formula -> Formula -> Property
@@ -68,7 +68,7 @@ prop_freeBoundVarsTerm = freeBoundVars
 alphaEquivalenceReflexivity :: (Eq e, Show e, FirstOrder e) => e -> Property
 alphaEquivalenceReflexivity e =
   whenFail (print $ alpha e e) $
-    e `alphaEquivalent` e
+    e ~= e
 
 prop_alphaEquivalenceReflexivityFormula :: Formula -> Property
 prop_alphaEquivalenceReflexivityFormula = alphaEquivalenceReflexivity
@@ -88,7 +88,7 @@ alphaEquivalenceSymmetry :: (Eq e, Show e, FirstOrder e) => e -> e -> Property
 alphaEquivalenceSymmetry a b =
   whenFail (print $ alpha a b) $
     whenFail (print $ alpha b a) $
-      a `alphaEquivalent` b == b `alphaEquivalent` a
+      a ~= b == b ~= a
 
 prop_alphaEquivalenceSymmetryFormula :: Formula -> Formula -> Property
 prop_alphaEquivalenceSymmetryFormula = alphaEquivalenceSymmetry
@@ -110,9 +110,9 @@ alphaEquivalenceTransitivity a b c =
   whenFail (print $ alpha a b) $
     whenFail (print $ alpha b c) $
       whenFail (print $ alpha a c) $
-        a `alphaEquivalent` b ==>
-          b `alphaEquivalent` c ==>
-            a `alphaEquivalent` c
+        a ~= b ==>
+          b ~= c ==>
+            a ~= c
 
 prop_alphaEquivalenceTransitivityFormula :: Formula -> Formula -> Formula -> Property
 prop_alphaEquivalenceTransitivityFormula = alphaEquivalenceTransitivity
