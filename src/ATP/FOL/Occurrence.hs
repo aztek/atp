@@ -11,11 +11,6 @@ Stability    : experimental
 
 module ATP.FOL.Occurrence (
   -- * Occurrence
-  Substitution,
-  effective,
-  eliminatesVariable,
-  eliminatesVariables,
-  independent,
   FirstOrder(..),
   closed
 ) where
@@ -33,43 +28,6 @@ import ATP.FOL.Formula
 
 
 -- * Occurrence
-
--- | The parallel substitution of a set of variables.
-type Substitution = Map Var Term
-
--- | @'eliminatesVariable' v s@ is true iff 's' substituted the variable 'v'
--- with a term where 'v' does not occur.
---
--- > eliminatesVariable v s ==> not (v `freeIn` substitute s e)
---
-eliminatesVariable :: Var -> Substitution -> Bool
-eliminatesVariable v s = M.member v s && not (any (freeIn v) (M.elems s))
-
--- | @'effective' s e@ checks whether 's' substitutes any of the variables
--- that occur freely in 'e'.
---
--- > not (effective s e) ==> substitute s e === e
---
-effective :: FirstOrder e => Substitution -> e -> Bool
-effective s e = any (`freeIn` e) (M.keys s)
-
--- | @'eliminatesVariables' s@ is true iff 's' substitutes each of its variables
--- /v/ with a term where /v/ does not occur.
---
--- > eliminatesVariables s ==> not $ effective s (substitute s e)
---
-eliminatesVariables :: Substitution -> Bool
-eliminatesVariables s = not $ any (effective s) (M.elems s)
-
--- | Checks whether two substitutions are independent.
---
--- > independent s s' ==> substitute s (substitute s' e) === substitute s' (substitute s e)
---
-independent :: Substitution -> Substitution -> Bool
-independent s1 s2 =
-  S.disjoint (M.keysSet s1) (M.keysSet s2) &&
-  all (`eliminatesVariable` s2) (M.keys s1) &&
-  all (`eliminatesVariable` s1) (M.keys s2)
 
 -- | Renaming is an injective mapping of variables.
 type Renaming = Map Var Var
@@ -121,9 +79,6 @@ class FirstOrder e where
   -- @'closed'@.
   ground :: e -> Bool
   ground = S.null . vars
-
-  -- | Apply the given substitution to the given expression.
-  substitute :: Substitution -> e -> e
 
   -- | @'alpha' a b@ returns 'Nothing' if 'a' cannot be alpha converted to 'b'
   -- and 'Just r', where 'r' is a renaming, otherwise.
@@ -178,10 +133,6 @@ instance FirstOrder LogicalExpression where
     Clause  c -> ground c
     Formula f -> ground f
 
-  substitute s = \case
-    Clause  c -> Clause  (substitute s c)
-    Formula f -> Formula (substitute s f)
-
   alpha (Clause  c) (Clause  c') = alpha c c'
   alpha (Formula f) (Formula f') = alpha f f'
   alpha _           _            = Nothing
@@ -212,12 +163,6 @@ instance FirstOrder Formula where
     Connected  _ f g -> bound f `S.union` bound g
     Quantified _ v f -> if v `freeIn` f then S.insert v (bound f) else bound f
 
-  substitute s = \case
-    Atomic l         -> Atomic (substitute s l)
-    Negate f         -> Negate (substitute s f)
-    Connected  c f g -> Connected c (substitute s f) (substitute s g)
-    Quantified q v f -> Quantified q v (substitute (M.delete v s) f)
-
   alpha (Atomic l) (Atomic l') = alpha l l'
   alpha (Negate f) (Negate f') = alpha f f'
   alpha (Connected c f g) (Connected c' f' g') | c == c' =
@@ -232,8 +177,6 @@ instance FirstOrder Clause where
   free = vars
 
   bound _ = S.empty
-
-  substitute s = Literals . fmap (substitute s) . unClause
 
   alpha (Literals ls) (Literals ls') | length ls == length ls' =
     foldM mergeRenamings M.empty =<< zipWithM alpha ls ls'
@@ -250,8 +193,6 @@ instance FirstOrder e => FirstOrder (Signed e) where
 
   ground = ground . unsign
 
-  substitute = fmap . substitute
-
   alpha = alpha `on` unsign
   alphaEquivalent = alphaEquivalent `on` unsign
 
@@ -264,11 +205,6 @@ instance FirstOrder Literal where
   free = vars
 
   bound _ = S.empty
-
-  substitute s = \case
-    Constant b     -> Constant b
-    Predicate p ts -> Predicate p (fmap (substitute s) ts)
-    Equality a b   -> Equality (substitute s a) (substitute s b)
 
   alpha (Constant b) (Constant b') | b == b' = Just M.empty
   alpha (Predicate p ts) (Predicate p' ts') | p == p', length ts == length ts' =
@@ -285,10 +221,6 @@ instance FirstOrder Term where
   free = vars
 
   bound _ = S.empty
-
-  substitute s = \case
-    Variable v    -> M.findWithDefault (Variable v) v s
-    Function f ts -> Function f (fmap (substitute s) ts)
 
   alpha (Variable v) (Variable v') = Just (M.singleton v v')
   alpha (Function f ts) (Function f' ts') | f == f', length ts == length ts' =
