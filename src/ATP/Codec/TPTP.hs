@@ -16,6 +16,7 @@ module ATP.Codec.TPTP (
   decode,
   encodeFormula,
   decodeFormula,
+  encodeClause,
   decodeClause,
   encodeTheorem,
   decodeRefutation
@@ -208,8 +209,10 @@ decodeFormulaS = \case
                         <$> decodeFormulaS f <*> traverse (decodeVar . fst) vs
 
 -- | Encode a formula in unsorted first-order logic in TPTP.
-encode :: Formula -> TPTP.Formula
-encode = TPTP.FOF . encodeFormula
+encode :: LogicalExpression -> TPTP.Formula
+encode = \case
+  Clause  c -> TPTP.CNF (encodeClause  c)
+  Formula f -> TPTP.FOF (encodeFormula f)
 
 -- | Decode a formula in unsorted first-order logic from TPTP.
 decode :: TPTP.Formula -> LogicalExpression
@@ -219,6 +222,10 @@ decode = \case
   TPTP.TFF0{} -> error "decode: formulas in TFF0 are not supported"
   TPTP.TFF1{} -> error "decode: formulas in TFF1 are not supported"
 
+-- | Encode a clause in unsorted first-order logic in TPTP.
+encodeClause :: Clause -> TPTP.Clause
+encodeClause (Literals ls) = TPTP.clause (fmap encodeSignedLiteral ls)
+
 -- | Decode a clause in unsorted first-order logic from TPTP.
 decodeClause :: TPTP.Clause -> Clause
 decodeClause = evalEnumeration . decodeClauseS
@@ -226,10 +233,18 @@ decodeClause = evalEnumeration . decodeClauseS
 decodeClauseS :: TPTP.Clause -> Substitutions Clause
 decodeClauseS (TPTP.Clause ls) = Literals <$> traverse decodeSignedLiteralS (NE.toList ls)
 
+encodeSign :: Sign -> TPTP.Sign
+encodeSign = \case
+  Positive -> TPTP.Positive
+  Negative -> TPTP.Negative
+
 decodeSign :: TPTP.Sign -> Sign
 decodeSign = \case
   TPTP.Positive -> Positive
   TPTP.Negative -> Negative
+
+encodeSignedLiteral :: Signed Literal -> (TPTP.Sign, TPTP.Literal)
+encodeSignedLiteral (Signed s l) = (encodeSign s, encodeLiteral l)
 
 decodeSignedLiteralS :: (TPTP.Sign, TPTP.Literal) -> Substitutions (Signed Literal)
 decodeSignedLiteralS (s, l) = sign (decodeSign s) <$> decodeLiteral l
@@ -240,7 +255,7 @@ encodeTheorem (Theorem as c) = TPTP.TPTP units
   where
     units = unit TPTP.Conjecture 0 c : zipWith (unit TPTP.Axiom) [1..] as
     unit r n f = TPTP.Unit (Right n) (formula r f) Nothing
-    formula r f = TPTP.Formula (TPTP.Standard r) (encode f)
+    formula r f = TPTP.Formula (TPTP.Standard r) (encode $ Formula f)
 
 -- | Decode a proof by refutation from a TSTP output.
 decodeRefutation :: TPTP.TSTP -> Refutation Integer
