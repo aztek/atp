@@ -36,13 +36,13 @@ We can formalize it in first-order logic and express in Haskell as follows.
 -}
 
 module ATP.FOL (
-  module ATP.FOL.Formula,
-  module ATP.FOL.Occurrence,
-  module ATP.FOL.Conversion,
-  module ATP.FOL.Theorem
+  module ATP.FirstOrder.Formula,
+  module ATP.FirstOrder.Occurrence,
+  module ATP.FirstOrder.Conversion,
+  module ATP.FirstOrder.Theorem
 ) where
 
-import ATP.FOL.Formula
-import ATP.FOL.Occurrence
-import ATP.FOL.Conversion
-import ATP.FOL.Theorem
+import ATP.FirstOrder.Formula
+import ATP.FirstOrder.Occurrence
+import ATP.FirstOrder.Conversion
+import ATP.FirstOrder.Theorem

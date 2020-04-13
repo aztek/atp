@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 
 {-|
-Module       : ATP.FOL.Occurrence
+Module       : ATP.FirstOrder.Occurrence
 Description  : Occurrences of variables in first-order expressions.
 Copyright    : (c) Evgenii Kotelnikov, 2019-2020
 License      : GPL-3
@@ -9,7 +9,7 @@ Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
 -}
 
-module ATP.FOL.Occurrence (
+module ATP.FirstOrder.Occurrence (
   -- * Occurrence
   FirstOrder(..),
   closed,
@@ -26,7 +26,7 @@ import Data.Maybe (isJust)
 import qualified Data.Set as S
 import Data.Set (Set)
 
-import ATP.FOL.Formula
+import ATP.FirstOrder.Formula
 
 -- $setup
 -- >>> :load QuickCheckSpec.Generators

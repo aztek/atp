@@ -1,5 +1,5 @@
 {-|
-Module       : ATP.FOL.Theorem
+Module       : ATP.FirstOrder.Theorem
 Description  : Theorems in unsorted first-order logic.
 Copyright    : (c) Evgenii Kotelnikov, 2019-2020
 License      : GPL-3
@@ -7,7 +7,7 @@ Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
 -}
 
-module ATP.FOL.Theorem (
+module ATP.FirstOrder.Theorem (
   -- * Theorems
   Theorem(..),
   (|-),
@@ -16,7 +16,7 @@ module ATP.FOL.Theorem (
 
 import qualified Data.Foldable as Foldable (toList)
 
-import ATP.FOL.Formula
+import ATP.FirstOrder.Formula
 
 
 -- * Theorems

@@ -5,7 +5,7 @@
 {-# LANGUAGE DeriveFunctor, DeriveTraversable, DeriveFoldable #-}
 
 {-|
-Module       : ATP.FOL.Formula
+Module       : ATP.FirstOrder.Formula
 Description  : Formulas in unsorted first-order logic.
 Copyright    : (c) Evgenii Kotelnikov, 2019-2020
 License      : GPL-3
@@ -13,7 +13,7 @@ Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
 -}
 
-module ATP.FOL.Formula (
+module ATP.FirstOrder.Formula (
   -- * Formulas
   Var,
   Symbol,

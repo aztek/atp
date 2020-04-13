@@ -6,7 +6,7 @@
 {-# LANGUAGE CPP #-}
 
 {-|
-Module       : QuickCheckSpec.Generators
+Module       : QuickCheckSpec.Generators.FOL
 Description  : QuickCheck generators of first-order formulas, theorems and proofs.
 Copyright    : (c) Evgenii Kotelnikov, 2020
 License      : GPL-3
@@ -20,7 +20,7 @@ import GHC.Generics (Generic)
 import Generic.Random (genericArbitraryU, genericArbitraryRec, (%))
 
 import Data.Text (Text, pack)
-import Test.QuickCheck (Arbitrary(..), shrinkList, listOf1, choose, oneof)
+import Test.QuickCheck (Arbitrary(..), shrinkList, listOf1, choose)
 
 import ATP.FOL
 import ATP.Proof

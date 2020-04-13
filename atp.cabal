@@ -44,10 +44,10 @@ library
     ATP.Prove
     ATP.Prover
   other-modules:
-    ATP.FOL.Formula
-    ATP.FOL.Occurrence
-    ATP.FOL.Conversion
-    ATP.FOL.Theorem
+    ATP.FirstOrder.Formula
+    ATP.FirstOrder.Occurrence
+    ATP.FirstOrder.Conversion
+    ATP.FirstOrder.Theorem
   ghc-options:
     -Wall
   if flag(Werror)

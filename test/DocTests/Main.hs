@@ -12,4 +12,8 @@ module Main where
 import Test.DocTest (doctest)
 
 main :: IO ()
-main = doctest ["-isrc", "-itest", "--fast", "src/ATP/FOL.hs", "src/ATP/Codec/TPTP.hs"]
+main = doctest ["-isrc", "-itest", "--fast",
+                "src/ATP/FirstOrder/Formula.hs",
+                "src/ATP/FirstOrder/Occurrence.hs",
+                "src/ATP/FirstOrder/Conversion.hs",
+                "src/ATP/Codec/TPTP.hs"]
