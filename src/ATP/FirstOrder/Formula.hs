@@ -47,11 +47,8 @@ module ATP.FirstOrder.Formula (
   unaryPredicate,
   binaryPredicate,
   ternaryPredicate,
-  emptyClause,
   pattern EmptyClause,
-  tautology,
   pattern Tautology,
-  falsum,
   pattern Falsum,
   (===),
   (=/=),
@@ -291,35 +288,17 @@ ternaryPredicate :: Symbol -> TernaryPredicate
 ternaryPredicate p a b c = Atomic (Predicate p [a, b, c])
 
 -- | The empty clause.
--- 'emptyClause' is semantically (but not syntactically) equivalent to 'falsum'.
-emptyClause :: Clause
-emptyClause = Literals []
-
--- | The empty clause.
-#if __GLASGOW_HASKELL__ >= 710
+-- 'EmptyClause' is semantically (but not syntactically) equivalent to 'Falsum'.
 pattern EmptyClause :: Clause
-#endif
 pattern EmptyClause = Literals []
 
 -- | The logical truth.
-tautology :: Formula
-tautology = Atomic (Constant True)
-
--- | The logical truth.
-#if __GLASGOW_HASKELL__ >= 710
 pattern Tautology :: Formula
-#endif
 pattern Tautology = Atomic (Constant True)
 
 -- | The logical false.
--- 'falsum' is semantically (but not syntactically) equivalent to 'emptyClause'.
-falsum :: Formula
-falsum = Atomic (Constant False)
-
--- | The logical false.
-#if __GLASGOW_HASKELL__ >= 710
+-- 'Falsum' is semantically (but not syntactically) equivalent to 'EmptyClause'.
 pattern Falsum :: Formula
-#endif
 pattern Falsum = Atomic (Constant False)
 
 -- | A smart constructor for equality.
@@ -333,8 +312,8 @@ a =/= b = Negate (a === b)
 -- | A smart constructor for negation.
 neg :: Formula -> Formula
 neg = \case
-  Tautology -> falsum
-  Falsum    -> tautology
+  Tautology -> Falsum
+  Falsum    -> Tautology
   Negate f  -> f
   f         -> Negate f
 
@@ -347,16 +326,16 @@ neg = \case
 --
 -- __Left identity__
 --
--- prop> tautology /\ g == g
+-- prop> Tautology /\ g == g
 --
 -- __Right identity__
 --
--- prop> f /\ tautology == f
+-- prop> f /\ Tautology == f
 --
 (/\) :: Formula -> Formula -> Formula
-Falsum    /\ _ = falsum
+Falsum    /\ _ = Falsum
 Tautology /\ g = g
-_ /\ Falsum    = falsum
+_ /\ Falsum    = Falsum
 f /\ Tautology = f
 Connected And f g /\ h = f /\ (g /\ h)
 f /\ g = Connected And f g
@@ -370,16 +349,16 @@ f /\ g = Connected And f g
 --
 -- __Left identity__
 --
--- prop> falsum \/ g == g
+-- prop> Falsum \/ g == g
 --
 -- __Right identity__
 --
--- prop> f \/ falsum == f
+-- prop> f \/ Falsum == f
 --
 (\/) :: Formula -> Formula -> Formula
-Tautology \/ _ = tautology
+Tautology \/ _ = Tautology
 Falsum    \/ g = g
-_ \/ Tautology = tautology
+_ \/ Tautology = Tautology
 f \/ Falsum    = f
 Connected Or f g \/ h = f \/ (g \/ h)
 f \/ g = Connected Or f g
@@ -387,8 +366,8 @@ f \/ g = Connected Or f g
 -- | A smart constructor for the 'Implies' connective.
 (==>) :: Formula -> Formula -> Formula
 Tautology ==> g = g
-Falsum    ==> _ = tautology
-_ ==> Tautology = tautology
+Falsum    ==> _ = Tautology
+_ ==> Tautology = Tautology
 f ==> Falsum    = neg f
 f ==> g = Connected Implies f g
 
@@ -401,11 +380,11 @@ f ==> g = Connected Implies f g
 --
 -- __Left identity__
 --
--- prop> tautology <=> g == g
+-- prop> Tautology <=> g == g
 --
 -- __Right identity__
 --
--- prop> f <=> tautology == f
+-- prop> f <=> Tautology == f
 --
 (<=>) :: Formula -> Formula -> Formula
 Tautology <=> g = g
@@ -422,11 +401,11 @@ f <=> g = Connected Equivalent f g
 --
 -- __Left identity__
 --
--- prop> falsum <~> g == g
+-- prop> Falsum <~> g == g
 --
 -- __Right identity__
 --
--- prop> f <~> falsum == f
+-- prop> f <~> Falsum == f
 --
 (<~>) :: Formula -> Formula -> Formula
 Falsum <~> g = g
@@ -493,7 +472,7 @@ exists = quantified Exists
 
 -- * Monoids of first-order formulas
 
--- | The ('tautology', '/\') monoid.
+-- | The ('Tautology', '/\') monoid.
 newtype Conjunction = Conjunction { getConjunction :: Formula }
   deriving (Show, Eq, Ord)
 
@@ -501,14 +480,14 @@ instance Semigroup Conjunction where
   Conjunction f <> Conjunction g = Conjunction (f /\ g)
 
 instance Monoid Conjunction where
-  mempty = Conjunction tautology
+  mempty = Conjunction Tautology
   mappend = (<>)
 
 -- | Build the conjunction of formulas in a list.
 conjunction :: Foldable f => f Formula -> Formula
 conjunction = getConjunction . mconcat . fmap Conjunction . Foldable.toList
 
--- | The ('falsum', '\/') monoid.
+-- | The ('Falsum', '\/') monoid.
 newtype Disjunction = Disjunction { getDisjunction :: Formula }
   deriving (Show, Eq, Ord)
 
@@ -516,14 +495,14 @@ instance Semigroup Disjunction where
   Disjunction f <> Disjunction g = Disjunction (f \/ g)
 
 instance Monoid Disjunction where
-  mempty = Disjunction falsum
+  mempty = Disjunction Falsum
   mappend = (<>)
 
 -- | Build the disjunction of formulas in a list.
 disjunction :: Foldable f => f Formula -> Formula
 disjunction = getDisjunction . mconcat . fmap Disjunction . Foldable.toList
 
--- | The ('tautology', '<=>') monoid.
+-- | The ('Tautology', '<=>') monoid.
 newtype Equivalence = Equivalence { getEquivalence :: Formula }
   deriving (Show, Eq, Ord)
 
@@ -531,14 +510,14 @@ instance Semigroup Equivalence where
   Equivalence f <> Equivalence g = Equivalence (f <=> g)
 
 instance Monoid Equivalence where
-  mempty = Equivalence tautology
+  mempty = Equivalence Tautology
   mappend = (<>)
 
 -- | Build the equivalence of formulas in a list.
 equivalence :: Foldable f => f Formula -> Formula
 equivalence = getEquivalence . mconcat . fmap Equivalence . Foldable.toList
 
--- | The ('falsum', '<~>') monoid.
+-- | The ('Falsum', '<~>') monoid.
 newtype Inequivalence = Inequivalence { getInequivalence :: Formula }
   deriving (Show, Eq, Ord)
 
@@ -546,7 +525,7 @@ instance Semigroup Inequivalence where
   Inequivalence f <> Inequivalence g = Inequivalence (f <~> g)
 
 instance Monoid Inequivalence where
-  mempty = Inequivalence falsum
+  mempty = Inequivalence Falsum
   mappend = (<>)
 
 -- | Build the inequivalence of formulas in a list.
@@ -565,7 +544,7 @@ inequivalence = getInequivalence . mconcat . fmap Inequivalence . Foldable.toLis
 --
 -- Any formula built only using smart constructors is simplified by construction.
 --
--- >>> simplify (Connected Or tautology (Atomic (Predicate "p" [])))
+-- >>> simplify (Connected Or Tautology (Atomic (Predicate "p" [])))
 -- Atomic (Constant True)
 --
 -- >>> simplify (Negate (Negate (Atomic (Predicate "p" []))))

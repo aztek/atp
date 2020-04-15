@@ -99,7 +99,7 @@ data Refutation l = Refutation (Inference l) [Derivation l]
 
 -- | List all derivations that lead to the refutation.
 derivations :: Refutation l -> NonEmpty (Derivation l)
-derivations (Refutation i ds) = Derivation i (Clause emptyClause) :| ds
+derivations (Refutation i ds) = Derivation i (Clause EmptyClause) :| ds
 
 -- | Construct a mapping between inference labels and their correspondent
 -- formulas.

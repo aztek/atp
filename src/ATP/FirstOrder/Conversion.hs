@@ -26,7 +26,7 @@ import ATP.FirstOrder.Occurrence
 -- | Convert a clause to a full first-order formula.
 liftClause :: Clause -> Formula
 liftClause = \case
-  EmptyClause -> falsum
+  EmptyClause -> Falsum
   Literals ls -> close . foldl1 (Connected Or) . fmap liftSignedLiteral $ ls
 
 -- | Try to convert a first-order formula /f/ to a clause.
