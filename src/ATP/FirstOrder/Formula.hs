@@ -341,7 +341,7 @@ unitClause (Signed s l) = case signed s l of
 --
 -- __Right identity__
 --
--- prop> c \/ EmptyClause == c
+-- prop> c \./ EmptyClause == c
 --
 -- __Left zero__
 --
@@ -349,7 +349,7 @@ unitClause (Signed s l) = case signed s l of
 --
 -- __Right zero__
 --
--- prop> c \/ TautologyClause == TautologyClause
+-- prop> c \./ TautologyClause == TautologyClause
 --
 (\./) :: Clause -> Clause -> Clause
 EmptyClause \./ c = c
@@ -359,9 +359,7 @@ _ \./ TautologyClause = TautologyClause
 Literals cs \./ Literals ss = Literals (cs <> ss)
 
 -- | A smart contructor for a clause.
---
 -- 'clause' eliminates negated boolean constants, falsums and redundant tautologies.
---
 clause :: Foldable f => f (Signed Literal) -> Clause
 clause = clauseUnion . fmap unitClause . Foldable.toList
 
