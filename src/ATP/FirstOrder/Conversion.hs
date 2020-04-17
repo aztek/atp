@@ -37,7 +37,7 @@ unliftClause = unlift . unprefix
   where
     unlift = \case
       Connected Or f g -> mappend <$> unlift f <*> unlift g
-      f -> fmap (\l -> Literals [l]) (unliftSignedLiteral f)
+      f -> UnitClause <$> unliftSignedLiteral f
 
 -- | Convert a signed literal to a (negated) atomic formula.
 liftSignedLiteral :: Signed Literal -> Formula

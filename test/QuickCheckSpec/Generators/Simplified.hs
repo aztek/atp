@@ -14,7 +14,7 @@ module QuickCheckSpec.Generators.Simplified (
   Simplified(..)
 ) where
 
-import Test.QuickCheck (Arbitrary(..), oneof)
+import Test.QuickCheck (Arbitrary(..))
 
 import QuickCheckSpec.Generators.FOL ()
 
@@ -28,14 +28,14 @@ newtype Simplified a = Simplified { getSimplified :: a }
 
 -- * Formulas
 
+instance Arbitrary (Simplified Clause) where
+  arbitrary = Simplified . simplifyClause <$> arbitrary
+
 instance Arbitrary (Simplified Formula) where
-  arbitrary = Simplified . simplify <$> arbitrary
+  arbitrary = Simplified . simplifyFormula <$> arbitrary
 
 instance Arbitrary (Simplified LogicalExpression) where
-  arbitrary = oneof [
-      Simplified . Clause <$> arbitrary,
-      fmap Formula <$> arbitrary
-    ]
+  arbitrary = Simplified . simplify <$> arbitrary
 
 
 -- * Theorems

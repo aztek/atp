@@ -48,6 +48,14 @@ module ATP.FirstOrder.Formula (
   binaryPredicate,
   ternaryPredicate,
   pattern EmptyClause,
+  pattern UnitClause,
+  unitClause,
+  signed,
+  pattern FalsumLiteral,
+  pattern TautologyLiteral,
+  pattern TautologyClause,
+  (\./),
+  clause,
   pattern Tautology,
   pattern Falsum,
   (===),
@@ -63,6 +71,8 @@ module ATP.FirstOrder.Formula (
   exists,
 
   -- * Monoids of first-order formulas
+  ClauseUnion(..),
+  clauseUnion,
   Conjunction(..),
   conjunction,
   Disjunction(..),
@@ -70,10 +80,7 @@ module ATP.FirstOrder.Formula (
   Equivalence(..),
   equivalence,
   Inequivalence(..),
-  inequivalence,
-
-  -- * Simplification
-  simplify
+  inequivalence
 ) where
 
 import qualified Data.Foldable as Foldable (toList)
@@ -222,6 +229,7 @@ infix  8 ===
 infix  8 =/=
 infixl 7 /\ --
 infixl 6 \/
+infixl 6 \./
 infix  5 ==>
 infixl 5 <=>
 infixl 5 <~>
@@ -287,10 +295,75 @@ binaryPredicate p a b = Atomic (Predicate p [a, b])
 ternaryPredicate :: Symbol -> TernaryPredicate
 ternaryPredicate p a b c = Atomic (Predicate p [a, b, c])
 
+-- | A smart constructor for a signed literal.
+signed :: Sign -> Literal -> Signed Literal
+signed Negative (Constant b) = Signed Positive (Constant (not b))
+signed s l = Signed s l
+
+-- | The positive falsum literal.
+pattern FalsumLiteral :: Signed Literal
+pattern FalsumLiteral = Signed Positive (Constant False)
+
+-- | The positive tautology literal.
+pattern TautologyLiteral :: Signed Literal
+pattern TautologyLiteral = Signed Positive (Constant True)
+
 -- | The empty clause.
 -- 'EmptyClause' is semantically (but not syntactically) equivalent to 'Falsum'.
 pattern EmptyClause :: Clause
 pattern EmptyClause = Literals []
+
+-- | The unit clause.
+pattern UnitClause :: Signed Literal -> Clause
+pattern UnitClause l = Literals [l]
+
+-- | A unit clause with a single positive tautology.
+-- 'TautologyClause' is semantically (but not syntactically) equivalent to 'Tautology'.
+pattern TautologyClause :: Clause
+pattern TautologyClause = UnitClause TautologyLiteral
+
+-- | A smart constructor for a unit clause.
+unitClause :: Signed Literal -> Clause
+unitClause (Signed s l) = case signed s l of
+  FalsumLiteral -> EmptyClause
+  sl -> UnitClause sl
+
+-- | Smart union of two clauses.
+-- ('\./') has the following properties.
+--
+-- __Associativity__
+--
+-- prop> (f \./ g) \./ h == f \./ (g \./ h)
+--
+-- __Left identity__
+--
+-- prop> EmptyClause \./ c == c
+--
+-- __Right identity__
+--
+-- prop> c \/ EmptyClause == c
+--
+-- __Left zero__
+--
+-- prop> TautologyClause \./ c == TautologyClause
+--
+-- __Right zero__
+--
+-- prop> c \/ TautologyClause == TautologyClause
+--
+(\./) :: Clause -> Clause -> Clause
+EmptyClause \./ c = c
+c \./ EmptyClause = c
+TautologyClause \./ _ = TautologyClause
+_ \./ TautologyClause = TautologyClause
+Literals cs \./ Literals ss = Literals (cs <> ss)
+
+-- | A smart contructor for a clause.
+--
+-- 'clause' eliminates negated boolean constants, falsums and redundant tautologies.
+--
+clause :: Foldable f => f (Signed Literal) -> Clause
+clause = clauseUnion . fmap unitClause . Foldable.toList
 
 -- | The logical truth.
 pattern Tautology :: Formula
@@ -472,6 +545,21 @@ exists = quantified Exists
 
 -- * Monoids of first-order formulas
 
+-- | The ('EmptyClause', '\./') monoid.
+newtype ClauseUnion = ClauseUnion { getClauseUnion :: Clause }
+  deriving (Show, Eq, Ord)
+
+instance Semigroup ClauseUnion where
+  ClauseUnion c <> ClauseUnion s = ClauseUnion (c \./ s)
+
+instance Monoid ClauseUnion where
+  mempty = ClauseUnion EmptyClause
+  mappend = (<>)
+
+-- | Build the union of a collection of clauses.
+clauseUnion :: Foldable f => f Clause -> Clause
+clauseUnion = getClauseUnion . mconcat . fmap ClauseUnion . Foldable.toList
+
 -- | The ('Tautology', '/\') monoid.
 newtype Conjunction = Conjunction { getConjunction :: Formula }
   deriving (Show, Eq, Ord)
@@ -531,40 +619,3 @@ instance Monoid Inequivalence where
 -- | Build the inequivalence of formulas in a list.
 inequivalence :: Foldable f => f Formula -> Formula
 inequivalence = getInequivalence . mconcat . fmap Inequivalence . Foldable.toList
-
-
--- * Simplification
-
--- | Simplifies the given formula by replacing each of its constructors with
--- corresponding smart constructors. The effects of simplification are the following.
---
--- * @'simplify' f@ does not contain nested negations.
--- * All chained applications of any binary connective inside @'simplify' f@ are
---   right-associative.
---
--- Any formula built only using smart constructors is simplified by construction.
---
--- >>> simplify (Connected Or Tautology (Atomic (Predicate "p" [])))
--- Atomic (Constant True)
---
--- >>> simplify (Negate (Negate (Atomic (Predicate "p" []))))
--- Atomic (Predicate "p" [])
---
--- >>> simplify (Connected And (Connected And (Atomic (Predicate "p" [])) (Atomic (Predicate "q" []))) (Atomic (Predicate "r" [])))
--- Connected And (Atomic (Predicate "p" [])) (Connected And (Atomic (Predicate "q" [])) (Atomic (Predicate "r" [])))
---
-simplify :: Formula -> Formula
-simplify = \case
-  Atomic l         -> Atomic l
-  Negate f         -> neg (simplify f)
-  Connected  c f g -> simplify f # simplify g where (#) = smartConnective c
-  Quantified q v f -> quantified q (v, simplify f)
-
--- | Convert a binary connective to its corresponding smart constructor.
-smartConnective :: Connective -> Formula -> Formula -> Formula
-smartConnective = \case
-  And        -> (/\)
-  Or         -> (\/)
-  Implies    -> (==>)
-  Equivalent -> (<=>)
-  Xor        -> (<~>)

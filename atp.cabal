@@ -45,6 +45,7 @@ library
     ATP.Prover
   other-modules:
     ATP.FirstOrder.Formula
+    ATP.FirstOrder.Simplification
     ATP.FirstOrder.Occurrence
     ATP.FirstOrder.Conversion
     ATP.FirstOrder.Theorem

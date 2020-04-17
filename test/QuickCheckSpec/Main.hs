@@ -23,7 +23,7 @@ import Test.QuickCheck (
   )
 
 import ATP.FOL hiding ((===), (==>))
-import ATP.Codec.TPTP (encodeFormula, decodeFormula)
+import ATP.Codec.TPTP
 
 import QuickCheckSpec.Generators.FOL ()
 
@@ -33,14 +33,6 @@ import QuickCheckSpec.Generators.FOL ()
 -- | Like '(===)', but for alpha equivalence.
 (~==) :: (Eq e, Show e, FirstOrder e) => e -> e -> Property
 a ~== b = counterexample (show a ++ " ~/= " ++ show b) (a ~= b)
-
--- | Like '(===)', but modulo simplification.
-(==~) :: Formula -> Formula -> Property
-(==~) = (===) `on` simplify
-
--- | Like '(===)', but for alpha equivalence and modulo simplification.
-(~==~) :: Formula -> Formula -> Property
-(~==~) = (~==) `on` simplify
 
 
 -- * Free and bound variables
@@ -129,11 +121,39 @@ prop_alphaEquivalenceTransitivityTerm = alphaEquivalenceTransitivity
 
 -- * Simplification
 
-prop_simplifyEliminatesDoubleNegation :: Formula -> Property
-prop_simplifyEliminatesDoubleNegation f =
+-- ** Clauses
+
+prop_simplifyClauseEliminatesNegatedConstants :: Clause -> Property
+prop_simplifyClauseEliminatesNegatedConstants c =
+  whenFail (print s) $
+    all (not . isNegatedConstant) (unClause s)
+      where s = simplifyClause c
+
+isNegatedConstant :: Signed Literal -> Bool
+isNegatedConstant = \case
+  Signed Negative Constant{} -> True
+  _ -> False
+
+prop_simplifyClauseEliminatesFalsum :: Clause -> Property
+prop_simplifyClauseEliminatesFalsum c =
+  whenFail (print s) $
+    FalsumLiteral `notElem` unClause s
+      where s = simplifyClause c
+
+prop_simplifyClauseEliminatesRedundantTautology :: Clause -> Property
+prop_simplifyClauseEliminatesRedundantTautology c =
+  whenFail (print s) $
+    s == TautologyClause || TautologyLiteral `notElem` unClause s
+      where s = simplifyClause c
+
+
+-- ** Formulas
+
+prop_simplifyFormulaEliminatesDoubleNegation :: Formula -> Property
+prop_simplifyFormulaEliminatesDoubleNegation f =
   whenFail (print g) $
     not (containsDoubleNegation g)
-      where g = simplify f
+      where g = simplifyFormula f
 
 containsDoubleNegation :: Formula -> Bool
 containsDoubleNegation = \case
@@ -145,11 +165,11 @@ containsDoubleNegation = \case
   Connected  _ f g -> containsDoubleNegation f || containsDoubleNegation g
   Quantified _ _ f -> containsDoubleNegation f
 
-prop_simplifyEliminatesLeftAssocitivity :: Formula -> Property
-prop_simplifyEliminatesLeftAssocitivity f =
+prop_simplifyFormulaEliminatesLeftAssocitivity :: Formula -> Property
+prop_simplifyFormulaEliminatesLeftAssocitivity f =
   whenFail (print g) $
     not (containsLeftAssocitivity g)
-      where g = simplify f
+      where g = simplifyFormula f
 
 containsLeftAssocitivity :: Formula -> Bool
 containsLeftAssocitivity = \case
@@ -161,23 +181,53 @@ containsLeftAssocitivity = \case
   Connected  _ f g -> containsLeftAssocitivity f || containsLeftAssocitivity g
   Quantified _ _ f -> containsLeftAssocitivity f
 
-prop_simplifyIdempotent :: Formula -> Property
-prop_simplifyIdempotent f = simplify f ==~ f
+
+-- ** Idempotence
+
+prop_simplifyIdempotentClause :: Clause -> Property
+prop_simplifyIdempotentClause c = simplifyClause c ==~ c
+  where
+    (==~) = (===) `on` simplifyClause
+
+prop_simplifyIdempotentFormula :: Formula -> Property
+prop_simplifyIdempotentFormula f = simplifyFormula f ==~ f
+  where
+    (==~) = (===) `on` simplifyFormula
+
+prop_simplifyIdempotentLogicalExpression :: LogicalExpression -> Property
+prop_simplifyIdempotentLogicalExpression e = simplify e ==~ e
+  where
+    (==~) = (===) `on` simplify
 
 
 -- * Conversions
 
 prop_liftUnliftSignedLiteral :: Signed Literal -> Property
-prop_liftUnliftSignedLiteral s = unliftSignedLiteral (liftSignedLiteral s) === Just s
+prop_liftUnliftSignedLiteral s =
+  unliftSignedLiteral (liftSignedLiteral s) === Just s
 
 prop_liftUnliftClause :: Clause -> Property
-prop_liftUnliftClause c = unliftClause (liftClause c) === Just c
+prop_liftUnliftClause c = unliftClause (liftClause c) ==~ Just c
+  where
+    (==~) = (===) `on` fmap simplifyClause
 
 
 -- * Codec
 
-prop_codec :: Formula -> Property
-prop_codec f = f ~==~ decodeFormula (encodeFormula f)
+prop_codecClause :: Clause -> Property
+prop_codecClause c = c ~==~ decodeClause (encodeClause c)
+  where
+    (~==~) = (~==) `on` simplifyClause
+
+prop_codecFormula :: Formula -> Property
+prop_codecFormula f = f ~==~ decodeFormula (encodeFormula f)
+  where
+    (~==~) = (~==) `on` simplifyFormula
+
+prop_codec :: LogicalExpression -> Property
+prop_codec e = e ~==~ decode (encode e)
+  where
+    (~==~) = (~==) `on` simplify
 
 
 -- * Runner

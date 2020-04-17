@@ -37,12 +37,14 @@ We can formalize it in first-order logic and express in Haskell as follows.
 
 module ATP.FOL (
   module ATP.FirstOrder.Formula,
+  module ATP.FirstOrder.Simplification,
   module ATP.FirstOrder.Occurrence,
   module ATP.FirstOrder.Conversion,
   module ATP.FirstOrder.Theorem
 ) where
 
 import ATP.FirstOrder.Formula
+import ATP.FirstOrder.Simplification
 import ATP.FirstOrder.Occurrence
 import ATP.FirstOrder.Conversion
 import ATP.FirstOrder.Theorem
