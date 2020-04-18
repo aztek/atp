@@ -1,3 +1,4 @@
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -83,6 +84,7 @@ module ATP.FirstOrder.Formula (
   inequivalence
 ) where
 
+import Data.Coerce (coerce)
 import qualified Data.Foldable as Foldable (toList)
 #if !MIN_VERSION_base(4, 11, 0)
 import Data.Semigroup (Semigroup(..))
@@ -548,7 +550,7 @@ newtype ClauseUnion = ClauseUnion { getClauseUnion :: Clause }
   deriving (Show, Eq, Ord)
 
 instance Semigroup ClauseUnion where
-  ClauseUnion c <> ClauseUnion s = ClauseUnion (c \./ s)
+  (<>) = coerce (\./)
 
 instance Monoid ClauseUnion where
   mempty = ClauseUnion EmptyClause
@@ -563,7 +565,7 @@ newtype Conjunction = Conjunction { getConjunction :: Formula }
   deriving (Show, Eq, Ord)
 
 instance Semigroup Conjunction where
-  Conjunction f <> Conjunction g = Conjunction (f /\ g)
+  (<>) = coerce (/\)
 
 instance Monoid Conjunction where
   mempty = Conjunction Tautology
@@ -578,7 +580,7 @@ newtype Disjunction = Disjunction { getDisjunction :: Formula }
   deriving (Show, Eq, Ord)
 
 instance Semigroup Disjunction where
-  Disjunction f <> Disjunction g = Disjunction (f \/ g)
+  (<>) = coerce (\/)
 
 instance Monoid Disjunction where
   mempty = Disjunction Falsum
@@ -593,7 +595,7 @@ newtype Equivalence = Equivalence { getEquivalence :: Formula }
   deriving (Show, Eq, Ord)
 
 instance Semigroup Equivalence where
-  Equivalence f <> Equivalence g = Equivalence (f <=> g)
+  (<>) = coerce (<=>)
 
 instance Monoid Equivalence where
   mempty = Equivalence Tautology
@@ -608,7 +610,7 @@ newtype Inequivalence = Inequivalence { getInequivalence :: Formula }
   deriving (Show, Eq, Ord)
 
 instance Semigroup Inequivalence where
-  Inequivalence f <> Inequivalence g = Inequivalence (f <~> g)
+  (<>) = coerce (<~>)
 
 instance Monoid Inequivalence where
   mempty = Inequivalence Falsum
