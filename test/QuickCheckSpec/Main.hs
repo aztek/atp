@@ -31,13 +31,13 @@ import QuickCheckSpec.Generators.FOL ()
 -- * Helper functions
 
 -- | Like '(===)', but for alpha equivalence.
-(~==) :: (Eq e, Show e, FirstOrder e) => e -> e -> Property
+(~==) :: (Show e, FirstOrder e) => e -> e -> Property
 a ~== b = counterexample (show a ++ " ~/= " ++ show b) (a ~= b)
 
 
 -- * Free and bound variables
 
-freeBoundVars :: (Eq e, Show e, FirstOrder e) => e -> Property
+freeBoundVars :: FirstOrder e => e -> Property
 freeBoundVars e = free e `S.union` bound e === vars e
 
 prop_freeBoundVarsFormula :: Formula -> Property
@@ -186,18 +186,15 @@ containsLeftAssocitivity = \case
 
 prop_simplifyIdempotentClause :: Clause -> Property
 prop_simplifyIdempotentClause c = simplifyClause c ==~ c
-  where
-    (==~) = (===) `on` simplifyClause
+  where (==~) = (===) `on` simplifyClause
 
 prop_simplifyIdempotentFormula :: Formula -> Property
 prop_simplifyIdempotentFormula f = simplifyFormula f ==~ f
-  where
-    (==~) = (===) `on` simplifyFormula
+  where (==~) = (===) `on` simplifyFormula
 
 prop_simplifyIdempotentLogicalExpression :: LogicalExpression -> Property
 prop_simplifyIdempotentLogicalExpression e = simplify e ==~ e
-  where
-    (==~) = (===) `on` simplify
+  where (==~) = (===) `on` simplify
 
 
 -- * Conversions
@@ -208,26 +205,22 @@ prop_liftUnliftSignedLiteral s =
 
 prop_liftUnliftClause :: Clause -> Property
 prop_liftUnliftClause c = unliftClause (liftClause c) ==~ Just c
-  where
-    (==~) = (===) `on` fmap simplifyClause
+  where (==~) = (===) `on` fmap simplifyClause
 
 
 -- * Codec
 
 prop_codecClause :: Clause -> Property
 prop_codecClause c = c ~==~ decodeClause (encodeClause c)
-  where
-    (~==~) = (~==) `on` simplifyClause
+  where (~==~) = (~==) `on` simplifyClause
 
 prop_codecFormula :: Formula -> Property
 prop_codecFormula f = f ~==~ decodeFormula (encodeFormula f)
-  where
-    (~==~) = (~==) `on` simplifyFormula
+  where (~==~) = (~==) `on` simplifyFormula
 
 prop_codec :: LogicalExpression -> Property
 prop_codec e = e ~==~ decode (encode e)
-  where
-    (~==~) = (~==) `on` simplify
+  where (~==~) = (~==) `on` simplify
 
 
 -- * Runner
