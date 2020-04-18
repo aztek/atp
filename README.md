@@ -15,8 +15,8 @@ Express theorems in first-order logic and automatically prove them using third-p
 import ATP
 
 human, mortal :: UnaryPredicate
-human = unaryPredicate "human"
-mortal = unaryPredicate "mortal"
+human = UnaryPredicate "human"
+mortal = UnaryPredicate "mortal"
 
 socrates :: Constant
 socrates = "socrates"

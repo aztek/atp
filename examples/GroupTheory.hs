@@ -17,10 +17,10 @@ import ATP
 
 
 inverse :: UnaryFunction
-inverse = unaryFunction "inverse"
+inverse = UnaryFunction "inverse"
 
 (.*.) :: BinaryFunction
-(.*.) = binaryFunction "mult"
+(.*.) = BinaryFunction "mult"
 
 e :: Constant
 e = "e"

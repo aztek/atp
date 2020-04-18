@@ -16,8 +16,8 @@ Consider the following classical logical syllogism.
 We can formalize it in first-order logic and express in Haskell as follows.
 
 > human, mortal :: UnaryPredicate
-> human = unaryPredicate "human"
-> mortal = unaryPredicate "mortal"
+> human = UnaryPredicate "human"
+> mortal = UnaryPredicate "mortal"
 >
 > socrates :: Constant
 > socrates = "socrates"

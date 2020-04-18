@@ -19,8 +19,8 @@ import ATP
 
 
 human, mortal :: UnaryPredicate
-human = unaryPredicate "human"
-mortal = unaryPredicate "mortal"
+human = UnaryPredicate "human"
+mortal = UnaryPredicate "mortal"
 
 socrates :: Constant
 socrates = "socrates"

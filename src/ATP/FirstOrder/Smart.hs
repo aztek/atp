@@ -21,17 +21,17 @@ module ATP.FirstOrder.Smart (
   BinaryFunction,
   TernaryFunction,
   function,
-  unaryFunction,
-  binaryFunction,
-  ternaryFunction,
+  pattern UnaryFunction,
+  pattern BinaryFunction,
+  pattern TernaryFunction,
   Predicate,
   UnaryPredicate,
   BinaryPredicate,
   TernaryPredicate,
   predicate,
-  unaryPredicate,
-  binaryPredicate,
-  ternaryPredicate,
+  pattern UnaryPredicate,
+  pattern BinaryPredicate,
+  pattern TernaryPredicate,
   pattern EmptyClause,
   pattern UnitClause,
   unitClause,
@@ -114,16 +114,16 @@ function :: Symbol -> Function
 function = Function
 
 -- | Build a unary function from a function symbol.
-unaryFunction :: Symbol -> UnaryFunction
-unaryFunction f a = Function f [a]
+pattern UnaryFunction :: Symbol -> UnaryFunction
+pattern UnaryFunction f a = Function f [a]
 
 -- | Build a binary function from a function symbol.
-binaryFunction :: Symbol -> BinaryFunction
-binaryFunction f a b = Function f [a, b]
+pattern BinaryFunction :: Symbol -> BinaryFunction
+pattern BinaryFunction f a b = Function f [a, b]
 
 -- | Build a ternary function from a function symbol.
-ternaryFunction :: Symbol -> TernaryFunction
-ternaryFunction f a b c = Function f [a, b, c]
+pattern TernaryFunction :: Symbol -> TernaryFunction
+pattern TernaryFunction f a b c = Function f [a, b, c]
 
 -- | The type of a predicate symbol - a mapping from zero or more terms
 -- to a formula.
@@ -143,16 +143,16 @@ predicate :: Symbol -> Predicate
 predicate p as = Atomic (Predicate p as)
 
 -- | Build a unary predicate from a predicate symbol.
-unaryPredicate :: Symbol -> UnaryPredicate
-unaryPredicate p a = Atomic (Predicate p [a])
+pattern UnaryPredicate :: Symbol -> UnaryPredicate
+pattern UnaryPredicate p a = Atomic (Predicate p [a])
 
 -- | Build a binary predicate from a predicate symbol.
-binaryPredicate :: Symbol -> BinaryPredicate
-binaryPredicate p a b = Atomic (Predicate p [a, b])
+pattern BinaryPredicate :: Symbol -> BinaryPredicate
+pattern BinaryPredicate p a b = Atomic (Predicate p [a, b])
 
 -- | Build a ternary predicate from a predicate symbol.
-ternaryPredicate :: Symbol -> TernaryPredicate
-ternaryPredicate p a b c = Atomic (Predicate p [a, b, c])
+pattern TernaryPredicate :: Symbol -> TernaryPredicate
+pattern TernaryPredicate p a b c = Atomic (Predicate p [a, b, c])
 
 -- | A smart constructor for a signed literal.
 signed :: Sign -> Literal -> Signed Literal
