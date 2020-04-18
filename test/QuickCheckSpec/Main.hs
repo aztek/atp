@@ -126,7 +126,7 @@ prop_alphaEquivalenceTransitivityTerm = alphaEquivalenceTransitivity
 prop_simplifyClauseEliminatesNegatedConstants :: Clause -> Property
 prop_simplifyClauseEliminatesNegatedConstants c =
   whenFail (print s) $
-    all (not . isNegatedConstant) (unClause s)
+    not $ any isNegatedConstant (unClause s)
       where s = simplifyClause c
 
 isNegatedConstant :: Signed Literal -> Bool
