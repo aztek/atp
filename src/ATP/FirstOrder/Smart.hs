@@ -283,7 +283,7 @@ exists :: Binder b => b -> Formula
 exists = quantified Exists
 
 
--- * Monoids of first-order formulas
+-- * Monoids in first-order logic
 
 -- | The ('EmptyClause', '\./') monoid.
 newtype ClauseUnion = ClauseUnion { getClauseUnion :: Clause }

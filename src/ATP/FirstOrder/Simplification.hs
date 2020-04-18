@@ -1,7 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE FlexibleInstances #-}
 
 {-|
 Module       : ATP.FirstOrder.Simplification
