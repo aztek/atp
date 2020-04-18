@@ -18,7 +18,6 @@ module ATP.FirstOrder.Conversion (
 ) where
 
 import ATP.FirstOrder.Core
-import ATP.FirstOrder.Smart
 import ATP.FirstOrder.Occurrence
 
 

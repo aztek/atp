@@ -1,7 +1,6 @@
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 {-|
@@ -15,34 +14,10 @@ Stability    : experimental
 
 module ATP.FirstOrder.Smart (
   -- * Smart constructors
-  Function,
-  Constant,
-  UnaryFunction,
-  BinaryFunction,
-  TernaryFunction,
-  function,
-  pattern UnaryFunction,
-  pattern BinaryFunction,
-  pattern TernaryFunction,
-  Predicate,
-  UnaryPredicate,
-  BinaryPredicate,
-  TernaryPredicate,
-  predicate,
-  pattern UnaryPredicate,
-  pattern BinaryPredicate,
-  pattern TernaryPredicate,
-  pattern EmptyClause,
-  pattern UnitClause,
   unitClause,
   signed,
-  pattern FalsumLiteral,
-  pattern TautologyLiteral,
-  pattern TautologyClause,
   (\./),
   clause,
-  pattern Tautology,
-  pattern Falsum,
   (===),
   (=/=),
   neg,
@@ -93,93 +68,10 @@ infix  5 ==>
 infixl 5 <=>
 infixl 5 <~>
 
--- | The type of a function symbol - a mapping from zero or more terms
--- to a term.
-type Function = [Term] -> Term
-
--- | The type of a constant symbol.
-type Constant = Term
-
--- | The type of a function symbol with one argument.
-type UnaryFunction = Term -> Term
-
--- | The type of a function symbol with two arguments.
-type BinaryFunction = Term -> Term -> Term
-
--- | The type of a function symbol with three arguments.
-type TernaryFunction = Term -> Term -> Term -> Term
-
--- | Build a function from a function symbol.
-function :: Symbol -> Function
-function = Function
-
--- | Build a unary function from a function symbol.
-pattern UnaryFunction :: Symbol -> UnaryFunction
-pattern UnaryFunction f a = Function f [a]
-
--- | Build a binary function from a function symbol.
-pattern BinaryFunction :: Symbol -> BinaryFunction
-pattern BinaryFunction f a b = Function f [a, b]
-
--- | Build a ternary function from a function symbol.
-pattern TernaryFunction :: Symbol -> TernaryFunction
-pattern TernaryFunction f a b c = Function f [a, b, c]
-
--- | The type of a predicate symbol - a mapping from zero or more terms
--- to a formula.
-type Predicate = [Term] -> Formula
-
--- | The type of a predicate symbol with one argument.
-type UnaryPredicate = Term -> Formula
-
--- | The type of a predicate symbol with two arguments.
-type BinaryPredicate = Term -> Term -> Formula
-
--- | The type of a function symbol with three arguments.
-type TernaryPredicate = Term -> Term -> Term -> Formula
-
--- | Build a predicate from a predicate symbol.
-predicate :: Symbol -> Predicate
-predicate p as = Atomic (Predicate p as)
-
--- | Build a unary predicate from a predicate symbol.
-pattern UnaryPredicate :: Symbol -> UnaryPredicate
-pattern UnaryPredicate p a = Atomic (Predicate p [a])
-
--- | Build a binary predicate from a predicate symbol.
-pattern BinaryPredicate :: Symbol -> BinaryPredicate
-pattern BinaryPredicate p a b = Atomic (Predicate p [a, b])
-
--- | Build a ternary predicate from a predicate symbol.
-pattern TernaryPredicate :: Symbol -> TernaryPredicate
-pattern TernaryPredicate p a b c = Atomic (Predicate p [a, b, c])
-
 -- | A smart constructor for a signed literal.
 signed :: Sign -> Literal -> Signed Literal
 signed Negative (Constant b) = Signed Positive (Constant (not b))
 signed s l = Signed s l
-
--- | The positive falsum literal.
-pattern FalsumLiteral :: Signed Literal
-pattern FalsumLiteral = Signed Positive (Constant False)
-
--- | The positive tautology literal.
-pattern TautologyLiteral :: Signed Literal
-pattern TautologyLiteral = Signed Positive (Constant True)
-
--- | The empty clause.
--- 'EmptyClause' is semantically (but not syntactically) equivalent to 'Falsum'.
-pattern EmptyClause :: Clause
-pattern EmptyClause = Literals []
-
--- | The unit clause.
-pattern UnitClause :: Signed Literal -> Clause
-pattern UnitClause l = Literals [l]
-
--- | A unit clause with a single positive tautology.
--- 'TautologyClause' is semantically (but not syntactically) equivalent to 'Tautology'.
-pattern TautologyClause :: Clause
-pattern TautologyClause = UnitClause TautologyLiteral
 
 -- | A smart constructor for a unit clause.
 unitClause :: Signed Literal -> Clause
@@ -221,15 +113,6 @@ Literals cs \./ Literals ss = Literals (cs <> ss)
 -- 'clause' eliminates negated boolean constants, falsums and redundant tautologies.
 clause :: Foldable f => f (Signed Literal) -> Clause
 clause = clauseUnion . fmap unitClause . Foldable.toList
-
--- | The logical truth.
-pattern Tautology :: Formula
-pattern Tautology = Atomic (Constant True)
-
--- | The logical false.
--- 'Falsum' is semantically (but not syntactically) equivalent to 'EmptyClause'.
-pattern Falsum :: Formula
-pattern Falsum = Atomic (Constant False)
 
 -- | A smart constructor for equality.
 (===) :: Term -> Term -> Formula

@@ -120,7 +120,7 @@ encodeTerm = \case
 -- | Decode a term from TPTP.
 decodeTermS :: TPTP.Term -> Substitutions Term
 decodeTermS = \case
-  TPTP.Function f ts  -> function (decodeFunction f) <$> traverse decodeTermS ts
+  TPTP.Function f ts  -> Function (decodeFunction f) <$> traverse decodeTermS ts
   TPTP.Variable v     -> Variable <$> decodeVar v
   TPTP.Number{}       -> error "decodeTermS: numbers are not supported"
   TPTP.DistinctTerm{} -> error "decodeTermS: distinct objects are not supported"
