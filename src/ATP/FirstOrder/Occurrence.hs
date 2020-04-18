@@ -26,7 +26,7 @@ import Data.Maybe (isJust)
 import qualified Data.Set as S
 import Data.Set (Set)
 
-import ATP.FirstOrder.Formula
+import ATP.FirstOrder.Core
 
 -- $setup
 -- >>> :load QuickCheckSpec.Generators

@@ -18,7 +18,8 @@ module ATP.FirstOrder.Simplification (
   simplifyFormula
 ) where
 
-import ATP.FirstOrder.Formula
+import ATP.FirstOrder.Core
+import ATP.FirstOrder.Smart
 
 -- $setup
 -- >>> :set -XOverloadedStrings

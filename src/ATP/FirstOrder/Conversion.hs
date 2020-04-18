@@ -17,7 +17,8 @@ module ATP.FirstOrder.Conversion (
   unliftClause
 ) where
 
-import ATP.FirstOrder.Formula
+import ATP.FirstOrder.Core
+import ATP.FirstOrder.Smart
 import ATP.FirstOrder.Occurrence
 
 

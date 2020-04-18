@@ -16,7 +16,7 @@ module ATP.FirstOrder.Theorem (
 
 import qualified Data.Foldable as Foldable (toList)
 
-import ATP.FirstOrder.Formula
+import ATP.FirstOrder.Core
 
 
 -- * Theorems
