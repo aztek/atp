@@ -2,7 +2,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE CPP #-}
 
 {-|
@@ -17,10 +16,10 @@ Stability    : experimental
 module QuickCheckSpec.Generators.FOL () where
 
 import GHC.Generics (Generic)
-import Generic.Random (genericArbitraryU, genericArbitraryRec, (%))
+import Generic.Random (genericArbitraryU, genericArbitraryRec, (%), uniform)
 
 import Data.Text (Text, pack)
-import Test.QuickCheck (Arbitrary(..), shrinkList, listOf1, choose)
+import Test.QuickCheck (Arbitrary(..), listOf1, choose, genericShrink)
 
 import ATP.FOL
 import ATP.Proof
@@ -33,18 +32,13 @@ instance Arbitrary Text where
 
 deriving instance Generic Term
 instance Arbitrary Term where
-  arbitrary = genericArbitraryRec (1 % 1 % ())
-  shrink = \case
-    Variable _    -> []
-    Function f ts -> ts ++ (Function f <$> shrinkList shrink ts)
+  arbitrary = genericArbitraryRec uniform
+  shrink = genericShrink
 
 deriving instance Generic Literal
 instance Arbitrary Literal where
-  arbitrary = genericArbitraryRec (1 % 1 % 1 % ())
-  shrink = \case
-    Constant _     -> []
-    Predicate p ts -> Predicate p <$> shrinkList shrink ts
-    Equality _ _   -> []
+  arbitrary = genericArbitraryRec uniform
+  shrink = genericShrink
 
 deriving instance Generic Sign
 instance Arbitrary Sign where
@@ -53,12 +47,12 @@ instance Arbitrary Sign where
 deriving instance Generic (Signed a)
 instance Arbitrary a => Arbitrary (Signed a) where
   arbitrary = genericArbitraryU
-  shrink (Signed s a) = Signed s <$> shrink a
+  shrink = genericShrink
 
 deriving instance Generic Clause
 instance Arbitrary Clause where
   arbitrary = genericArbitraryU
-  shrink (Literals ls) = Literals <$> shrink ls
+  shrink = genericShrink
 
 deriving instance Generic Quantifier
 instance Arbitrary Quantifier where
@@ -71,18 +65,12 @@ instance Arbitrary Connective where
 deriving instance Generic Formula
 instance Arbitrary Formula where
   arbitrary = genericArbitraryRec (3 % 2 % 1 % 2 % ())
-  shrink = \case
-    Atomic l         -> Atomic <$> shrink l
-    Negate f         -> f : (Negate <$> shrink f)
-    Connected  c f g -> f : g : (Connected c <$> shrink f <*> shrink g)
-    Quantified q v f -> f : (Quantified q v <$> shrink f)
+  shrink = genericShrink
 
 deriving instance Generic LogicalExpression
 instance Arbitrary LogicalExpression where
   arbitrary = genericArbitraryU
-  shrink = \case
-    Clause  c -> Clause  <$> shrink c
-    Formula f -> Formula <$> shrink f
+  shrink = genericShrink
 
 
 -- * Theorems
@@ -90,7 +78,7 @@ instance Arbitrary LogicalExpression where
 deriving instance Generic Theorem
 instance Arbitrary Theorem where
   arbitrary = genericArbitraryU
-  shrink (Theorem as c) = Theorem <$> shrinkList shrink as <*> shrink c
+  shrink = genericShrink
 
 
 -- * Proofs
@@ -102,9 +90,9 @@ instance Arbitrary f => Arbitrary (Inference f) where
 deriving instance Generic (Derivation l)
 instance Arbitrary l => Arbitrary (Derivation l) where
   arbitrary = genericArbitraryU
-  shrink (Derivation i f) = Derivation i <$> shrink f
+  shrink = genericShrink
 
 deriving instance Generic (Refutation l)
 instance Arbitrary l => Arbitrary (Refutation l) where
   arbitrary = genericArbitraryU
-  shrink (Refutation i ds) = Refutation i <$> shrinkList shrink ds
+  shrink = genericShrink
