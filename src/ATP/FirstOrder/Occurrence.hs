@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 {-|
 Module       : ATP.FirstOrder.Occurrence
@@ -175,7 +176,7 @@ instance FirstOrder Formula where
   alpha (Connected c f g) (Connected c' f' g') | c == c' =
     uncurry mergeRenamings =<< liftM2 (,) (alpha f f') (alpha g g')
   alpha (Quantified q v f) (Quantified q' v' f') | q == q' =
-    uncurry mergeRenamings =<< liftM2 (,) (alpha f f') (Just $ M.singleton v v')
+    uncurry mergeRenamings =<< liftM2 (,) (alpha f f') (alpha v v')
   alpha _ _ = Nothing
 
 instance FirstOrder Clause where
@@ -219,16 +220,23 @@ instance FirstOrder Literal where
 
 instance FirstOrder Term where
   vars = \case
-    Variable v    -> S.singleton v
+    Variable v    -> vars v
     Function _ ts -> S.unions (fmap vars ts)
 
   free = vars
   bound _ = S.empty
 
-  alpha (Variable v) (Variable v') = Just (M.singleton v v')
+  alpha (Variable v) (Variable v') = alpha v v'
   alpha (Function f ts) (Function f' ts') | f == f', length ts == length ts' =
     foldM mergeRenamings M.empty =<< zipWithM alpha ts ts'
   alpha _ _ = Nothing
+
+instance FirstOrder Var where
+  vars = S.singleton
+  free = vars
+  bound _ = S.empty
+
+  alpha v v' = Just (M.singleton v v')
 
 -- | Check whether the given formula is closed, i.e. does not contain any free
 -- variables.
