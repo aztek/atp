@@ -21,13 +21,9 @@ mortal = UnaryPredicate "mortal"
 socrates :: Constant
 socrates = "socrates"
 
-humansAreMortal :: Formula
+humansAreMortal, socratesIsHuman, socratesIsMortal :: Formula
 humansAreMortal = forall $ \x -> human x ==> mortal x
-
-socratesIsHuman :: Formula
 socratesIsHuman = human socrates
-
-socratesIsMortal :: Formula
 socratesIsMortal = mortal socrates
 
 syllogism :: Theorem
