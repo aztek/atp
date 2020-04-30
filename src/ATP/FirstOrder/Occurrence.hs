@@ -12,31 +12,26 @@ Stability    : experimental
 
 module ATP.FirstOrder.Occurrence (
   -- * Occurrence
-  FirstOrder(..),
+  FirstOrder(vars, free, bound, occursIn, freeIn, boundIn, (~=), alpha),
   closed,
   close,
   unprefix
 ) where
 
-import Control.Monad (foldM, zipWithM, liftM2, guard)
+import Prelude hiding (lookup)
+import Control.Monad (liftM2, zipWithM, when)
 import Data.Function (on)
-import Data.Functor (($>))
-import qualified Data.Map as M
-import Data.Map (Map)
-import Data.Maybe (isJust)
-import qualified Data.Set as S
+import qualified Data.Set as S (insert, delete, member, null, singleton)
 import Data.Set (Set)
 
 import ATP.FirstOrder.Core
+import ATP.FirstOrder.Alpha
 
 -- $setup
 -- >>> :load QuickCheckSpec.Generators
 
 
 -- * Occurrence
-
--- | Renaming is an injective mapping of variables.
-type Renaming = Map Var Var
 
 infix 5 ~=
 
@@ -49,7 +44,7 @@ infix 5 ~=
 --
 -- @'vars'@, @'free'@ and @'bound'@ are connected by the following property.
 --
--- > free e `S.union` bound e == vars e
+-- > free e <> bound e == vars e
 --
 -- @'occursIn'@, @'freeIn'@ and @'boundIn'@ are connected by the following property.
 --
@@ -88,10 +83,6 @@ class FirstOrder e where
   ground :: e -> Bool
   ground = S.null . vars
 
-  -- | @'alpha' a b@ returns 'Nothing' if 'a' cannot be alpha converted to 'b'
-  -- and 'Just r', where 'r' is a renaming, otherwise.
-  alpha :: e -> e -> Maybe Renaming
-
   -- | Check whether two given expressions are alpha-equivalent, that is
   -- equivalent up to renaming of variables.
   --
@@ -110,7 +101,12 @@ class FirstOrder e where
   -- > a ~= b && b ~= c ==> a ~= c
   --
   (~=) :: e -> e -> Bool
-  a ~= b = isJust (alpha a b)
+  a ~= b = evalAlpha (a ?= b)
+
+  -- | A helper function calculating alpha-equivalence using the 'Alpha' monad stack.
+  (?=) :: e -> e -> Alpha Bool
+
+  alpha :: AlphaMonad m => e -> AlphaT m e
 
 instance FirstOrder LogicalExpression where
   vars = \case
@@ -141,52 +137,55 @@ instance FirstOrder LogicalExpression where
     Clause  c -> ground c
     Formula f -> ground f
 
-  alpha (Clause  c) (Clause  c') = alpha c c'
-  alpha (Formula f) (Formula f') = alpha f f'
-  alpha _           _            = Nothing
+  Clause  c ?= Clause  c' = c ?= c'
+  Formula f ?= Formula f' = f ?= f'
+  _         ?= _          = return False
 
-insertRenaming :: Renaming -> (Var, Var) -> Maybe Renaming
-insertRenaming r (v, v') = guard p $> M.insert v v' r
-  where p = maybe (v' `notElem` M.elems r) (== v') (M.lookup v r)
-
-mergeRenamings :: Renaming -> Renaming -> Maybe Renaming
-mergeRenamings r = foldM insertRenaming r . M.toList
+  alpha = \case
+    Clause  c -> Clause  <$> alpha c
+    Formula f -> Formula <$> alpha f
 
 instance FirstOrder Formula where
   vars = \case
     Atomic l         -> vars l
     Negate f         -> vars f
-    Connected  _ f g -> vars f `S.union` vars g
+    Connected  _ f g -> vars f <> vars g
     Quantified _ _ f -> vars f
 
   free = \case
-    Atomic l         -> vars l
+    Atomic l         -> free l
     Negate f         -> free f
-    Connected  _ f g -> free f `S.union` free g
+    Connected  _ f g -> free f <> free g
     Quantified _ v f -> S.delete v (free f)
 
   bound = \case
-    Atomic{}         -> S.empty
+    Atomic{}         -> mempty
     Negate f         -> bound f
-    Connected  _ f g -> bound f `S.union` bound g
+    Connected  _ f g -> bound f <> bound g
     Quantified _ v f -> if v `freeIn` f then S.insert v (bound f) else bound f
 
-  alpha (Atomic l) (Atomic l') = alpha l l'
-  alpha (Negate f) (Negate f') = alpha f f'
-  alpha (Connected c f g) (Connected c' f' g') | c == c' =
-    uncurry mergeRenamings =<< liftM2 (,) (alpha f f') (alpha g g')
-  alpha (Quantified q v f) (Quantified q' v' f') | q == q' =
-    uncurry mergeRenamings =<< liftM2 (,) (alpha f f') (alpha v v')
-  alpha _ _ = Nothing
+  Atomic l ?= Atomic l' = l ?= l'
+  Negate f ?= Negate f' = f ?= f'
+  Connected  c f g ?= Connected  c' f' g' | c == c' = liftM2 (&&) (f ?= f') (g ?= g')
+  Quantified q v f ?= Quantified q' v' f' | q == q' = enter v v' (f ?= f')
+  _ ?= _ = return False
+
+  alpha = \case
+    Atomic l -> Atomic <$> alpha l
+    Negate f -> Negate <$> alpha f
+    Connected  c f g -> Connected c <$> alpha f <*> alpha g
+    Quantified q v f -> do
+      v' <- binding v
+      f' <- enter v v' (alpha f)
+      return (Quantified q v' f')
 
 instance FirstOrder Clause where
-  vars = S.unions . fmap vars . unClause
+  vars = vars . unClause
   free = vars
-  bound _ = S.empty
-
-  alpha (Literals ls) (Literals ls') | length ls == length ls' =
-    foldM mergeRenamings M.empty =<< zipWithM alpha ls ls'
-  alpha _ _ = Nothing
+  bound _ = mempty
+  (~=) = (~=) `on` unClause
+  (?=) = (?=) `on` unClause
+  alpha = fmap Literals . traverse alpha . unClause
 
 instance FirstOrder e => FirstOrder (Signed e) where
   vars  = vars  . unsign
@@ -199,44 +198,72 @@ instance FirstOrder e => FirstOrder (Signed e) where
 
   ground = ground . unsign
 
-  alpha = alpha `on` unsign
   (~=) = (~=) `on` unsign
+  (?=) = (?=) `on` unsign
+
+  alpha = traverse alpha
 
 instance FirstOrder Literal where
   vars = \case
-    Constant{}     -> S.empty
-    Predicate _ ts -> S.unions (fmap vars ts)
-    Equality a b   -> vars a `S.union` vars b
+    Constant{}     -> mempty
+    Predicate _ ts -> vars ts
+    Equality a b   -> vars a <> vars b
 
   free = vars
-  bound _ = S.empty
+  bound _ = mempty
 
-  alpha (Constant b) (Constant b') | b == b' = Just M.empty
-  alpha (Predicate p ts) (Predicate p' ts') | p == p', length ts == length ts' =
-    foldM mergeRenamings M.empty =<< zipWithM alpha ts ts'
-  alpha (Equality a b) (Equality a' b') =
-    uncurry mergeRenamings =<< liftM2 (,) (alpha a a') (alpha b b')
-  alpha _ _ = Nothing
+  Constant  b    ?= Constant  b'     = return (b == b')
+  Predicate p ts ?= Predicate p' ts' | p == p' = ts ?= ts'
+  Equality  a b  ?= Equality  a' b'  = liftM2 (&&) (a ?= a') (b ?= b')
+  _ ?= _ = return False
+
+  alpha = \case
+    Constant b     -> return (Constant b)
+    Predicate p ts -> Predicate p <$> traverse alpha ts
+    Equality a b   -> Equality <$> alpha a <*> alpha b
 
 instance FirstOrder Term where
   vars = \case
     Variable v    -> vars v
-    Function _ ts -> S.unions (fmap vars ts)
+    Function _ ts -> vars ts
 
   free = vars
-  bound _ = S.empty
+  bound _ = mempty
 
-  alpha (Variable v) (Variable v') = alpha v v'
-  alpha (Function f ts) (Function f' ts') | f == f', length ts == length ts' =
-    foldM mergeRenamings M.empty =<< zipWithM alpha ts ts'
-  alpha _ _ = Nothing
+  Variable v    ?= Variable v'     = v ?= v'
+  Function f ts ?= Function f' ts' | f == f' = ts ?= ts'
+  _ ?= _ = return False
+
+  alpha = \case
+    Function f ts -> Function f <$> traverse alpha ts
+    Variable v    -> Variable   <$> alpha v
 
 instance FirstOrder Var where
   vars = S.singleton
   free = vars
-  bound _ = S.empty
+  bound _ = mempty
 
-  alpha v v' = Just (M.singleton v v')
+  v ?= v' = lookup v >>= \case
+    Just w' -> return (w' == v')
+    Nothing -> do
+      vs <- scope
+      let f = v' `notElem` vs
+      when f (share v v')
+      return f
+
+  alpha v = lookup v >>= \case
+    Just v' -> occurrence v'
+    Nothing -> do { v' <- binding v; share v v'; return v' }
+
+instance FirstOrder e => FirstOrder [e] where
+  vars = mconcat . fmap vars
+  free = vars
+  bound = mempty
+
+  es ?= es' | length es == length es' = and <$> zipWithM (?=) es es'
+  _  ?= _   = return False
+
+  alpha = traverse alpha
 
 -- | Check whether the given formula is closed, i.e. does not contain any free
 -- variables.
