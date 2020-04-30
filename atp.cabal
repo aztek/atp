@@ -45,6 +45,7 @@ library
     ATP.Prover
   other-modules:
     ATP.FirstOrder.Core
+    ATP.FirstOrder.Alpha
     ATP.FirstOrder.Smart
     ATP.FirstOrder.Simplification
     ATP.FirstOrder.Occurrence

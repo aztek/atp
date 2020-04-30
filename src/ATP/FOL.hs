@@ -33,6 +33,7 @@ We can formalize it in first-order logic and express in Haskell as follows.
 
 module ATP.FOL (
   module ATP.FirstOrder.Core,
+  module ATP.FirstOrder.Alpha,
   module ATP.FirstOrder.Smart,
   module ATP.FirstOrder.Simplification,
   module ATP.FirstOrder.Occurrence,
@@ -41,6 +42,7 @@ module ATP.FOL (
 ) where
 
 import ATP.FirstOrder.Core
+import ATP.FirstOrder.Alpha
 import ATP.FirstOrder.Smart
 import ATP.FirstOrder.Simplification
 import ATP.FirstOrder.Occurrence
