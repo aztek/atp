@@ -15,7 +15,6 @@ module ATP.FirstOrder.Alpha (
   runAlphaT,
   evalAlphaT,
   execAlphaT,
-  -- mapAlphaT,
 
   Alpha,
   runAlpha,
@@ -33,8 +32,8 @@ module ATP.FirstOrder.Alpha (
 import Prelude hiding (lookup)
 import Control.Applicative ((<|>))
 import Control.Monad.Trans (MonadTrans(..))
-import Control.Monad.Reader (MonadReader(..), ReaderT(..), asks, mapReaderT)
-import Control.Monad.State (MonadState(..), StateT(..), modify, gets, evalStateT, mapStateT)
+import Control.Monad.Reader (MonadReader(..), ReaderT(..), asks)
+import Control.Monad.State (MonadState(..), StateT(..), modify, gets, evalStateT)
 import Data.Functor.Identity (Identity(..))
 import qualified Data.List as L (lookup)
 import qualified Data.Map as M (empty, lookup, insert, elems)
