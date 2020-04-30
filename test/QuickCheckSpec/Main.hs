@@ -14,18 +14,18 @@ module Main (main) where
 
 import Control.Monad (unless)
 import Data.Function (on)
-import qualified Data.Set as S (union)
 import System.Exit (exitFailure)
 
 import Test.QuickCheck (
-    Property, (===), (==>), whenFail, counterexample,
-    forAllProperties, quickCheckWithResult, stdArgs, Args(..)
+    Property, property, (===), (==>), whenFail, counterexample, forAll,
+    forAllProperties, quickCheckWithResult, stdArgs, Args(..), withMaxSuccess
   )
 
-import ATP.FOL hiding ((===), (==>))
+import ATP hiding ((===), (==>))
 import ATP.Codec.TPTP
 
 import QuickCheckSpec.Generators.FOL ()
+import QuickCheckSpec.Generators.AlphaEquivalent
 
 
 -- * Helper functions
@@ -35,10 +35,76 @@ import QuickCheckSpec.Generators.FOL ()
 a ~== b = counterexample (show a ++ " ~/= " ++ show b) (a ~= b)
 
 
+-- * Generators
+
+-- ** 'genAlphaEquivalent' does not introduce new free variables
+
+freeCountAlphaEquivalent :: (Show e, FirstOrder e) => e -> Property
+freeCountAlphaEquivalent a =
+  forAll (genAlphaEquivalent a) $ \b ->
+    length (free a) === length (free b)
+
+prop_freeCountAlphaEquivalentFormula :: Formula -> Property
+prop_freeCountAlphaEquivalentFormula =
+  withMaxSuccess 100000 . freeCountAlphaEquivalent
+
+prop_freeCountAlphaEquivalentClause :: Clause -> Property
+prop_freeCountAlphaEquivalentClause = freeCountAlphaEquivalent
+
+prop_freeCountAlphaEquivalentLiteral :: Literal -> Property
+prop_freeCountAlphaEquivalentLiteral = freeCountAlphaEquivalent
+
+prop_freeCountAlphaEquivalentTerm :: Term -> Property
+prop_freeCountAlphaEquivalentTerm = freeCountAlphaEquivalent
+
+
+-- ** 'genAlphaEquivalent' produces alpha equivalent expressions
+
+actuallyAlphaEquivalent :: (Show e, FirstOrder e) => e -> Property
+actuallyAlphaEquivalent a =
+  forAll (genAlphaEquivalent a) $ \b ->
+    a ~= b
+
+prop_actuallyAlphaEquivalentFormula :: Formula -> Property
+prop_actuallyAlphaEquivalentFormula =
+  withMaxSuccess 100000 . actuallyAlphaEquivalent
+
+prop_actuallyAlphaEquivalentClause :: Clause -> Property
+prop_actuallyAlphaEquivalentClause = actuallyAlphaEquivalent
+
+prop_actuallyAlphaEquivalentLiteral :: Literal -> Property
+prop_actuallyAlphaEquivalentLiteral = actuallyAlphaEquivalent
+
+prop_actuallyAlphaEquivalentTerm :: Term -> Property
+prop_actuallyAlphaEquivalentTerm = actuallyAlphaEquivalent
+
+
+-- ** 'genAlphaInequivalent' produces alpha inequivalent expressions
+
+actuallyAlphaInequivalent :: (Show e, FirstOrder e) => e -> Property
+actuallyAlphaInequivalent a =
+  length (vars a) > 1 ==>
+    forAll (genAlphaInequivalent a) $ \b ->
+      not (a ~= b)
+
+prop_actuallyAlphaInequivalentFormula :: Formula -> Property
+prop_actuallyAlphaInequivalentFormula =
+  withMaxSuccess 50000 . actuallyAlphaInequivalent
+
+prop_actuallyAlphaInequivalentClause :: Clause -> Property
+prop_actuallyAlphaInequivalentClause = actuallyAlphaInequivalent
+
+prop_actuallyAlphaInequivalentLiteral :: Literal -> Property
+prop_actuallyAlphaInequivalentLiteral = actuallyAlphaInequivalent
+
+prop_actuallyAlphaInequivalentTerm :: Term -> Property
+prop_actuallyAlphaInequivalentTerm = actuallyAlphaInequivalent
+
+
 -- * Free and bound variables
 
 freeBoundVars :: FirstOrder e => e -> Property
-freeBoundVars e = free e `S.union` bound e === vars e
+freeBoundVars e = free e <> bound e === vars e
 
 prop_freeBoundVarsFormula :: Formula -> Property
 prop_freeBoundVarsFormula = freeBoundVars
@@ -53,17 +119,16 @@ prop_freeBoundVarsTerm :: Term -> Property
 prop_freeBoundVarsTerm = freeBoundVars
 
 
--- * Alpha conversions
+-- * Alpha equivalence
 
 -- ** Alpha equivalence is reflexive
 
-alphaEquivalenceReflexivity :: (Eq e, Show e, FirstOrder e) => e -> Property
-alphaEquivalenceReflexivity e =
-  whenFail (print $ alpha e e) $
-    e ~= e
+alphaEquivalenceReflexivity :: FirstOrder e => e -> Property
+alphaEquivalenceReflexivity e = property (e ~= e)
 
 prop_alphaEquivalenceReflexivityFormula :: Formula -> Property
-prop_alphaEquivalenceReflexivityFormula = alphaEquivalenceReflexivity
+prop_alphaEquivalenceReflexivityFormula =
+  withMaxSuccess 100000 . alphaEquivalenceReflexivity
 
 prop_alphaEquivalenceReflexivityClause :: Clause -> Property
 prop_alphaEquivalenceReflexivityClause = alphaEquivalenceReflexivity
@@ -74,48 +139,47 @@ prop_alphaEquivalenceReflexivityLiteral = alphaEquivalenceReflexivity
 prop_alphaEquivalenceReflexivityTerm :: Term -> Property
 prop_alphaEquivalenceReflexivityTerm = alphaEquivalenceReflexivity
 
+
 -- ** Alpha equivalence is symmetric
 
-alphaEquivalenceSymmetry :: (Eq e, Show e, FirstOrder e) => e -> e -> Property
-alphaEquivalenceSymmetry a b =
-  whenFail (print $ alpha a b) $
-    whenFail (print $ alpha b a) $
-      a ~= b == b ~= a
+alphaEquivalenceSymmetry :: (Show e, FirstOrder e) => e -> Property
+alphaEquivalenceSymmetry a =
+  forAll (genAlphaEquivalent a) $ \b ->
+    b ~= a
 
-prop_alphaEquivalenceSymmetryFormula :: Formula -> Formula -> Property
-prop_alphaEquivalenceSymmetryFormula = alphaEquivalenceSymmetry
+prop_alphaEquivalenceSymmetryFormula :: Formula -> Property
+prop_alphaEquivalenceSymmetryFormula =
+  withMaxSuccess 100000 . alphaEquivalenceSymmetry
 
-prop_alphaEquivalenceSymmetryClause :: Formula -> Formula -> Property
+prop_alphaEquivalenceSymmetryClause :: Clause -> Property
 prop_alphaEquivalenceSymmetryClause = alphaEquivalenceSymmetry
 
-prop_alphaEquivalenceSymmetryLiteral :: Literal -> Literal -> Property
+prop_alphaEquivalenceSymmetryLiteral :: Literal -> Property
 prop_alphaEquivalenceSymmetryLiteral = alphaEquivalenceSymmetry
 
-prop_alphaEquivalenceSymmetryTerm :: Term -> Term -> Property
+prop_alphaEquivalenceSymmetryTerm :: Term -> Property
 prop_alphaEquivalenceSymmetryTerm = alphaEquivalenceSymmetry
+
 
 -- ** Alpha equivalence is transitive
 
-alphaEquivalenceTransitivity :: (Eq e, Show e, FirstOrder e)
-                             => e -> e -> e -> Property
-alphaEquivalenceTransitivity a b c =
-  whenFail (print $ alpha a b) $
-    whenFail (print $ alpha b c) $
-      whenFail (print $ alpha a c) $
-        a ~= b ==>
-          b ~= c ==>
-            a ~= c
+alphaEquivalenceTransitivity :: (Show e, FirstOrder e) => e -> Property
+alphaEquivalenceTransitivity a =
+  forAll (genAlphaEquivalent a) $ \b ->
+    forAll (genAlphaEquivalent b) $ \c ->
+      a ~= c
 
-prop_alphaEquivalenceTransitivityFormula :: Formula -> Formula -> Formula -> Property
-prop_alphaEquivalenceTransitivityFormula = alphaEquivalenceTransitivity
+prop_alphaEquivalenceTransitivityFormula :: Formula -> Property
+prop_alphaEquivalenceTransitivityFormula =
+  withMaxSuccess 100000 . alphaEquivalenceTransitivity
 
-prop_alphaEquivalenceTransitivityClause :: Clause -> Clause -> Clause -> Property
+prop_alphaEquivalenceTransitivityClause :: Clause -> Property
 prop_alphaEquivalenceTransitivityClause = alphaEquivalenceTransitivity
 
-prop_alphaEquivalenceTransitivityLiteral :: Literal -> Literal -> Literal -> Property
+prop_alphaEquivalenceTransitivityLiteral :: Literal -> Property
 prop_alphaEquivalenceTransitivityLiteral = alphaEquivalenceTransitivity
 
-prop_alphaEquivalenceTransitivityTerm :: Term -> Term -> Term -> Property
+prop_alphaEquivalenceTransitivityTerm :: Term -> Property
 prop_alphaEquivalenceTransitivityTerm = alphaEquivalenceTransitivity
 
 
@@ -229,5 +293,6 @@ return []
 
 main :: IO ()
 main = do
-  success <- $forAllProperties $ quickCheckWithResult stdArgs{maxSuccess=1000}
+  let args = stdArgs{maxSuccess=1000, maxDiscardRatio=50}
+  success <- $forAllProperties (quickCheckWithResult args)
   unless success exitFailure
