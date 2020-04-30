@@ -195,6 +195,12 @@ instance IsString Term where
 instance IsString Literal where
   fromString = flip Predicate [] . fromString
 
+instance IsString e => IsString (Signed e) where
+  fromString = Signed Positive . fromString
+
+instance IsString Clause where
+  fromString = UnitClause . fromString
+
 instance IsString Formula where
   fromString = Atomic . fromString
 
