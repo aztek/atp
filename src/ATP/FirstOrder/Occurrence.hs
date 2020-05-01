@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleInstances #-}
 
@@ -21,6 +22,9 @@ module ATP.FirstOrder.Occurrence (
 import Prelude hiding (lookup)
 import Control.Monad (liftM2, zipWithM, when)
 import Data.Function (on)
+#if !MIN_VERSION_base(4, 11, 0)
+import Data.Semigroup (Semigroup(..))
+#endif
 import qualified Data.Set as S (insert, delete, member, null, singleton)
 import Data.Set (Set)
 
