@@ -14,6 +14,9 @@ module Main (main) where
 
 import Control.Monad (unless)
 import Data.Function (on)
+#if !MIN_VERSION_base(4, 11, 0)
+import Data.Semigroup (Semigroup(..))
+#endif
 import System.Exit (exitFailure)
 
 import Test.QuickCheck (
