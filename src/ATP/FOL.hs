@@ -38,7 +38,8 @@ module ATP.FOL (
   module ATP.FirstOrder.Simplification,
   module ATP.FirstOrder.Occurrence,
   module ATP.FirstOrder.Conversion,
-  module ATP.FirstOrder.Theorem
+  module ATP.FirstOrder.Theorem,
+  module ATP.FirstOrder.Derivation
 ) where
 
 import ATP.FirstOrder.Core
@@ -48,3 +49,4 @@ import ATP.FirstOrder.Simplification
 import ATP.FirstOrder.Occurrence
 import ATP.FirstOrder.Conversion
 import ATP.FirstOrder.Theorem
+import ATP.FirstOrder.Derivation

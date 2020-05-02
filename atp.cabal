@@ -51,6 +51,7 @@ library
     ATP.FirstOrder.Occurrence
     ATP.FirstOrder.Conversion
     ATP.FirstOrder.Theorem
+    ATP.FirstOrder.Derivation
   ghc-options:
     -Wall
   if flag(Werror)

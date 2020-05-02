@@ -36,8 +36,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.TPTP as TPTP
 
-import ATP.FOL
-import ATP.Proof (Inference(..), Derivation(..), Refutation(..))
+import ATP.FOL hiding (antecedents, derivations)
 
 
 -- * Helpers
