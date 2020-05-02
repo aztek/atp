@@ -260,7 +260,11 @@ pattern BinaryPredicate :: Symbol -> BinaryPredicate
 pattern BinaryPredicate p a b = Atomic (Predicate p [a, b])
 
 -- | Build a ternary predicate from a predicate symbol.
+#if __GLASGOW_HASKELL__ >= 800 && __GLASGOW_HASKELL__ < 802
+pattern TernaryPredicate :: Symbol -> Term -> Term -> Term -> Formula
+#else
 pattern TernaryPredicate :: Symbol -> TernaryPredicate
+#endif
 pattern TernaryPredicate p a b c = Atomic (Predicate p [a, b, c])
 
 
