@@ -224,15 +224,27 @@ type BinaryFunction = Term -> Term -> Term
 type TernaryFunction = Term -> Term -> Term -> Term
 
 -- | Build a unary function from a function symbol.
+#if __GLASGOW_HASKELL__ == 800
+pattern UnaryFunction :: Symbol -> Term -> Term
+#else
 pattern UnaryFunction :: Symbol -> UnaryFunction
+#endif
 pattern UnaryFunction f a = Function f [a]
 
 -- | Build a binary function from a function symbol.
+#if __GLASGOW_HASKELL__ == 800
+pattern BinaryFunction :: Symbol -> Term -> Term -> Term
+#else
 pattern BinaryFunction :: Symbol -> BinaryFunction
+#endif
 pattern BinaryFunction f a b = Function f [a, b]
 
 -- | Build a ternary function from a function symbol.
+#if __GLASGOW_HASKELL__ == 800
+pattern TernaryFunction :: Symbol -> Term -> Term -> Term -> Term
+#else
 pattern TernaryFunction :: Symbol -> TernaryFunction
+#endif
 pattern TernaryFunction f a b c = Function f [a, b, c]
 
 
@@ -252,11 +264,19 @@ type BinaryPredicate = Term -> Term -> Formula
 type TernaryPredicate = Term -> Term -> Term -> Formula
 
 -- | Build a unary predicate from a predicate symbol.
+#if __GLASGOW_HASKELL__ == 800
+pattern UnaryPredicate :: Symbol -> Term -> Formula
+#else
 pattern UnaryPredicate :: Symbol -> UnaryPredicate
+#endif
 pattern UnaryPredicate p a = Atomic (Predicate p [a])
 
 -- | Build a binary predicate from a predicate symbol.
+#if __GLASGOW_HASKELL__ == 800
+pattern BinaryPredicate :: Symbol -> Term -> Term -> Formula
+#else
 pattern BinaryPredicate :: Symbol -> BinaryPredicate
+#endif
 pattern BinaryPredicate p a b = Atomic (Predicate p [a, b])
 
 -- | Build a ternary predicate from a predicate symbol.
