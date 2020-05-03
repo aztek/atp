@@ -170,6 +170,7 @@ prettyRule = \case
   Clausification{}        -> yellow "clausification"
   Superposition{}         -> yellow "superposition"
   Resolution{}            -> yellow "resolution"
+  Paramodulation{}        -> yellow "paramodulation"
   SubsumptionResolution{} -> yellow "subsumption resolution"
   ForwardDemodulation{}   -> yellow "forward demodulation"
   BackwardDemodulation{}  -> yellow "backward demodulation"

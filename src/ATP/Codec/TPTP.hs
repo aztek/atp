@@ -340,6 +340,7 @@ decodeInference source role antecedents = case source of
     ("trivial_inequality_removal", [f]) -> TrivialInequality       f
     ("superposition",           [f, g]) -> Superposition         f g
     ("resolution",              [f, g]) -> Resolution            f g
+    ("pm",                      [f, g]) -> Paramodulation        f g
     ("subsumption_resolution",  [f, g]) -> SubsumptionResolution f g
     ("forward_demodulation",    [f, g]) -> ForwardDemodulation   f g
     ("backward_demodulation",   [f, g]) -> BackwardDemodulation  f g

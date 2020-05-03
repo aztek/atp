@@ -53,6 +53,7 @@ data Inference f
   | TrivialInequality  f f
   | Superposition         f f f
   | Resolution            f f f
+  | Paramodulation        f f f
   | SubsumptionResolution f f f
   | ForwardDemodulation   f f f
   | BackwardDemodulation  f f f
@@ -75,6 +76,7 @@ sequents = \case
   TrivialInequality  f g -> ([f], g)
   Superposition         f g h -> ([f, g], h)
   Resolution            f g h -> ([f, g], h)
+  Paramodulation        f g h -> ([f, g], h)
   SubsumptionResolution f g h -> ([f, g], h)
   ForwardDemodulation   f g h -> ([f, g], h)
   BackwardDemodulation  f g h -> ([f, g], h)
