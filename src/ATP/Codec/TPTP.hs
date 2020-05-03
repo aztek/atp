@@ -23,11 +23,11 @@ module ATP.Codec.TPTP (
 ) where
 
 import Control.Applicative (liftA2)
-import Control.Monad (when)
-import Control.Monad.State (State, evalState, get, modify)
-import Data.List (genericIndex)
+import Control.Monad (when, foldM)
+import Control.Monad.State (State, evalState, get, gets, modify)
+import Data.List (genericIndex, find)
 import qualified Data.List.NonEmpty as NE (toList)
-import Data.Map (Map)
+import Data.Map (Map, (!))
 import qualified Data.Map as M (empty, lookup, insert, member)
 #if !MIN_VERSION_base(4, 11, 0)
 import Data.Semigroup (Semigroup(..))
@@ -46,8 +46,14 @@ type Enumeration a = State (Integer, Map a Integer)
 evalEnumeration :: Enumeration a e -> e
 evalEnumeration = flip evalState (1, M.empty)
 
-register :: Ord a => a -> Enumeration a ()
-register a = modify $ \(i, m) -> (i + 1, M.insert a i m)
+fresh :: Enumeration a Integer
+fresh = do
+  i <- gets fst
+  modify $ \(j, m) -> (j + 1, m)
+  return i
+
+register :: Ord a => a -> Integer -> Enumeration a ()
+register a i = modify $ fmap (M.insert a i)
 
 
 -- * Coding and decoding
@@ -89,11 +95,12 @@ type Substitutions = Enumeration TPTP.Var
 
 -- | Decode a variable from TPTP.
 decodeVar :: TPTP.Var -> Substitutions Var
-decodeVar v = do
-  (i, s) <- get
-  case M.lookup v s of
-    Just w  -> return w
-    Nothing -> register v >> return i
+decodeVar v = gets (M.lookup v . snd) >>= \case
+  Just w -> return w
+  Nothing -> do
+    i <- fresh
+    register v i
+    return i
 
 -- | Encode a function symbol in TPTP.
 encodeFunction :: Symbol -> TPTP.Name TPTP.Function
@@ -260,7 +267,7 @@ encodeTheorem (Theorem as c) = TPTP.TPTP units
 decodeRefutation :: TPTP.TSTP -> Refutation Integer
 decodeRefutation (TPTP.TSTP szs units)
   | TPTP.SZS (Just _status) (Just _dataform) <- szs =
-    case reverse (decodeDerivations units) of
+    case decodeDerivations units of
       Derivation inference conclusion : derivations
         | isContradiction conclusion -> Refutation inference derivations
       _:_ -> error "decodeRefutation: malformed input: refutation not found"
@@ -274,18 +281,25 @@ isContradiction = \case
   _ -> False
 
 decodeDerivations :: [TPTP.Unit] -> [Derivation Integer]
-decodeDerivations = evalEnumeration . mapM decodeDerivationS
+decodeDerivations = evalEnumeration . foldM decodeDerivationS []
 
-decodeDerivationS :: TPTP.Unit -> Enumeration TPTP.UnitName (Derivation Integer)
-decodeDerivationS = \case
+decodeDerivationS :: [Derivation Integer] -> TPTP.Unit ->
+                     Enumeration TPTP.UnitName [Derivation Integer]
+decodeDerivationS derivations = \case
   TPTP.Unit name (TPTP.Formula role formula) (Just (source, _)) -> do
     (label, relabeling) <- get
     when (M.member name relabeling)
          (error "decodeDerivationS: malformed input: non-unique units")
-    register name
+
     let antecedents = fmap (decodeUnitName relabeling) (collectParents source)
     let inference = decodeInference source role antecedents label
-    return $ Derivation inference (decode formula)
+    let expression = decode formula
+    let derivation = Derivation inference expression
+
+    case find (\index -> labeling derivations ! index ~= expression) antecedents of
+      Just index ->  register name index      >> return derivations
+      Nothing    -> (register name =<< fresh) >> return (derivation:derivations)
+
   _ -> error "decodeDerivationS: malformed input: expected unit"
 
 collectParents :: TPTP.Source -> [TPTP.UnitName]

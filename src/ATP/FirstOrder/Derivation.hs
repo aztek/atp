@@ -101,7 +101,7 @@ derivations (Refutation i ds) = Derivation i (Clause EmptyClause) :| ds
 
 -- | Construct a mapping between inference labels and their correspondent
 -- formulas.
-labeling :: Ord l => Refutation l -> Map l LogicalExpression
+labeling :: Ord l => [Derivation l] -> Map l LogicalExpression
 labeling = M.fromList . toList
          . fmap (\(Derivation i f) -> (consequent i, f))
-         . derivations
+        --  . derivations
