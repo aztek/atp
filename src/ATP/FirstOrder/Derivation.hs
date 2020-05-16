@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor, DeriveTraversable, DeriveFoldable #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE LambdaCase #-}
 
 {-|
