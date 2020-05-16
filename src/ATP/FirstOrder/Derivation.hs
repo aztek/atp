@@ -21,7 +21,6 @@ module ATP.FirstOrder.Derivation (
   labeling
 ) where
 
-import Data.Foldable (toList)
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.Map as M (fromList)
 import Data.Map (Map)
@@ -104,6 +103,4 @@ derivations (Refutation i ds) = Derivation i (Clause EmptyClause) :| ds
 -- | Construct a mapping between inference labels and their correspondent
 -- formulas.
 labeling :: Ord l => [Derivation l] -> Map l LogicalExpression
-labeling = M.fromList . toList
-         . fmap (\(Derivation i f) -> (consequent i, f))
-        --  . derivations
+labeling = M.fromList . fmap (\(Derivation i f) -> (consequent i, f))

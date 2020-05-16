@@ -23,12 +23,12 @@ module ATP.Codec.TPTP (
 ) where
 
 import Control.Applicative (liftA2)
-import Control.Monad (when, foldM)
-import Control.Monad.State (State, evalState, get, gets, modify)
+import Control.Monad (foldM)
+import Control.Monad.State (State, evalState, gets, modify)
 import Data.List (genericIndex, find)
 import qualified Data.List.NonEmpty as NE (toList)
 import Data.Map (Map, (!))
-import qualified Data.Map as M (empty, lookup, insert, member)
+import qualified Data.Map as M (empty, lookup, insert)
 #if !MIN_VERSION_base(4, 11, 0)
 import Data.Semigroup (Semigroup(..))
 #endif
@@ -36,7 +36,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.TPTP as TPTP
 
-import ATP.FOL hiding (antecedents, derivations)
+import ATP.FOL hiding (antecedents, consequent, derivations)
 
 
 -- * Helpers
@@ -54,6 +54,17 @@ fresh = do
 
 register :: Ord a => a -> Integer -> Enumeration a ()
 register a i = modify $ fmap (M.insert a i)
+
+alias :: Ord a => a -> a -> Enumeration a ()
+alias original synonym = do
+  v <- gets (M.lookup original . snd)
+  i <- case v of
+    Just i -> return i
+    Nothing -> do
+      i <- fresh
+      register original i
+      return i
+  register synonym i
 
 
 -- * Coding and decoding
@@ -281,26 +292,32 @@ isContradiction = \case
   _ -> False
 
 decodeDerivations :: [TPTP.Unit] -> [Derivation Integer]
-decodeDerivations = evalEnumeration . foldM decodeDerivationS []
+decodeDerivations units = evalEnumeration (foldM (decodeDerivationS labels) [] decodedUnits)
+  where
+    labels = labeling decodedUnits
+    decodedUnits = fmap decodeDerivation units
 
-decodeDerivationS :: [Derivation Integer] -> TPTP.Unit ->
+decodeDerivationS :: Map TPTP.UnitName LogicalExpression ->
+                     [Derivation Integer] -> Derivation TPTP.UnitName ->
                      Enumeration TPTP.UnitName [Derivation Integer]
-decodeDerivationS derivations = \case
-  TPTP.Unit name (TPTP.Formula role formula) (Just (source, _)) -> do
-    (label, relabeling) <- get
-    when (M.member name relabeling)
-         (error "decodeDerivationS: malformed input: non-unique units")
+decodeDerivationS labels derivations derivation@(Derivation inference formula) =
+  case find (\index -> labels ! index ~= formula) antecedents of
+    Just index -> do
+      alias index consequent
+      return derivations
+    Nothing -> do
+      derivation' <- traverse decodeUnitNameS derivation
+      return (derivation':derivations)
+  where
+    (antecedents, consequent) = sequents inference
 
-    let antecedents = fmap (decodeUnitName relabeling) (collectParents source)
-    let inference = decodeInference source role antecedents label
-    let expression = decode formula
-    let derivation = Derivation inference expression
-
-    case find (\index -> labeling derivations ! index ~= expression) antecedents of
-      Just index ->  register name index      >> return derivations
-      Nothing    -> (register name =<< fresh) >> return (derivation:derivations)
-
-  _ -> error "decodeDerivationS: malformed input: expected unit"
+decodeDerivation :: TPTP.Unit -> Derivation TPTP.UnitName
+decodeDerivation = \case
+  TPTP.Unit name (TPTP.Formula role formula) (Just (source, _)) -> derivation
+    where
+      derivation = Derivation inference (decode formula)
+      inference  = decodeInference source role (collectParents source) name
+  _ -> error "decodeDerivation: malformed input: expected unit"
 
 collectParents :: TPTP.Source -> [TPTP.UnitName]
 collectParents = \case
@@ -312,10 +329,15 @@ collectParents = \case
   TPTP.UnitSource p  -> [p]
   TPTP.UnknownSource -> []
 
-decodeUnitName :: Map TPTP.UnitName l -> TPTP.UnitName -> l
-decodeUnitName relabeling name
-  | Just label <- M.lookup name relabeling = label
-  | otherwise = error "decodeUnitName: malformed input: unrecognized unit"
+decodeUnitNameS :: TPTP.UnitName -> Enumeration TPTP.UnitName Integer
+decodeUnitNameS name = do
+  relabeling <- gets snd
+  case M.lookup name relabeling of
+    Just label -> return label
+    Nothing -> do
+      label <- fresh
+      register name label
+      return label
 
 decodeInference :: TPTP.Source -> TPTP.Reserved TPTP.Role -> [f] -> f -> Inference f
 decodeInference source role antecedents = case source of
