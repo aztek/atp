@@ -19,7 +19,6 @@ import Test.QuickCheck (Arbitrary(..))
 import QuickCheckSpec.Generators.FOL ()
 
 import ATP.FOL
-import ATP.Proof
 
 
 newtype Simplified a = Simplified { getSimplified :: a }
