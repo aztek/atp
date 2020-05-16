@@ -22,7 +22,6 @@ import Data.Text (Text, pack)
 import Test.QuickCheck (Arbitrary(..), listOf1, choose, genericShrink)
 
 import ATP.FOL
-import ATP.Proof
 
 
 -- * Formulas
