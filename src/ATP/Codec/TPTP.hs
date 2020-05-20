@@ -25,7 +25,7 @@ module ATP.Codec.TPTP (
 import Control.Applicative (liftA2)
 import Control.Monad (foldM)
 import Control.Monad.State (State, evalState, gets, modify)
-import Data.List (genericIndex, find)
+import Data.List (genericIndex, find, delete)
 import qualified Data.List.NonEmpty as NE (toList)
 import Data.Map (Map, (!))
 import qualified Data.Map as M (empty, lookup, insert)
@@ -278,12 +278,15 @@ encodeTheorem (Theorem as c) = TPTP.TPTP units
 decodeRefutation :: TPTP.TSTP -> Refutation Integer
 decodeRefutation (TPTP.TSTP szs units)
   | TPTP.SZS (Just _status) (Just _dataform) <- szs =
-    case decodeDerivations units of
-      Derivation inference conclusion : derivations
-        | isContradiction conclusion -> Refutation inference derivations
-      _:_ -> error "decodeRefutation: malformed input: refutation not found"
-      []  -> error "decodeRefutation: malformed input: empty proof"
+    case extractBy (isContradiction . formulaOf) (decodeDerivations units) of
+      Just (refutation, derivations) -> Refutation (inferenceOf refutation) derivations
+      Nothing -> error "decodeRefutation: malformed input: refutation not found"
   | otherwise = error "decodeRefutation: malformed input: missing SZS ontologies"
+
+extractBy :: Eq a => (a -> Bool) -> [a] -> Maybe (a, [a])
+extractBy f as
+  | Just a <- find f as = Just (a, delete a as)
+  | otherwise = Nothing
 
 isContradiction :: LogicalExpression -> Bool
 isContradiction = \case
