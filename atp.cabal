@@ -44,6 +44,7 @@ library
     ATP.Prove
     ATP.Prover
   other-modules:
+    ATP.Internal.Enumeration
     ATP.FirstOrder.Core
     ATP.FirstOrder.Alpha
     ATP.FirstOrder.Smart

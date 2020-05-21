@@ -24,11 +24,9 @@ module ATP.Codec.TPTP (
 
 import Control.Applicative (liftA2)
 import Control.Monad (foldM, void)
-import Control.Monad.State (State, evalState, gets, modify)
 import Data.List (genericIndex, find, delete)
 import qualified Data.List.NonEmpty as NE (toList)
 import Data.Map (Map, (!))
-import qualified Data.Map as M (empty, lookup, insert)
 #if !MIN_VERSION_base(4, 11, 0)
 import Data.Semigroup (Semigroup(..))
 #endif
@@ -36,32 +34,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.TPTP as TPTP
 
+import ATP.Internal.Enumeration
 import ATP.FOL hiding (antecedents, consequent, derivations)
-
-
--- * Helpers
-
-type Enumeration a = State (Integer, Map a Integer)
-
-evalEnumeration :: Enumeration a e -> e
-evalEnumeration = flip evalState (1, M.empty)
-
-fresh :: Enumeration a Integer
-fresh = do
-  i <- gets fst
-  modify $ \(j, m) -> (j + 1, m)
-  return i
-
-register :: Ord a => a -> Integer -> Enumeration a Integer
-register a i = modify (fmap (M.insert a i)) >> return i
-
-enumerate :: Ord a => a -> Enumeration a Integer
-enumerate v = gets (M.lookup v . snd) >>= \case
-  Just w  -> return w
-  Nothing -> register v =<< fresh
-
-alias :: Ord a => a -> a -> Enumeration a Integer
-alias original synonym = register synonym =<< enumerate original
 
 
 -- * Coding and decoding
