@@ -14,6 +14,7 @@ Stability    : experimental
 module ATP.Internal.Enumeration (
   Enumeration,
   evalEnumeration,
+  fresh,
   enumerate,
   alias
 ) where
@@ -35,13 +36,13 @@ fresh = do
   modify $ \(j, m) -> (j + 1, m)
   return i
 
-register :: Ord a => a -> Integer -> Enumeration a Integer
-register a i = modify (fmap (M.insert a i)) >> return i
-
 enumerate :: Ord a => a -> Enumeration a Integer
 enumerate v = gets (M.lookup v . snd) >>= \case
-  Just w  -> return w
-  Nothing -> register v =<< fresh
+  Just w -> return w
+  Nothing -> do
+    i <- fresh
+    modify $ fmap (M.insert v i)
+    return i
 
-alias :: Ord a => a -> a -> Enumeration a Integer
-alias original synonym = register synonym =<< enumerate original
+alias :: Ord a => a -> a -> Enumeration a ()
+alias original synonym = modify . fmap . M.insert synonym =<< enumerate original
