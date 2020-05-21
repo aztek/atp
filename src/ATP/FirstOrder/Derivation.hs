@@ -90,8 +90,10 @@ antecedents = fst . sequents
 consequent :: Inference f -> f
 consequent = snd . sequents
 
-data Derivation l = Derivation (Inference l) LogicalExpression
-  deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
+data Derivation l = Derivation {
+  inferenceOf :: Inference l,
+  formulaOf   :: LogicalExpression
+} deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
 
 data Refutation l = Refutation (Inference l) [Derivation l]
   deriving (Show, Eq, Ord, Functor, Foldable, Traversable)

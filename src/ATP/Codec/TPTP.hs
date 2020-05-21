@@ -23,7 +23,7 @@ module ATP.Codec.TPTP (
 ) where
 
 import Control.Applicative (liftA2)
-import Control.Monad (foldM)
+import Control.Monad (foldM, void)
 import Control.Monad.State (State, evalState, gets, modify)
 import Data.List (genericIndex, find, delete)
 import qualified Data.List.NonEmpty as NE (toList)
@@ -52,19 +52,16 @@ fresh = do
   modify $ \(j, m) -> (j + 1, m)
   return i
 
-register :: Ord a => a -> Integer -> Enumeration a ()
-register a i = modify $ fmap (M.insert a i)
+register :: Ord a => a -> Integer -> Enumeration a Integer
+register a i = modify (fmap (M.insert a i)) >> return i
 
-alias :: Ord a => a -> a -> Enumeration a ()
-alias original synonym = do
-  v <- gets (M.lookup original . snd)
-  i <- case v of
-    Just i -> return i
-    Nothing -> do
-      i <- fresh
-      register original i
-      return i
-  register synonym i
+enumerate :: Ord a => a -> Enumeration a Integer
+enumerate v = gets (M.lookup v . snd) >>= \case
+  Just w  -> return w
+  Nothing -> register v =<< fresh
+
+alias :: Ord a => a -> a -> Enumeration a Integer
+alias original synonym = register synonym =<< enumerate original
 
 
 -- * Coding and decoding
@@ -104,15 +101,6 @@ encodeVar v = TPTP.Var $ genericIndex variables (abs v)
 
 type Substitutions = Enumeration TPTP.Var
 
--- | Decode a variable from TPTP.
-decodeVar :: TPTP.Var -> Substitutions Var
-decodeVar v = gets (M.lookup v . snd) >>= \case
-  Just w -> return w
-  Nothing -> do
-    i <- fresh
-    register v i
-    return i
-
 -- | Encode a function symbol in TPTP.
 encodeFunction :: Symbol -> TPTP.Name TPTP.Function
 encodeFunction = TPTP.Defined . TPTP.Atom
@@ -138,7 +126,7 @@ encodeTerm = \case
 decodeTermS :: TPTP.Term -> Substitutions Term
 decodeTermS = \case
   TPTP.Function f ts  -> Function (decodeFunction f) <$> traverse decodeTermS ts
-  TPTP.Variable v     -> Variable <$> decodeVar v
+  TPTP.Variable v     -> Variable <$> enumerate v
   TPTP.Number{}       -> error "decodeTermS: numbers are not supported"
   TPTP.DistinctTerm{} -> error "decodeTermS: distinct objects are not supported"
 
@@ -223,7 +211,7 @@ decodeFormulaS = \case
   TPTP.Connected f c g   -> decodeConnected c
                         <$> decodeFormulaS f <*> decodeFormulaS g
   TPTP.Quantified q vs f -> foldr (curry $ quantified (decodeQuantifier q))
-                        <$> decodeFormulaS f <*> traverse (decodeVar . fst) vs
+                        <$> decodeFormulaS f <*> traverse (enumerate . fst) vs
 
 -- | Encode a formula in unsorted first-order logic in TPTP.
 encode :: LogicalExpression -> TPTP.Formula
@@ -306,10 +294,10 @@ decodeDerivationS :: Map TPTP.UnitName LogicalExpression ->
 decodeDerivationS labels derivations derivation@(Derivation inference formula) =
   case find (\index -> labels ! index ~= formula) antecedents of
     Just index -> do
-      alias index consequent
+      void (alias index consequent)
       return derivations
     Nothing -> do
-      derivation' <- traverse decodeUnitNameS derivation
+      derivation' <- traverse enumerate derivation
       return (derivation':derivations)
   where
     (antecedents, consequent) = sequents inference
@@ -331,16 +319,6 @@ collectParents = \case
   TPTP.Inference _ _ ps -> concatMap (\(TPTP.Parent p _) -> collectParents p) ps
   TPTP.UnitSource p  -> [p]
   TPTP.UnknownSource -> []
-
-decodeUnitNameS :: TPTP.UnitName -> Enumeration TPTP.UnitName Integer
-decodeUnitNameS name = do
-  relabeling <- gets snd
-  case M.lookup name relabeling of
-    Just label -> return label
-    Nothing -> do
-      label <- fresh
-      register name label
-      return label
 
 decodeInference :: TPTP.Source -> TPTP.Reserved TPTP.Role -> [f] -> f -> Inference f
 decodeInference source role antecedents = case source of
