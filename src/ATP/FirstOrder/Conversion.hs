@@ -20,6 +20,7 @@ module ATP.FirstOrder.Conversion (
   -- ** Proofs
   liftContradiction,
   unliftContradiction,
+  liftDerivation,
   unliftDerivation
 ) where
 
@@ -81,6 +82,9 @@ isContradiction = \case
   Clause c | Falsum <- liftClause c -> True
   Formula Falsum -> True
   _ -> False
+
+liftDerivation :: Ord f => f -> Refutation f -> Derivation f
+liftDerivation f (Refutation d c) = addSequent d (Sequent f (liftContradiction c))
 
 -- | Try to convert a derivation to a refutation.
 -- This function succeds if the derivation has exactly one inference
