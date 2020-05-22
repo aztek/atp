@@ -23,10 +23,12 @@ module ATP.Codec.TPTP (
 ) where
 
 import Control.Applicative (liftA2)
-import Control.Monad (foldM, void)
-import Data.List (genericIndex, find, delete)
+import Control.Monad (foldM)
+import Data.Functor (($>))
+import Data.List (genericIndex, find)
 import qualified Data.List.NonEmpty as NE (toList)
 import Data.Map (Map, (!))
+import Data.Maybe (fromMaybe)
 #if !MIN_VERSION_base(4, 11, 0)
 import Data.Semigroup (Semigroup(..))
 #endif
@@ -35,7 +37,7 @@ import qualified Data.Text as T
 import qualified Data.TPTP as TPTP
 
 import ATP.Internal.Enumeration
-import ATP.FOL hiding (antecedents, consequent, derivations)
+import ATP.FOL
 
 
 -- * Coding and decoding
@@ -240,85 +242,77 @@ encodeTheorem (Theorem as c) = TPTP.TPTP units
 decodeRefutation :: TPTP.TSTP -> Refutation Integer
 decodeRefutation (TPTP.TSTP szs units)
   | TPTP.SZS (Just _status) (Just _dataform) <- szs =
-    case extractBy (isContradiction . formulaOf) (decodeDerivations units) of
-      Just (refutation, derivations) -> Refutation (inferenceOf refutation) derivations
-      Nothing -> error "decodeRefutation: malformed input: refutation not found"
+    fromMaybe (error "decodeRefutation: malformed input: refutation not found")
+              (unliftDerivation (decodeDerivation units))
   | otherwise = error "decodeRefutation: malformed input: missing SZS ontologies"
 
-extractBy :: Eq a => (a -> Bool) -> [a] -> Maybe (a, [a])
-extractBy f as
-  | Just a <- find f as = Just (a, delete a as)
-  | otherwise = Nothing
-
-isContradiction :: LogicalExpression -> Bool
-isContradiction = \case
-  Clause c | Falsum <- liftClause c -> True
-  Formula Falsum -> True
-  _ -> False
-
-decodeDerivations :: [TPTP.Unit] -> [Derivation Integer]
-decodeDerivations units = evalEnumeration (foldM (decodeDerivationS labels) [] decodedUnits)
+decodeDerivation :: [TPTP.Unit] -> Derivation Integer
+decodeDerivation units = evalEnumeration
+                       . foldM (decodeSequentS expressions) mempty
+                       $ decodedSequents
   where
-    labels = labeling decodedUnits
-    decodedUnits = fmap decodeDerivation units
+    expressions = labeling decodedSequents
+    decodedSequents = fmap decodeSequent units
 
-decodeDerivationS :: Map TPTP.UnitName LogicalExpression ->
-                     [Derivation Integer] -> Derivation TPTP.UnitName ->
-                     Enumeration TPTP.UnitName [Derivation Integer]
-decodeDerivationS labels derivations derivation@(Derivation inference formula) =
-  case find (\index -> labels ! index ~= formula) antecedents of
-    Just index -> do
-      void (alias index consequent)
-      return derivations
-    Nothing -> do
-      derivation' <- traverse enumerate derivation
-      return (derivation':derivations)
-  where
-    (antecedents, consequent) = sequents inference
+decodeSequentS :: Map TPTP.UnitName LogicalExpression ->
+                  Derivation Integer -> Sequent TPTP.UnitName ->
+                  Enumeration TPTP.UnitName (Derivation Integer)
+decodeSequentS es d s@(Sequent l i) =
+  case find synonymous (antecedents i) of
+    Just a  -> alias l a $> d
+    Nothing -> addSequent d <$> traverse enumerate s
+  where synonymous a = es ! a ~= consequent i
 
-decodeDerivation :: TPTP.Unit -> Derivation TPTP.UnitName
-decodeDerivation = \case
-  TPTP.Unit name (TPTP.Formula role formula) (Just (source, _)) -> derivation
+decodeSequent :: TPTP.Unit -> Sequent TPTP.UnitName
+decodeSequent = \case
+  TPTP.Unit name (TPTP.Formula role formula) (Just (source, _)) -> sequent
     where
-      derivation = Derivation inference (decode formula)
-      inference  = decodeInference source role (collectParents source) name
-  _ -> error "decodeDerivation: malformed input: expected unit"
+      rule = decodeRule source role (collectParents source)
+      inference = Inference rule (decode formula)
+      sequent = Sequent name inference
+  _ -> error "decodeSequent: malformed input: expected unit"
 
 collectParents :: TPTP.Source -> [TPTP.UnitName]
 collectParents = \case
-  TPTP.File{}        -> []
-  TPTP.Theory{}      -> []
-  TPTP.Creator{}     -> []
-  TPTP.Introduced{}  -> []
+  TPTP.File{}           -> []
+  TPTP.Theory{}         -> []
+  TPTP.Creator{}        -> []
+  TPTP.Introduced{}     -> []
   TPTP.Inference _ _ ps -> concatMap (\(TPTP.Parent p _) -> collectParents p) ps
-  TPTP.UnitSource p  -> [p]
-  TPTP.UnknownSource -> []
+  TPTP.UnitSource p     -> [p]
+  TPTP.UnknownSource    -> []
 
-decodeInference :: TPTP.Source -> TPTP.Reserved TPTP.Role -> [f] -> f -> Inference f
-decodeInference source role antecedents = case source of
-  TPTP.Theory{}      -> error "decodeInference: unsupported unit source"
-  TPTP.Creator{}     -> error "decodeInference: unsupported unit source"
-  TPTP.UnitSource{}  -> error "decodeInference: unsupported unit source"
-  TPTP.Introduced{}  -> Axiom
-  TPTP.UnknownSource -> Unknown antecedents
-  TPTP.File{} -> case (role, antecedents) of
-    (TPTP.Standard TPTP.Axiom,      []) -> Axiom
-    (TPTP.Standard TPTP.Conjecture, []) -> Conjecture
-    _ -> error $ "decodeInference: unrecognized unit role " ++ show role
-  TPTP.Inference (TPTP.Atom rule) _ _ -> case (rule, antecedents) of
-    ("negated_conjecture",         [f]) -> NegatedConjecture       f
-    ("assume_negation",            [f]) -> NegatedConjecture       f
-    ("flattening",                 [f]) -> Flattening              f
-    ("skolemisation",              [f]) -> Skolemisation           f
-    ("skolemize",                  [f]) -> Skolemisation           f
-    ("ennf_transformation",        [f]) -> EnnfTransformation      f
-    ("nnf_transformation",         [f]) -> NnfTransformation       f
-    ("cnf_transformation",         [f]) -> Clausification          f
-    ("trivial_inequality_removal", [f]) -> TrivialInequality       f
-    ("superposition",           [f, g]) -> Superposition         f g
-    ("resolution",              [f, g]) -> Resolution            f g
-    ("pm",                      [f, g]) -> Paramodulation        f g
-    ("subsumption_resolution",  [f, g]) -> SubsumptionResolution f g
-    ("forward_demodulation",    [f, g]) -> ForwardDemodulation   f g
-    ("backward_demodulation",   [f, g]) -> BackwardDemodulation  f g
-    _ -> Other rule antecedents
+decodeRule :: TPTP.Source -> TPTP.Reserved TPTP.Role -> [f] -> Rule f
+decodeRule s role as = case s of
+  TPTP.Theory{}           -> error "decodeRule: unsupported unit source"
+  TPTP.Creator{}          -> error "decodeRule: unsupported unit source"
+  TPTP.UnitSource{}       -> error "decodeRule: unsupported unit source"
+  TPTP.Introduced{}       -> Axiom
+  TPTP.UnknownSource      -> Unknown as
+  TPTP.File{}             -> decodeIntroductionRule role as
+  TPTP.Inference rule _ _ -> decodeInferenceRule rule as
+
+decodeIntroductionRule :: TPTP.Reserved TPTP.Role -> [a] -> Rule f
+decodeIntroductionRule role as = case (role, as) of
+  (TPTP.Standard TPTP.Axiom,      []) -> Axiom
+  (TPTP.Standard TPTP.Conjecture, []) -> Conjecture
+  _ -> error $ "decodeIntroductionRule: unrecognized unit role " ++ show role
+
+decodeInferenceRule :: TPTP.Atom -> [f] -> Rule f
+decodeInferenceRule (TPTP.Atom rule) as = case (rule, as) of
+  ("negated_conjecture",         [f]) -> NegatedConjecture       f
+  ("assume_negation",            [f]) -> NegatedConjecture       f
+  ("flattening",                 [f]) -> Flattening              f
+  ("skolemisation",              [f]) -> Skolemisation           f
+  ("skolemize",                  [f]) -> Skolemisation           f
+  ("ennf_transformation",        [f]) -> EnnfTransformation      f
+  ("nnf_transformation",         [f]) -> NnfTransformation       f
+  ("cnf_transformation",         [f]) -> Clausification          f
+  ("trivial_inequality_removal", [f]) -> TrivialInequality       f
+  ("superposition",           [f, g]) -> Superposition         f g
+  ("resolution",              [f, g]) -> Resolution            f g
+  ("pm",                      [f, g]) -> Paramodulation        f g
+  ("subsumption_resolution",  [f, g]) -> SubsumptionResolution f g
+  ("forward_demodulation",    [f, g]) -> ForwardDemodulation   f g
+  ("backward_demodulation",   [f, g]) -> BackwardDemodulation  f g
+  _ -> Other rule as

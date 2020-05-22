@@ -14,7 +14,7 @@ Stability    : experimental
 module ATP.Internal.Enumeration (
   Enumeration,
   evalEnumeration,
-  fresh,
+  next,
   enumerate,
   alias
 ) where
@@ -30,8 +30,8 @@ newtype Enumeration a s = Enumeration (State (Integer, Map a Integer) s)
 evalEnumeration :: Enumeration a e -> e
 evalEnumeration (Enumeration s) = evalState s (1, M.empty)
 
-fresh :: Enumeration a Integer
-fresh = do
+next :: Enumeration a Integer
+next = do
   i <- gets fst
   modify $ \(j, m) -> (j + 1, m)
   return i
@@ -40,9 +40,16 @@ enumerate :: Ord a => a -> Enumeration a Integer
 enumerate v = gets (M.lookup v . snd) >>= \case
   Just w -> return w
   Nothing -> do
-    i <- fresh
+    i <- next
     modify $ fmap (M.insert v i)
     return i
 
 alias :: Ord a => a -> a -> Enumeration a ()
-alias original synonym = modify . fmap . M.insert synonym =<< enumerate original
+alias a b = gets (\(_, m) -> (M.lookup a m, M.lookup b m)) >>= \case
+  (Just{},  Just{})  -> error "alias"
+  (Just i,  Nothing) -> modify $ fmap (M.insert b i)
+  (Nothing, Just i)  -> modify $ fmap (M.insert a i)
+  (Nothing, Nothing) -> do
+    i <- next
+    modify $ fmap (M.insert a i)
+    modify $ fmap (M.insert b i)

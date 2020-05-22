@@ -44,14 +44,12 @@ Conjecture. mortal(socrates)
 ```
 λ: prove syllogism >>= pprint
 Found a proof by contradiction using E.
-10. ⟘ [cn 8, 9]
-9. mortal(socrates) [paramodulation 6, 7]
-8. ￢mortal(socrates) [split_conjunct 4]
-7. human(socrates) [split_conjunct 3]
-6. mortal(x) ⋁ ￢human(x) [split_conjunct 5]
-5. ∀ x . (￢human(x) ⋁ mortal(x)) [variable_rename 2]
-4. ￢mortal(socrates) [negated conjecture 1]
-3. human(socrates) [axiom]
+1. human(socrates) [axiom]
 2. ∀ x . (human(x) => mortal(x)) [axiom]
-1. mortal(socrates) [conjecture]
+3. mortal(socrates) [conjecture]
+4. ￢mortal(socrates) [negated conjecture 3]
+5. ∀ x . (￢human(x) ⋁ mortal(x)) [variable_rename 2]
+6. mortal(x) ⋁ ￢human(x) [split_conjunct 5]
+7. mortal(socrates) [paramodulation 6, 1]
+8. ⟘ [cn 4, 7]
 ```

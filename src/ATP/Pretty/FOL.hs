@@ -11,13 +11,19 @@ module ATP.Pretty.FOL (
 ) where
 
 import Control.Applicative (liftA2)
+import Control.Monad (foldM)
 import Data.Char (digitToInt)
-import Data.List (genericIndex)
-import Data.List.NonEmpty (NonEmpty(..), nonEmpty, toList)
+import Data.Foldable (toList)
+import Data.Functor (($>))
+import Data.List (genericIndex, find)
+import Data.List.NonEmpty (NonEmpty(..), nonEmpty)
+import Data.Map (Map, (!))
 import Data.Text as T (unpack)
 import System.IO (Handle)
 
 import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
+
+import ATP.Internal.Enumeration
 
 import ATP.FOL
 import ATP.Proof
@@ -151,14 +157,13 @@ instance Pretty Theorem where
 
 -- * Pretty printer for proofs
 
-instance Pretty l => Pretty (Inference l) where
-  pretty i
-    | Just as <- nonEmpty (antecedents i) =
-        prettyRule i <+> commaSep (fmap (bold . pretty) as)
-    | otherwise = prettyRule i
+instance Pretty l => Pretty (Rule l) where
+  pretty rule = prettyRuleTag rule <> case nonEmpty (toList rule) of
+    Just as -> space <> commaSep (fmap (bold . pretty) as)
+    Nothing -> empty
 
-prettyRule :: Inference l -> Doc
-prettyRule = \case
+prettyRuleTag :: Rule l -> Doc
+prettyRuleTag = \case
   Conjecture{}            -> yellow "conjecture"
   NegatedConjecture{}     -> yellow "negated conjecture"
   Axiom{}                 -> yellow "axiom"
@@ -175,14 +180,45 @@ prettyRule = \case
   ForwardDemodulation{}   -> yellow "forward demodulation"
   BackwardDemodulation{}  -> yellow "backward demodulation"
   Unknown{}               -> red "unknown"
-  Other name _ _          -> text (T.unpack name)
+  Other name _            -> text (T.unpack name)
 
-instance Pretty l => Pretty (Derivation l) where
-  pretty (Derivation i f) =  bold (pretty (consequent i) <> dot) <+> pretty f
-                         <+> brackets (pretty i)
+instance Pretty l => Pretty (Inference l) where
+  pretty (Inference r f) = pretty f <+> brackets (pretty r)
 
-instance Pretty l => Pretty (Refutation l) where
-  pretty p = vsep (toList . fmap pretty $ derivations p) <> line
+instance Pretty l => Pretty (Sequent l) where
+  pretty (Sequent c i) = bold (pretty c <> dot) <+> pretty i
+
+instance (Ord l, Pretty l) => Pretty (Refutation l) where
+  pretty r = vsep (pretty <$> sequents r) <> line
+
+-- | List all sequents that lead to the refutation, sorted topologically
+-- breadth-first on the graph of inferences.
+sequents :: Ord l => Refutation l -> [Sequent Integer]
+sequents (Refutation d c) = evalEnumeration $ do
+  let ss = breadthFirst d
+  let es = labeling ss
+  ss' <- foldM (sequentsS es) [] ss
+  s <- Sequent <$> next <*> traverse enumerate (liftContradiction c)
+  return (reverse (s:ss'))
+
+sequentsS :: Ord l => Map l LogicalExpression ->
+             [Sequent Integer] -> Sequent l ->
+             Enumeration l [Sequent Integer]
+sequentsS es ss s@(Sequent l i) =
+  case find trivialClausification (antecedents i) of
+    Just a  -> alias l a $> ss
+    Nothing -> fmap (:ss) (traverse enumerate s)
+  where trivialClausification a = es ! a ~~= consequent i
+
+(~~=) :: LogicalExpression -> LogicalExpression -> Bool
+Clause  c ~~= Formula f = triviallyClausified f c
+Formula f ~~= Clause  c = triviallyClausified f c
+_ ~~= _ = False
+
+triviallyClausified :: Formula -> Clause -> Bool
+triviallyClausified f c
+  | Just k <- unliftClause f = k ~= c
+  | otherwise = False
 
 instance Pretty Proof where
   pretty (Proof p r) = vsep [green meta, pretty r]

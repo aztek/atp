@@ -11,17 +11,28 @@ Stability    : experimental
 
 module ATP.FirstOrder.Conversion (
   -- * Conversions
+  -- ** Formulas
   liftSignedLiteral,
   unliftSignedLiteral,
   liftClause,
-  unliftClause
+  unliftClause,
+
+  -- ** Proofs
+  liftContradiction,
+  unliftContradiction,
+  unliftDerivation
 ) where
 
+import qualified Data.Map as M (partition, toList)
+
 import ATP.FirstOrder.Core
+import ATP.FirstOrder.Derivation
 import ATP.FirstOrder.Occurrence
 
 
 -- * Conversions
+
+-- ** Formulas
 
 -- | Convert a clause to a full first-order formula.
 liftClause :: Clause -> Formula
@@ -52,3 +63,31 @@ unliftSignedLiteral = \case
   Atomic l -> Just (Signed Positive l)
   Negate f -> sign Negative <$> unliftSignedLiteral f
   _ -> Nothing
+
+
+-- ** Proofs
+
+liftContradiction :: Contradiction f -> Inference f
+liftContradiction (Contradiction r) = Inference r (Formula Falsum)
+
+unliftContradiction :: Inference f -> Maybe (Contradiction f)
+unliftContradiction (Inference r e)
+  | isContradiction e = Just (Contradiction r)
+  | otherwise = Nothing
+
+-- | Check whether a given expression is either a falsum or an empty clause.
+isContradiction :: LogicalExpression -> Bool
+isContradiction = \case
+  Clause c | Falsum <- liftClause c -> True
+  Formula Falsum -> True
+  _ -> False
+
+-- | Try to convert a derivation to a refutation.
+-- This function succeds if the derivation has exactly one inference
+-- resulting in contradiction.
+unliftDerivation :: Derivation f -> Maybe (Refutation f)
+unliftDerivation (Derivation is) = Refutation (Derivation is') <$> c
+  where
+    (cs, is') = M.partition (isContradiction . consequent) is
+    c | [(_, Inference r _)] <- M.toList cs = Just (Contradiction r)
+      | otherwise = Nothing

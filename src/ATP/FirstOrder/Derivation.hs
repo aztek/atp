@@ -1,5 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE LambdaCase #-}
 
 {-|
 Module       : ATP.FirstOrder.Derivation
@@ -11,23 +11,52 @@ Stability    : experimental
 -}
 
 module ATP.FirstOrder.Derivation (
+  -- * Proofs
+  Rule(..),
   Inference(..),
-  sequents,
   antecedents,
   consequent,
+  Contradiction(..),
+  Sequent(..),
   Derivation(..),
-  Refutation(..),
-  derivations,
-  labeling
+  addSequent,
+  breadthFirst,
+  labeling,
+  Refutation(..)
 ) where
 
-import Data.List.NonEmpty (NonEmpty(..))
-import qualified Data.Map as M (fromList)
-import Data.Map (Map)
+import Data.Foldable (toList)
+import Data.Function (on)
+import Data.List (sortBy)
+import qualified Data.Map as M (fromList, insert, toList)
+import Data.Map (Map, (!))
 import Data.Text (Text)
 
 import ATP.FirstOrder.Core
 
+
+-- * Proofs
+
+-- | The inference rule.
+data Rule f
+  = Axiom
+  | Conjecture
+  | NegatedConjecture  f
+  | Flattening         f
+  | Skolemisation      f
+  | EnnfTransformation f
+  | NnfTransformation  f
+  | Clausification     f
+  | TrivialInequality  f
+  | Superposition         f f
+  | Resolution            f f
+  | Paramodulation        f f
+  | SubsumptionResolution f f
+  | ForwardDemodulation   f f
+  | BackwardDemodulation  f f
+  | Unknown    [f]
+  | Other Text [f]
+  deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
 
 -- | A logical inference is an expression of the form
 --
@@ -35,74 +64,54 @@ import ATP.FirstOrder.Core
 -- > ----------- R,
 -- >     C
 --
--- where each of @A_1@, ... @A_n@ (called antecedents), and @C@
--- (called consequent) are formulas and @R@ is an inference rule.
---
--- Each of the constructors of 'Inference' represents a recognized inference
--- rule.
-data Inference f
-  = Axiom      f
-  | Conjecture f
-  | NegatedConjecture  f f
-  | Flattening         f f
-  | Skolemisation      f f
-  | EnnfTransformation f f
-  | NnfTransformation  f f
-  | Clausification     f f
-  | TrivialInequality  f f
-  | Superposition         f f f
-  | Resolution            f f f
-  | Paramodulation        f f f
-  | SubsumptionResolution f f f
-  | ForwardDemodulation   f f f
-  | BackwardDemodulation  f f f
-  | Unknown    [f] f
-  | Other Text [f] f
+-- where each of @A_1@, ... @A_n@ (called 'antecedents'), and @C@
+-- (called 'consequent') are formulas and @R@ is an inference 'Rule'.
+data Inference f = Inference (Rule f) LogicalExpression
   deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
 
--- | The sequents involved in an inference - the list of antecedents and the
--- consequent.
-sequents :: Inference f -> ([f], f)
-sequents = \case
-  Axiom      f -> ([], f)
-  Conjecture f -> ([], f)
-  NegatedConjecture  f g -> ([f], g)
-  Flattening         f g -> ([f], g)
-  Skolemisation      f g -> ([f], g)
-  EnnfTransformation f g -> ([f], g)
-  NnfTransformation  f g -> ([f], g)
-  Clausification     f g -> ([f], g)
-  TrivialInequality  f g -> ([f], g)
-  Superposition         f g h -> ([f, g], h)
-  Resolution            f g h -> ([f, g], h)
-  Paramodulation        f g h -> ([f, g], h)
-  SubsumptionResolution f g h -> ([f, g], h)
-  ForwardDemodulation   f g h -> ([f, g], h)
-  BackwardDemodulation  f g h -> ([f, g], h)
-  Unknown fs g -> (fs, g)
-  Other _ fs g -> (fs, g)
-
--- | The list of antecedents of an inference.
+-- | The antecedents of an inference.
 antecedents :: Inference f -> [f]
-antecedents = fst . sequents
+antecedents (Inference rule _) = toList rule
 
 -- | The consequent of an inference.
-consequent :: Inference f -> f
-consequent = snd . sequents
+consequent :: Inference f -> LogicalExpression
+consequent (Inference _ e) = e
 
-data Derivation l = Derivation {
-  inferenceOf :: Inference l,
-  formulaOf   :: LogicalExpression
-} deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
-
-data Refutation l = Refutation (Inference l) [Derivation l]
+-- | Contradiction is a special case of an inference whos consequent is
+-- a logical falsum.
+newtype Contradiction f = Contradiction (Rule f)
   deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
 
--- | List all derivations that lead to the refutation.
-derivations :: Refutation l -> NonEmpty (Derivation l)
-derivations (Refutation i ds) = Derivation i (Clause EmptyClause) :| ds
+data Sequent f = Sequent f (Inference f)
+  deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
+
+sequentMap :: Ord f => [Sequent f] -> Map f (Inference f)
+sequentMap ss = M.fromList [(f, e) | Sequent f e <- ss]
 
 -- | Construct a mapping between inference labels and their correspondent
 -- formulas.
-labeling :: Ord l => [Derivation l] -> Map l LogicalExpression
-labeling = M.fromList . fmap (\(Derivation i f) -> (consequent i, f))
+labeling :: Ord f => [Sequent f] -> Map f LogicalExpression
+labeling = fmap consequent . sequentMap
+
+newtype Derivation f = Derivation (Map f (Inference f))
+  deriving (Show, Eq, Ord, Semigroup, Monoid)
+
+addSequent :: Ord f => Derivation f -> Sequent f -> Derivation f
+addSequent (Derivation m) (Sequent f i) = Derivation (M.insert f i m)
+
+fromDerivation :: Derivation f -> [Sequent f]
+fromDerivation (Derivation m) = fmap (uncurry Sequent) (M.toList m)
+
+breadthFirst :: Ord f => Derivation f -> [Sequent f]
+breadthFirst d = sortBy (compare `on` criteria) (fromDerivation d)
+  where criteria (Sequent l (Inference r f)) = (distances d ! l, r, f)
+
+distances :: Ord f => Derivation f -> Map f Integer
+distances (Derivation m) = fmap distance m
+  where
+    distance i
+      | null (antecedents i) = 0
+      | otherwise = 1 + maximum (fmap (\a -> distance (m ! a)) (antecedents i))
+
+data Refutation f = Refutation (Derivation f) (Contradiction f)
+  deriving (Show, Eq, Ord)
