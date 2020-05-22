@@ -39,11 +39,11 @@ Axiom 2. human(socrates)
 Conjecture. mortal(socrates)
 ```
 
-`prove` runs a third-party automated first-order theorem prover [E](https://wwwlehre.dhbw-stuttgart.de/~sschulz/E/E.html) to contruct a proof of the syllogism.
+`prove` runs a third-party automated first-order theorem prover [E](https://wwwlehre.dhbw-stuttgart.de/~sschulz/E/E.html) to contruct a proof of the syllogism. This is a proof by _refutation_, that is, contradiction is derived from negated conjecture.
 
 ```
 λ: prove syllogism >>= pprint
-Found a proof by contradiction using E.
+Found a proof by refutation using E.
 1. human(socrates) [axiom]
 2. ∀ x . (human(x) => mortal(x)) [axiom]
 3. mortal(socrates) [conjecture]

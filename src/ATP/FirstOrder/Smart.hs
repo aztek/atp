@@ -30,7 +30,7 @@ module ATP.FirstOrder.Smart (
   forall,
   exists,
 
-  -- * Monoids in first-order logic
+  -- * Monoids
   ClauseUnion(..),
   clauseUnion,
   Conjunction(..),

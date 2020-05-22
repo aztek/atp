@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {-|
 Module       : ATP.FirstOrder.Core
@@ -129,14 +130,7 @@ instance Monad Signed where
 -- | The first-order clause - an explicitly universally-quantified disjunction
 -- of positive or negative literals, represented as a list of signed literals.
 newtype Clause = Literals { unClause :: [Signed Literal] }
-  deriving (Show, Eq, Ord)
-
-instance Semigroup Clause where
-  Literals ls <> Literals ms = Literals (ls <> ms)
-
-instance Monoid Clause where
-  mempty = Literals []
-  mappend = (<>)
+  deriving (Show, Eq, Ord, Semigroup, Monoid)
 
 -- | The quantifier in first-order logic.
 data Quantifier

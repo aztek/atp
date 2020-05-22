@@ -165,7 +165,7 @@ instance Pretty l => Pretty (Rule l) where
 prettyRuleTag :: Rule l -> Doc
 prettyRuleTag = \case
   Conjecture{}            -> yellow "conjecture"
-  NegatedConjecture{}     -> yellow "negated conjecture"
+  NegatedConjecture{}     -> underline (yellow "negated conjecture")
   Axiom{}                 -> yellow "axiom"
   Flattening{}            -> yellow "flattening"
   Skolemisation{}         -> yellow "skolemisation"
@@ -223,5 +223,5 @@ triviallyClausified f c
 instance Pretty Proof where
   pretty (Proof p r) = vsep [green meta, pretty r]
     where
-      meta = "Found a proof by contradiction using" <+> name <> "."
+      meta = "Found a proof by refutation using" <+> name <> "."
       name = text (T.unpack $ proverName p)
