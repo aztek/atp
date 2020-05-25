@@ -30,6 +30,9 @@ import Data.Function (on)
 import Data.List (sortBy)
 import qualified Data.Map as M (fromList, insert, toList)
 import Data.Map (Map, (!))
+#if !MIN_VERSION_base(4, 11, 0)
+import Data.Semigroup (Semigroup)
+#endif
 import Data.Text (Text)
 
 import ATP.FirstOrder.Core
