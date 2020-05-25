@@ -27,7 +27,7 @@ import System.IO (Handle, hPutStr, hFlush, hClose)
 import System.Process (ProcessHandle, runInteractiveProcess)
 
 import ATP.FOL (Theorem)
-import ATP.Codec.TPTP (encodeTheorem, decodeRefutation)
+import ATP.Codec.TPTP (encodeTheorem, decodeSolution)
 import ATP.Prover (Prover(..), eprover)
 import ATP.Proof (Proof(..))
 
@@ -76,7 +76,7 @@ proveWith ProvingOptions{prover, displayTPTP, displayTSTP} theorem = do
 
   case parseTSTPOnly output of
     Left err   -> error $ "proveWith: malformed proof: " ++ err
-    Right tstp -> return $ Proof prover (decodeRefutation tstp)
+    Right tstp -> return $ Proof prover (decodeSolution tstp)
 
 startProverProcess :: Prover -> IO (Handle, Handle, Handle, ProcessHandle)
 startProverProcess Prover{cmdPath, cmdArgs} =

@@ -19,7 +19,7 @@ module ATP.Codec.TPTP (
   encodeClause,
   decodeClause,
   encodeTheorem,
-  decodeRefutation
+  decodeSolution
 ) where
 
 import Control.Applicative (liftA2)
@@ -28,7 +28,6 @@ import Data.Functor (($>))
 import Data.List (genericIndex, find)
 import qualified Data.List.NonEmpty as NE (toList)
 import Data.Map (Map, (!))
-import Data.Maybe (fromMaybe)
 #if !MIN_VERSION_base(4, 11, 0)
 import Data.Semigroup (Semigroup(..))
 #endif
@@ -238,13 +237,16 @@ encodeTheorem (Theorem as c) = TPTP.TPTP units
     unit r n f = TPTP.Unit (Right n) (formula r f) Nothing
     formula r f = TPTP.Formula (TPTP.Standard r) (encode $ Formula f)
 
--- | Decode a proof by refutation from a TSTP output.
-decodeRefutation :: TPTP.TSTP -> Refutation Integer
-decodeRefutation (TPTP.TSTP szs units)
-  | TPTP.SZS (Just _status) (Just _dataform) <- szs =
-    fromMaybe (error "decodeRefutation: malformed input: refutation not found")
-              (unliftDerivation (decodeDerivation units))
-  | otherwise = error "decodeRefutation: malformed input: missing SZS ontologies"
+-- | Decode a solution from a TSTP output.
+decodeSolution :: TPTP.TSTP -> Refutation Integer
+decodeSolution (TPTP.TSTP szs units)
+  | TPTP.SZS (Just _status) (Just _dataform) <- szs = decodeRefutation units
+  | otherwise = error "decodeSolution: malformed input: missing SZS ontologies"
+
+decodeRefutation :: [TPTP.Unit] -> Refutation Integer
+decodeRefutation units
+  | Just refutation <- unliftDerivation (decodeDerivation units) = refutation
+  | otherwise = error "decodeRefutation: malformed input: refutation not found"
 
 decodeDerivation :: [TPTP.Unit] -> Derivation Integer
 decodeDerivation units = evalEnumeration
