@@ -1,5 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE CPP #-}
 
 {-|
 Module       : ATP.FirstOrder.Derivation
