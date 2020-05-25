@@ -82,16 +82,28 @@ instance Arbitrary Theorem where
 
 -- * Proofs
 
+deriving instance Generic (Rule f)
+instance Arbitrary f => Arbitrary (Rule f) where
+  arbitrary = genericArbitraryU
+
 deriving instance Generic (Inference f)
 instance Arbitrary f => Arbitrary (Inference f) where
   arbitrary = genericArbitraryU
 
-deriving instance Generic (Derivation l)
-instance Arbitrary l => Arbitrary (Derivation l) where
+deriving instance Generic (Contradiction f)
+instance Arbitrary f => Arbitrary (Contradiction f) where
+  arbitrary = genericArbitraryU
+
+deriving instance Generic (Sequent f)
+instance Arbitrary f => Arbitrary (Sequent f) where
+  arbitrary = genericArbitraryU
+
+deriving instance Generic (Derivation f)
+instance (Ord f, Arbitrary f) => Arbitrary (Derivation f) where
   arbitrary = genericArbitraryU
   shrink = genericShrink
 
-deriving instance Generic (Refutation l)
-instance Arbitrary l => Arbitrary (Refutation l) where
+deriving instance Generic (Refutation f)
+instance (Ord f, Arbitrary f) => Arbitrary (Refutation f) where
   arbitrary = genericArbitraryU
   shrink = genericShrink

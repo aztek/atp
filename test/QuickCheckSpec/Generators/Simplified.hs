@@ -48,12 +48,22 @@ instance Arbitrary (Simplified Theorem) where
 
 -- * Proofs
 
-instance Arbitrary l => Arbitrary (Simplified (Derivation l)) where
+instance Arbitrary f => Arbitrary (Simplified (Inference f)) where
   arbitrary = do
-    d <- Derivation <$> arbitrary <*> fmap getSimplified arbitrary
+    i <- Inference <$> arbitrary <*> fmap getSimplified arbitrary
+    return (Simplified i)
+
+instance Arbitrary f => Arbitrary (Simplified (Sequent f)) where
+  arbitrary = do
+    s <- Sequent <$> arbitrary <*> fmap getSimplified arbitrary
+    return (Simplified s)
+
+instance (Ord f, Arbitrary f) => Arbitrary (Simplified (Derivation f)) where
+  arbitrary = do
+    d <- Derivation . fmap getSimplified <$> arbitrary
     return (Simplified d)
 
-instance Arbitrary l => Arbitrary (Simplified (Refutation l)) where
+instance (Ord f, Arbitrary f) => Arbitrary (Simplified (Refutation f)) where
   arbitrary = do
-    r <- Refutation <$> arbitrary <*> fmap (fmap getSimplified) arbitrary
+    r <- Refutation <$> fmap getSimplified arbitrary <*> arbitrary
     return (Simplified r)
