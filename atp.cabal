@@ -1,7 +1,7 @@
 cabal-version: 2.4
 name: atp
 version: 0.1.0.0
-synopsis: Bindings to automated theorem provers
+synopsis: Interface to automated theorem provers
 description:
   Express theorems in first-order logic and automatically prove them using
   third-party reasoning tools.

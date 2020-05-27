@@ -1,4 +1,4 @@
-Haskell bindings to automated theorem provers
+Haskell interface to automated theorem provers
 ===
 
 [![Build Status](https://travis-ci.org/aztek/atp.svg?branch=master)](https://travis-ci.org/aztek/atp)
