@@ -275,6 +275,10 @@ prop_liftUnliftClause :: Clause -> Property
 prop_liftUnliftClause c = unliftClause (liftClause c) ==~ Just c
   where (==~) = (===) `on` fmap simplifyClause
 
+prop_liftUnliftContradiction :: (Show f, Eq f) => Contradiction f -> Property
+prop_liftUnliftContradiction c =
+  unliftContradiction (liftContradiction c) === Just c
+
 
 -- * Codec
 
