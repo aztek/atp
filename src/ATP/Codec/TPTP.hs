@@ -204,7 +204,7 @@ decode = \case
 
 -- | Encode a clause in unsorted first-order logic in TPTP.
 encodeClause :: Clause -> TPTP.Clause
-encodeClause (Literals ls) = TPTP.clause (fmap encodeSignedLiteral ls)
+encodeClause = TPTP.clause . fmap encodeSignedLiteral . unClause
 
 -- | Decode a clause in unsorted first-order logic from TPTP.
 decodeClause :: TPTP.Clause -> Clause
@@ -245,7 +245,7 @@ decodeSolution (TPTP.TSTP szs units)
 
 decodeRefutation :: [TPTP.Unit] -> Refutation Integer
 decodeRefutation units
-  | Just refutation <- unliftDerivation (decodeDerivation units) = refutation
+  | Just refutation <- unliftRefutation (decodeDerivation units) = refutation
   | otherwise = error "decodeRefutation: malformed input: refutation not found"
 
 decodeDerivation :: [TPTP.Unit] -> Derivation Integer

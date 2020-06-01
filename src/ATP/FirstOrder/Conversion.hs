@@ -20,8 +20,8 @@ module ATP.FirstOrder.Conversion (
   -- ** Proofs
   liftContradiction,
   unliftContradiction,
-  liftDerivation,
-  unliftDerivation
+  liftRefutation,
+  unliftRefutation
 ) where
 
 import qualified Data.Map as M (partition, toList)
@@ -83,14 +83,14 @@ isContradiction = \case
   Formula Falsum -> True
   _ -> False
 
-liftDerivation :: Ord f => f -> Refutation f -> Derivation f
-liftDerivation f (Refutation d c) = addSequent d (Sequent f (liftContradiction c))
+liftRefutation :: Ord f => f -> Refutation f -> Derivation f
+liftRefutation f (Refutation d c) = addSequent d (Sequent f (liftContradiction c))
 
 -- | Try to convert a derivation to a refutation.
 -- This function succeds if the derivation has exactly one inference
 -- resulting in contradiction.
-unliftDerivation :: Derivation f -> Maybe (Refutation f)
-unliftDerivation (Derivation is) = Refutation (Derivation is') <$> c
+unliftRefutation :: Derivation f -> Maybe (Refutation f)
+unliftRefutation (Derivation is) = Refutation (Derivation is') <$> c
   where
     (cs, is') = M.partition (isContradiction . consequent) is
     c | [(_, Inference r _)] <- M.toList cs = Just (Contradiction r)
