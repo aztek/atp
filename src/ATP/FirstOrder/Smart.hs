@@ -145,6 +145,14 @@ neg = \case
 --
 -- prop> f /\ Tautology == f
 --
+-- __Left zero__
+--
+-- prop> Falsum /\ g == Falsum
+--
+-- __Right zero__
+--
+-- prop> f /\ Falsum == Falsum
+--
 (/\) :: Formula -> Formula -> Formula
 Falsum    /\ _ = Falsum
 Tautology /\ g = g
@@ -167,6 +175,14 @@ f /\ g = Connected And f g
 -- __Right identity__
 --
 -- prop> f \/ Falsum == f
+--
+-- __Left zero__
+--
+-- prop> Tautology /\ g == Tautology
+--
+-- __Right zero__
+--
+-- prop> f /\ Tautology == Tautology
 --
 (\/) :: Formula -> Formula -> Formula
 Tautology \/ _ = Tautology
