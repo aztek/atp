@@ -1,3 +1,5 @@
+{-# LANGUAGE PatternSynonyms #-}
+
 {-|
 Module       : ATP.FirstOrder.Theorem
 Description  : Theorems in unsorted first-order logic.
@@ -11,7 +13,7 @@ module ATP.FirstOrder.Theorem (
   -- * Theorems
   Theorem(..),
   (|-),
-  claim
+  pattern Claim
 ) where
 
 import qualified Data.Foldable as Foldable (toList)
@@ -33,6 +35,6 @@ infix 2 |-
 (|-) :: Foldable f => f Formula -> Formula -> Theorem
 as |- c = Theorem (Foldable.toList as) c
 
--- | Build a logical claim - a conjecture entailed by the empty set of premises.
-claim :: Formula -> Theorem
-claim f = [] |- f
+-- | A logical claim is a conjecture entailed by the empty set of axioms.
+pattern Claim :: Formula -> Theorem
+pattern Claim f = Theorem [] f
