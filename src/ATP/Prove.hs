@@ -29,7 +29,7 @@ import System.Process (ProcessHandle, runInteractiveProcess)
 import ATP.FOL (Theorem)
 import ATP.Codec.TPTP (encodeTheorem, decodeSolution)
 import ATP.Prover (Prover(..), proverCmd, eprover)
-import ATP.Proof (Proof(..))
+import ATP.Proof
 
 
 data ProvingOptions = ProvingOptions {
@@ -52,14 +52,14 @@ defaultProver :: Prover
 defaultProver = eprover
 
 -- | Attempt to prove a theorem using 'defaultProver'.
-prove :: Theorem -> IO Proof
+prove :: Theorem -> IO Answer
 prove = proveWith stdOptions
 
 -- | Attempt to prove a theorem using a given prover.
-proveUsing :: Prover -> Theorem -> IO Proof
+proveUsing :: Prover -> Theorem -> IO Answer
 proveUsing p = proveWith stdOptions{prover = p}
 
-proveWith :: ProvingOptions -> Theorem -> IO Proof
+proveWith :: ProvingOptions -> Theorem -> IO Answer
 proveWith ProvingOptions{prover, displayTPTP, displayCmd, displayTSTP} theorem = do
   -- Execute the theorem prover and open handlers to its stdin and stdout
   (hStdIn, hStdOut, _, _) <- startProverProcess prover
@@ -80,7 +80,7 @@ proveWith ProvingOptions{prover, displayTPTP, displayCmd, displayTSTP} theorem =
 
   case parseTSTPOnly output of
     Left err   -> error $ "proveWith: malformed proof: " ++ err
-    Right tstp -> return $ Proof prover (decodeSolution tstp)
+    Right tstp -> return $ Answer prover (decodeSolution tstp)
 
 startProverProcess :: Prover -> IO (Handle, Handle, Handle, ProcessHandle)
 startProverProcess Prover{cmdPath, cmdArgs} =

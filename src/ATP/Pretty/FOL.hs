@@ -196,6 +196,9 @@ instance Pretty l => Pretty (Inference l) where
 instance Pretty l => Pretty (Sequent l) where
   pretty (Sequent c i) = bold (pretty c <> dot) <+> pretty i
 
+instance (Ord l, Pretty l) => Pretty (Derivation l) where
+  pretty d = vsep (pretty <$> derivation d) <> line
+
 instance (Ord l, Pretty l) => Pretty (Refutation l) where
   pretty r = vsep (pretty <$> sequents r) <> line
 
@@ -203,11 +206,18 @@ instance (Ord l, Pretty l) => Pretty (Refutation l) where
 -- breadth-first on the graph of inferences.
 sequents :: Ord l => Refutation l -> [Sequent Integer]
 sequents (Refutation d c) = evalEnumeration $ do
-  let ss = breadthFirst d
-  let es = labeling ss
-  ss' <- foldM (sequentsS es) [] ss
+  ss <- derivationS d
   s <- Sequent <$> next <*> traverse enumerate (liftContradiction c)
-  return (reverse (s:ss'))
+  return (reverse (s:ss))
+
+derivation :: Ord l => Derivation l -> [Sequent Integer]
+derivation = evalEnumeration . fmap reverse . derivationS
+
+derivationS :: Ord l => Derivation l -> Enumeration l [Sequent Integer]
+derivationS d = foldM (sequentsS es) [] ss
+  where
+    ss = breadthFirst d
+    es = labeling ss
 
 sequentsS :: Ord l => Map l LogicalExpression ->
              [Sequent Integer] -> Sequent l ->
@@ -228,8 +238,15 @@ triviallyClausified f c
   | Just k <- unliftClause f = k ~= c
   | otherwise = False
 
-instance Pretty Proof where
-  pretty (Proof p r) = vsep [green meta, pretty r]
+instance Pretty Solution where
+  pretty = \case
+    Saturation d -> pretty d
+    Proof r -> pretty r
+
+instance Pretty Answer where
+  pretty (Answer p s) = vsep [meta, pretty s]
     where
-      meta = "Found a proof by refutation using" <+> name <> "."
-      name = text (T.unpack $ proverName p)
+      name = bold . text . T.unpack $ proverName p
+      meta = case s of
+        Saturation{} -> yellow $ "Disproven by constructing a saturated set of clauses using" <+> name <> "."
+        Proof{} -> green $ "Found a proof by refutation using" <+> name <> "."

@@ -37,6 +37,7 @@ import qualified Data.TPTP as TPTP
 
 import ATP.Internal.Enumeration
 import ATP.FOL
+import ATP.Proof
 
 
 -- * Coding and decoding
@@ -238,9 +239,12 @@ encodeTheorem (Theorem as c) = TPTP.TPTP units
     formula r f = TPTP.Formula (TPTP.Standard r) (encode $ Formula f)
 
 -- | Decode a solution from a TSTP output.
-decodeSolution :: TPTP.TSTP -> Refutation Integer
+decodeSolution :: TPTP.TSTP -> Solution
 decodeSolution (TPTP.TSTP szs units)
-  | TPTP.SZS (Just _status) (Just _dataform) <- szs = decodeRefutation units
+  | TPTP.SZS (Just (Right status)) (Just _dataform) <- szs = case status of
+    TPTP.THM -> Proof (decodeRefutation units)
+    TPTP.CSA -> Saturation (decodeDerivation units)
+    _ -> error "decodeSolution: unsupported SZS status"
   | otherwise = error "decodeSolution: malformed input: missing SZS ontologies"
 
 decodeRefutation :: [TPTP.Unit] -> Refutation Integer
