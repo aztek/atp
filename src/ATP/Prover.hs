@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 {-|
 Module       : ATP.Prover
@@ -11,6 +12,7 @@ Stability    : experimental
 
 module ATP.Prover (
   Prover(..),
+  proverCmd,
   vampire,
   eprover
 ) where
@@ -24,6 +26,9 @@ data Prover = Prover {
   cmdPath :: String,
   cmdArgs :: [String]
 } deriving (Show, Eq, Ord)
+
+proverCmd :: Prover -> String
+proverCmd Prover{cmdPath, cmdArgs} = unwords (cmdPath:cmdArgs)
 
 -- | The <http://www.eprover.org/ E> theorem prover.
 eprover :: Prover

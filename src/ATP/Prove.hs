@@ -28,13 +28,14 @@ import System.Process (ProcessHandle, runInteractiveProcess)
 
 import ATP.FOL (Theorem)
 import ATP.Codec.TPTP (encodeTheorem, decodeSolution)
-import ATP.Prover (Prover(..), eprover)
+import ATP.Prover (Prover(..), proverCmd, eprover)
 import ATP.Proof (Proof(..))
 
 
 data ProvingOptions = ProvingOptions {
   prover :: Prover,
   displayTPTP :: Bool,
+  displayCmd  :: Bool,
   displayTSTP :: Bool
 } deriving (Eq, Show, Ord)
 
@@ -42,6 +43,7 @@ stdOptions :: ProvingOptions
 stdOptions = ProvingOptions {
   prover = defaultProver,
   displayTPTP = False,
+  displayCmd  = False,
   displayTSTP = False
 }
 
@@ -58,7 +60,7 @@ proveUsing :: Prover -> Theorem -> IO Proof
 proveUsing p = proveWith stdOptions{prover = p}
 
 proveWith :: ProvingOptions -> Theorem -> IO Proof
-proveWith ProvingOptions{prover, displayTPTP, displayTSTP} theorem = do
+proveWith ProvingOptions{prover, displayTPTP, displayCmd, displayTSTP} theorem = do
   -- Execute the theorem prover and open handlers to its stdin and stdout
   (hStdIn, hStdOut, _, _) <- startProverProcess prover
 
@@ -66,6 +68,8 @@ proveWith ProvingOptions{prover, displayTPTP, displayTSTP} theorem = do
   let tptp = pretty (encodeTheorem theorem)
 
   when displayTPTP (print tptp)
+
+  when displayCmd (putStrLn $ proverCmd prover)
 
   hPutStr hStdIn (show tptp) >> hFlush hStdIn >> hClose hStdIn
 
