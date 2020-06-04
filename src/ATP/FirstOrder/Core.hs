@@ -159,8 +159,8 @@ isAssociative = \case
   And        -> True
   Or         -> True
   Implies    -> False
-  Equivalent -> False
-  Xor        -> False
+  Equivalent -> True
+  Xor        -> True
 
 -- | The formula in first-order logic.
 data Formula

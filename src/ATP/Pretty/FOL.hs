@@ -134,9 +134,17 @@ unitary = \case
 
 under :: Connective -> Formula -> Bool
 under c = \case
-  Connected c' _ _ | c == c' && isAssociative c -> True
+  Connected c' _ _ | c == c' && chainable c -> True
   Quantified{} -> False
   f -> unitary f
+
+chainable :: Connective -> Bool
+chainable = \case
+  And        -> True
+  Or         -> True
+  Implies    -> False
+  Equivalent -> False
+  Xor        -> False
 
 instance Pretty LogicalExpression where
   pretty = \case
