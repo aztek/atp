@@ -14,6 +14,8 @@ module ATP.Prove (
   ProvingOptions(..),
   stdOptions,
   defaultProver,
+  refute,
+  refuteUsing,
   prove,
   proveUsing,
   proveWith
@@ -21,13 +23,14 @@ module ATP.Prove (
 
 import Control.Monad (when)
 import qualified Data.Text.IO as TIO (hGetContents, putStrLn)
+import Data.TPTP (TPTP)
 import Data.TPTP.Parse.Text (parseTSTPOnly)
 import Data.TPTP.Pretty (pretty)
 import System.IO (Handle, hPutStr, hFlush, hClose)
 import System.Process (ProcessHandle, runInteractiveProcess)
 
-import ATP.FOL (Theorem)
-import ATP.Codec.TPTP (encodeTheorem, decodeSolution)
+import ATP.FOL (ClauseSet, Theorem)
+import ATP.Codec.TPTP (encodeClauseSet, encodeTheorem, decodeSolution)
 import ATP.Prover (Prover(..), proverCmd, eprover)
 import ATP.Proof
 
@@ -51,21 +54,29 @@ stdOptions = ProvingOptions {
 defaultProver :: Prover
 defaultProver = eprover
 
+-- | Attempt to refute a set of clauses using 'defaultProver'.
+refute :: ClauseSet -> IO Answer
+refute = proveWith stdOptions . encodeClauseSet
+
+-- | Attempt to refute a set of clauses using a given prover.
+refuteUsing :: Prover -> ClauseSet -> IO Answer
+refuteUsing p = proveWith stdOptions{prover = p} . encodeClauseSet
+
 -- | Attempt to prove a theorem using 'defaultProver'.
 prove :: Theorem -> IO Answer
-prove = proveWith stdOptions
+prove = proveWith stdOptions . encodeTheorem
 
 -- | Attempt to prove a theorem using a given prover.
 proveUsing :: Prover -> Theorem -> IO Answer
-proveUsing p = proveWith stdOptions{prover = p}
+proveUsing p = proveWith stdOptions{prover = p} . encodeTheorem
 
-proveWith :: ProvingOptions -> Theorem -> IO Answer
-proveWith ProvingOptions{prover, displayTPTP, displayCmd, displayTSTP} theorem = do
+proveWith :: ProvingOptions -> TPTP -> IO Answer
+proveWith ProvingOptions{prover, displayTPTP, displayCmd, displayTSTP} problem = do
   -- Execute the theorem prover and open handlers to its stdin and stdout
   (hStdIn, hStdOut, _, _) <- startProverProcess prover
 
   -- Encode the given theorem in TPTP and write it to the prover's stdin
-  let tptp = pretty (encodeTheorem theorem)
+  let tptp = pretty problem
 
   when displayTPTP (print tptp)
 
