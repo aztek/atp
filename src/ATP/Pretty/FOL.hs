@@ -152,7 +152,13 @@ instance Pretty LogicalExpression where
     Formula f -> pretty f
 
 
--- * Pretty printer for theorems
+-- * Pretty printer for problems
+
+instance Pretty ClauseSet where
+  pretty (ClauseSet cs) = vsep (zipWith axiom [1..] cs) <> line
+    where
+      axiom i = sequent ("Axiom" <+> integer i)
+      sequent h f = bold (h <> dot) <+> pretty f
 
 instance Pretty Theorem where
   pretty = \case

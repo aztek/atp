@@ -37,7 +37,12 @@ instance Arbitrary (Simplified LogicalExpression) where
   arbitrary = Simplified . simplify <$> arbitrary
 
 
--- * Theorems
+-- * Problems
+
+instance Arbitrary (Simplified ClauseSet) where
+  arbitrary = do
+    cs <- fmap getSimplified <$> arbitrary
+    return $ Simplified (ClauseSet cs)
 
 instance Arbitrary (Simplified Theorem) where
   arbitrary = do

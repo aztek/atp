@@ -72,7 +72,12 @@ instance Arbitrary LogicalExpression where
   shrink = genericShrink
 
 
--- * Theorems
+-- * Problems
+
+deriving instance Generic ClauseSet
+instance Arbitrary ClauseSet where
+  arbitrary = genericArbitraryU
+  shrink = genericShrink
 
 deriving instance Generic Theorem
 instance Arbitrary Theorem where

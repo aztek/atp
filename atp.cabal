@@ -51,7 +51,7 @@ library
     ATP.FirstOrder.Simplification
     ATP.FirstOrder.Occurrence
     ATP.FirstOrder.Conversion
-    ATP.FirstOrder.Theorem
+    ATP.FirstOrder.Problem
     ATP.FirstOrder.Derivation
   ghc-options:
     -Wall

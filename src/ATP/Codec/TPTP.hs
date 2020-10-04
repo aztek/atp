@@ -19,6 +19,7 @@ module ATP.Codec.TPTP (
   encodeClause,
   decodeClause,
   encodeTheorem,
+  encodeClauseSet,
   decodeSolution
 ) where
 
@@ -229,6 +230,14 @@ encodeSignedLiteral (Signed s l) = (encodeSign s, encodeLiteral l)
 
 decodeSignedLiteralS :: (TPTP.Sign, TPTP.Literal) -> Substitutions (Signed Literal)
 decodeSignedLiteralS (s, l) = sign (decodeSign s) <$> decodeLiteral l
+
+-- | Encode a set of first-order clauses in TPTP.
+encodeClauseSet :: ClauseSet -> TPTP.TPTP
+encodeClauseSet (ClauseSet cs) = TPTP.TPTP units
+  where
+    units = zipWith unit [1..] cs
+    unit n f = TPTP.Unit (Right n) (clauze f) Nothing
+    clauze = TPTP.Formula (TPTP.Standard TPTP.Axiom) . encode . Clause
 
 -- | Encode a theorem in unsorted first-order logic in TPTP.
 encodeTheorem :: Theorem -> TPTP.TPTP
