@@ -58,6 +58,7 @@ data Rule f
   | SubsumptionResolution f f
   | ForwardDemodulation   f f
   | BackwardDemodulation  f f
+  | AxiomOfChoice
   | Unknown    [f]
   | Other Text [f]
   deriving (Show, Eq, Ord, Functor, Foldable, Traversable)

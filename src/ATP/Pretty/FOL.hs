@@ -193,6 +193,7 @@ prettyRuleTag = \case
   SubsumptionResolution{} -> yellow "subsumption resolution"
   ForwardDemodulation{}   -> yellow "forward demodulation"
   BackwardDemodulation{}  -> yellow "backward demodulation"
+  AxiomOfChoice           -> yellow "axiom of choice"
   Unknown{}               -> red "unknown"
   Other name _            -> text (T.unpack name)
 

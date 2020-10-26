@@ -302,10 +302,16 @@ decodeRule s role as = case s of
   TPTP.Theory{}           -> error "decodeRule: unsupported unit source"
   TPTP.Creator{}          -> error "decodeRule: unsupported unit source"
   TPTP.UnitSource{}       -> error "decodeRule: unsupported unit source"
-  TPTP.Introduced{}       -> Axiom
+  TPTP.Introduced taut _  -> decodeTautologyRule taut
   TPTP.UnknownSource      -> Unknown as
   TPTP.File{}             -> decodeIntroductionRule role as
   TPTP.Inference rule _ _ -> decodeInferenceRule rule as
+
+decodeTautologyRule :: TPTP.Reserved TPTP.Intro -> Rule f
+decodeTautologyRule = \case
+  TPTP.Standard TPTP.ByAxiomOfChoice -> AxiomOfChoice
+  TPTP.Extended "choice_axiom" -> AxiomOfChoice
+  _ -> Axiom
 
 decodeIntroductionRule :: TPTP.Reserved TPTP.Role -> [a] -> Rule f
 decodeIntroductionRule role as = case (role, as) of
