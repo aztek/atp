@@ -40,7 +40,7 @@ import ATP.FirstOrder.Alpha
 infix 5 ~=
 
 -- | A class of first-order expressions, i.e. expressions that might contain
--- variables. @'Formula'@s, @'Literal'@s and @'Term'@s are first-order expressions.
+-- variables. @t'Formula'@s, @'Literal'@s and @'Term'@s are first-order expressions.
 --
 -- A variable can occur both as free and bound, therefore
 -- @'free' e@ and @'bound' e@ are not necessarily disjoint and
