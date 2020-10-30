@@ -16,6 +16,7 @@ module ATP.Prove (
   defaultProver,
   refute,
   refuteUsing,
+  refuteWith,
   prove,
   proveUsing,
   proveWith
@@ -56,22 +57,30 @@ defaultProver = eprover
 
 -- | Attempt to refute a set of clauses using 'defaultProver'.
 refute :: ClauseSet -> IO Answer
-refute = proveWith stdOptions . encodeClauseSet
+refute = refuteWith stdOptions
 
 -- | Attempt to refute a set of clauses using a given prover.
 refuteUsing :: Prover -> ClauseSet -> IO Answer
-refuteUsing p = proveWith stdOptions{prover = p} . encodeClauseSet
+refuteUsing p = refuteWith stdOptions{prover = p}
+
+-- | Attempt to refute a set of clauses with a given set of options.
+refuteWith :: ProvingOptions -> ClauseSet -> IO Answer
+refuteWith po = runWith po . encodeClauseSet
 
 -- | Attempt to prove a theorem using 'defaultProver'.
 prove :: Theorem -> IO Answer
-prove = proveWith stdOptions . encodeTheorem
+prove = proveWith stdOptions
 
 -- | Attempt to prove a theorem using a given prover.
 proveUsing :: Prover -> Theorem -> IO Answer
-proveUsing p = proveWith stdOptions{prover = p} . encodeTheorem
+proveUsing p = proveWith stdOptions{prover = p}
 
-proveWith :: ProvingOptions -> TPTP -> IO Answer
-proveWith ProvingOptions{prover, displayTPTP, displayCmd, displayTSTP} problem = do
+-- | Attempt to prove a theorem with a given set of options.
+proveWith :: ProvingOptions -> Theorem -> IO Answer
+proveWith po = runWith po . encodeTheorem
+
+runWith :: ProvingOptions -> TPTP -> IO Answer
+runWith ProvingOptions{prover, displayTPTP, displayCmd, displayTSTP} problem = do
   -- Execute the theorem prover and open handlers to its stdin and stdout
   (hStdIn, hStdOut, _, _) <- startProverProcess prover
 
@@ -90,7 +99,7 @@ proveWith ProvingOptions{prover, displayTPTP, displayCmd, displayTSTP} problem =
   when displayTSTP (TIO.putStrLn output)
 
   case parseTSTPOnly output of
-    Left err   -> error $ "proveWith: malformed proof: " ++ err
+    Left err   -> error $ "runWith: malformed proof: " ++ err
     Right tstp -> return $ Answer prover (decodeSolution tstp)
 
 startProverProcess :: Prover -> IO (Handle, Handle, Handle, ProcessHandle)
