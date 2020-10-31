@@ -68,9 +68,11 @@ unliftSignedLiteral = \case
 
 -- ** Proofs
 
+-- | Convert a contradiction to an inference.
 liftContradiction :: Contradiction f -> Inference f
 liftContradiction (Contradiction r) = Inference r (Formula Falsum)
 
+-- | Try to convert an inference to a contradiction.
 unliftContradiction :: Inference f -> Maybe (Contradiction f)
 unliftContradiction (Inference r e)
   | isContradiction e = Just (Contradiction r)
@@ -83,6 +85,7 @@ isContradiction = \case
   Formula Falsum -> True
   _ -> False
 
+-- | Convert a refutation to a derivation.
 liftRefutation :: Ord f => f -> Refutation f -> Derivation f
 liftRefutation f (Refutation d c) = addSequent d (Sequent f (liftContradiction c))
 

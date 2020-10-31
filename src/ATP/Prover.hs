@@ -27,6 +27,7 @@ data Prover = Prover {
   cmdArgs :: [String]
 } deriving (Show, Eq, Ord)
 
+-- | Build a command that executes the given prover.
 proverCmd :: Prover -> String
 proverCmd Prover{cmdPath, cmdArgs} = unwords (cmdPath:cmdArgs)
 

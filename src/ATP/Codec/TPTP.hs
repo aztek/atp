@@ -60,7 +60,7 @@ import ATP.Proof
 -- >>> encodeVar (-7)
 -- Var "XX1"
 --
--- 'encodeVar' is injective.
+-- @encodeVar@ is injective.
 --
 -- prop> (v == v') == (encodeVar v == encodeVar v')
 --

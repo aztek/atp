@@ -11,6 +11,9 @@ Stability    : experimental
 -}
 
 module ATP.FirstOrder.Alpha (
+  Global,
+  Stack,
+
   AlphaT(..),
   runAlphaT,
   evalAlphaT,
@@ -97,8 +100,8 @@ share v w = modify (M.insert v w)
 
 -- | A helper monad for computations on free and bound occurrences of variables.
 class Monad m => AlphaMonad m where
-  -- | A monadic action to perform on a variable under a quantified.
+  -- | A monadic action to perform on a variable under a quantifier.
   binding :: Var -> AlphaT m Var
 
-  -- | A monadic action to perform on a variable occuring in a term.
+  -- | A monadic action to perform on a variable occurrence.
   occurrence :: Var -> AlphaT m Var

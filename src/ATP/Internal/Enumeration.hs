@@ -4,7 +4,7 @@
 {-|
 Module       : ATP.Internal.Enumeration
 Description  : The helper Enumeration monad used to describe computations with
-               renaming values with consequtive numbers.
+               renaming values with consecutive numbers.
 Copyright    : (c) Evgenii Kotelnikov, 2019-2020
 License      : GPL-3
 Maintainer   : evgeny.kotelnikov@gmail.com

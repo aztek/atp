@@ -13,7 +13,7 @@ Stability    : experimental
 
 module ATP.FirstOrder.Occurrence (
   -- * Occurrence
-  FirstOrder(vars, free, bound, occursIn, freeIn, boundIn, (~=), alpha),
+  FirstOrder(..),
   closed,
   close,
   unprefix
