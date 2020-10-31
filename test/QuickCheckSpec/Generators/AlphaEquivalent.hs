@@ -31,7 +31,7 @@ genAlphaEquivalent = getAlphaEquivalence . evalAlphaT . alpha
 newtype AlphaEquivalence m a = AlphaEquivalence { getAlphaEquivalence :: m a }
   deriving (Functor, Applicative, Monad)
 
-instance AlphaMonad (AlphaEquivalence Gen) where
+instance MonadAlpha (AlphaEquivalence Gen) where
   binding _  = fresh
   occurrence = return
 
@@ -44,7 +44,7 @@ genAlphaInequivalent = getAlphaInequivalence . evalAlphaT . alpha
 newtype AlphaInequivalence m a = AlphaInequivalence { getAlphaInequivalence :: m a }
   deriving (Functor, Applicative, Monad)
 
-instance AlphaMonad (AlphaInequivalence Gen) where
+instance MonadAlpha (AlphaInequivalence Gen) where
   binding _  = stale
   occurrence = anythingBut
 

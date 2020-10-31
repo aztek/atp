@@ -29,7 +29,7 @@ module ATP.FirstOrder.Alpha (
   enter,
   share,
 
-  AlphaMonad(..)
+  MonadAlpha(..)
 ) where
 
 import Prelude hiding (lookup)
@@ -99,7 +99,7 @@ share v w = modify (M.insert v w)
 
 
 -- | A helper monad for computations on free and bound occurrences of variables.
-class Monad m => AlphaMonad m where
+class Monad m => MonadAlpha m where
   -- | A monadic action to perform on a variable under a quantifier.
   binding :: Var -> AlphaT m Var
 

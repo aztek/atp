@@ -110,7 +110,7 @@ class FirstOrder e where
   -- | A helper function calculating alpha-equivalence using the 'Alpha' monad stack.
   (?=) :: e -> e -> Alpha Bool
 
-  alpha :: AlphaMonad m => e -> AlphaT m e
+  alpha :: MonadAlpha m => e -> AlphaT m e
 
 instance FirstOrder LogicalExpression where
   vars = \case
