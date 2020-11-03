@@ -25,6 +25,7 @@ module ATP.Codec.TPTP (
 
 import Control.Applicative (liftA2)
 import Control.Monad (foldM)
+import Control.Monad.Trans (lift)
 import Data.Functor (($>))
 import Data.List (genericIndex, find)
 import qualified Data.List.NonEmpty as NE (toList)
@@ -37,6 +38,7 @@ import qualified Data.Text as T
 import qualified Data.TPTP as TPTP
 
 import ATP.Internal.Enumeration
+import ATP.Error
 import ATP.FOL
 import ATP.Proof
 
@@ -76,18 +78,17 @@ encodeVar v = TPTP.Var $ genericIndex variables (abs v)
         letter = if v >= 0 then w else w <> w
         index  = if n == 0 then T.empty else T.pack (show n)
 
-type Substitutions = Enumeration TPTP.Var
+type Substitutions = EnumerationT TPTP.Var Partial
 
 -- | Encode a function symbol in TPTP.
 encodeFunction :: Symbol -> TPTP.Name TPTP.Function
 encodeFunction = TPTP.Defined . TPTP.Atom
 
 -- | Decode a function symbol from TPTP.
-decodeFunction :: TPTP.Name s -> Symbol
+decodeFunction :: TPTP.Name s -> Partial Symbol
 decodeFunction = \case
-  TPTP.Defined (TPTP.Atom s) -> s
-  TPTP.Reserved{} ->
-    error "decodeFunction: reserved functions are not supported"
+  TPTP.Defined (TPTP.Atom s) -> return s
+  TPTP.Reserved{} -> parsingError "reserved functions are not supported"
 
 -- | Encode a predicate symbol in TPTP.
 encodePredicate :: Symbol -> TPTP.Name TPTP.Predicate
@@ -102,10 +103,10 @@ encodeTerm = \case
 -- | Decode a term from TPTP.
 decodeTermS :: TPTP.Term -> Substitutions Term
 decodeTermS = \case
-  TPTP.Function f ts  -> Function (decodeFunction f) <$> traverse decodeTermS ts
+  TPTP.Function f ts  -> Function <$> lift (decodeFunction f) <*> traverse decodeTermS ts
   TPTP.Variable v     -> Variable <$> enumerate v
-  TPTP.Number{}       -> error "decodeTermS: numbers are not supported"
-  TPTP.DistinctTerm{} -> error "decodeTermS: distinct objects are not supported"
+  TPTP.Number{}       -> lift $ parsingError "numbers are not supported"
+  TPTP.DistinctTerm{} -> lift $ parsingError "distinct objects are not supported"
 
 -- | Encode a literal in TPTP.
 encodeLiteral :: Literal -> TPTP.Literal
@@ -118,18 +119,21 @@ encodeLiteral = \case
 -- | Decode a literal from TPTP.
 decodeLiteral :: TPTP.Literal -> Substitutions (Signed Literal)
 decodeLiteral = \case
-  TPTP.Predicate p ts -> Signed Positive . decodePredicate p <$> traverse decodeTermS ts
+  TPTP.Predicate p ts -> do
+    p' <- lift (decodePredicate p)
+    ts' <- traverse decodeTermS ts
+    return $ Signed Positive (p' ts')
   TPTP.Equality a s b -> decodeEquality s <$> decodeTermS a <*> decodeTermS b
 
-decodePredicate :: TPTP.Name TPTP.Predicate -> [Term] -> Literal
+decodePredicate :: TPTP.Name TPTP.Predicate -> Partial ([Term] -> Literal)
 decodePredicate = \case
-  TPTP.Defined  (TPTP.Atom p)                  -> Predicate p
-  TPTP.Reserved (TPTP.Standard TPTP.Tautology) -> const (Constant True)
-  TPTP.Reserved (TPTP.Standard TPTP.Falsum)    -> const (Constant False)
-  TPTP.Reserved TPTP.Standard{} ->
-    error "decodePredicate: unsupported standard reserved predicate"
+  TPTP.Defined  (TPTP.Atom p)                  -> return $ Predicate p
+  TPTP.Reserved (TPTP.Standard TPTP.Tautology) -> return $ const (Constant True)
+  TPTP.Reserved (TPTP.Standard TPTP.Falsum)    -> return $ const (Constant False)
+  TPTP.Reserved (TPTP.Standard p) ->
+    parsingError $ "unsupported standard reserved predicate " <> show p
   TPTP.Reserved TPTP.Extended{} ->
-    error "decodePredicate: extended reserved predicates are not supported"
+    parsingError "extended reserved predicates are not supported"
 
 decodeEquality :: TPTP.Sign -> Term -> Term -> Signed Literal
 decodeEquality s a b = Signed (decodeSign s) (Equality a b)
@@ -178,8 +182,8 @@ encodeFormula = \case
   Quantified q v f -> TPTP.quantified (encodeQuantifier q) [(encodeVar v, TPTP.Unsorted ())] (encodeFormula f)
 
 -- | Decode a formula in unsorted first-order logic from TPTP.
-decodeFormula :: TPTP.UnsortedFirstOrder -> Formula
-decodeFormula = evalEnumeration . decodeFormulaS
+decodeFormula :: TPTP.UnsortedFirstOrder -> Partial Formula
+decodeFormula = evalEnumerationT . decodeFormulaS
 
 decodeFormulaS :: TPTP.UnsortedFirstOrder -> Substitutions Formula
 decodeFormulaS = \case
@@ -197,20 +201,20 @@ encode = \case
   Formula f -> TPTP.FOF (encodeFormula f)
 
 -- | Decode a formula in unsorted first-order logic from TPTP.
-decode :: TPTP.Formula -> LogicalExpression
+decode :: TPTP.Formula -> Partial LogicalExpression
 decode = \case
-  TPTP.FOF f  -> Formula (decodeFormula f)
-  TPTP.CNF c  -> Clause  (decodeClause  c)
-  TPTP.TFF0{} -> error "decode: formulas in TFF0 are not supported"
-  TPTP.TFF1{} -> error "decode: formulas in TFF1 are not supported"
+  TPTP.FOF f  -> Formula <$> decodeFormula f
+  TPTP.CNF c  -> Clause  <$> decodeClause  c
+  TPTP.TFF0{} -> parsingError "formulas in TFF0 are not supported"
+  TPTP.TFF1{} -> parsingError "formulas in TFF1 are not supported"
 
 -- | Encode a clause in unsorted first-order logic in TPTP.
 encodeClause :: Clause -> TPTP.Clause
 encodeClause = TPTP.clause . fmap encodeSignedLiteral . unClause
 
 -- | Decode a clause in unsorted first-order logic from TPTP.
-decodeClause :: TPTP.Clause -> Clause
-decodeClause = evalEnumeration . decodeClauseS
+decodeClause :: TPTP.Clause -> Partial Clause
+decodeClause = evalEnumerationT . decodeClauseS
 
 decodeClauseS :: TPTP.Clause -> Substitutions Clause
 decodeClauseS (TPTP.Clause ls) = Literals <$> traverse decodeSignedLiteralS (NE.toList ls)
@@ -248,26 +252,28 @@ encodeTheorem (Theorem as c) = TPTP.TPTP units
     formula r f = TPTP.Formula (TPTP.Standard r) (encode $ Formula f)
 
 -- | Decode a solution from a TSTP output.
-decodeSolution :: TPTP.TSTP -> Solution
+decodeSolution :: TPTP.TSTP -> Partial Solution
 decodeSolution (TPTP.TSTP szs units)
   | TPTP.SZS (Just (Right status)) (Just _dataform) <- szs = case status of
-    TPTP.THM -> Proof (decodeRefutation units)
-    TPTP.CSA -> Saturation (decodeDerivation units)
-    _ -> error "decodeSolution: unsupported SZS status"
-  | otherwise = error "decodeSolution: malformed input: missing SZS ontologies"
+    TPTP.THM -> Proof <$> decodeRefutation units
+    TPTP.CSA -> Saturation <$> decodeDerivation units
+    _ -> parsingError $ "unsupported SZS " <> show status
+  | otherwise = proofError "malformed input: missing SZS ontologies"
 
-decodeRefutation :: [TPTP.Unit] -> Refutation Integer
-decodeRefutation units
-  | Just refutation <- unliftRefutation (decodeDerivation units) = refutation
-  | otherwise = error "decodeRefutation: malformed input: refutation not found"
+decodeRefutation :: [TPTP.Unit] -> Partial (Refutation Integer)
+decodeRefutation units = do
+  derivation <- decodeDerivation units
+  case unliftRefutation derivation of
+    Just refutation -> return refutation
+    Nothing -> proofError "malformed input: refutation not found"
 
-decodeDerivation :: [TPTP.Unit] -> Derivation Integer
-decodeDerivation units = evalEnumeration
-                       . foldM (decodeSequentS expressions) mempty
-                       $ decodedSequents
-  where
-    expressions = labeling decodedSequents
-    decodedSequents = fmap decodeSequent units
+decodeDerivation :: [TPTP.Unit] -> Partial (Derivation Integer)
+decodeDerivation units = do
+  decodedSequents <- traverse decodeSequent units
+  let expressions = labeling decodedSequents
+  return . evalEnumeration
+         . foldM (decodeSequentS expressions) mempty
+         $ decodedSequents
 
 decodeSequentS :: Map TPTP.UnitName LogicalExpression ->
                   Derivation Integer -> Sequent TPTP.UnitName ->
@@ -278,14 +284,13 @@ decodeSequentS es d s@(Sequent l i) =
     Nothing -> addSequent d <$> traverse enumerate s
   where synonymous a = es ! a ~= consequent i
 
-decodeSequent :: TPTP.Unit -> Sequent TPTP.UnitName
+decodeSequent :: TPTP.Unit -> Partial (Sequent TPTP.UnitName)
 decodeSequent = \case
-  TPTP.Unit name (TPTP.Formula role formula) (Just (source, _)) -> sequent
-    where
-      rule = decodeRule source role (collectParents source)
-      inference = Inference rule (decode formula)
-      sequent = Sequent name inference
-  _ -> error "decodeSequent: malformed input: expected unit"
+  TPTP.Unit name (TPTP.Formula role formula) (Just (source, _)) -> do
+    rule <- decodeRule source role (collectParents source)
+    expression <- decode formula
+    return $ Sequent name (Inference rule expression)
+  _ -> proofError "malformed input: expected unit"
 
 collectParents :: TPTP.Source -> [TPTP.UnitName]
 collectParents = \case
@@ -297,15 +302,15 @@ collectParents = \case
   TPTP.UnitSource p     -> [p]
   TPTP.UnknownSource    -> []
 
-decodeRule :: TPTP.Source -> TPTP.Reserved TPTP.Role -> [f] -> Rule f
+decodeRule :: TPTP.Source -> TPTP.Reserved TPTP.Role -> [f] -> Partial (Rule f)
 decodeRule s role as = case s of
-  TPTP.Theory{}           -> error "decodeRule: unsupported unit source"
-  TPTP.Creator{}          -> error "decodeRule: unsupported unit source"
-  TPTP.UnitSource{}       -> error "decodeRule: unsupported unit source"
-  TPTP.Introduced taut _  -> decodeTautologyRule taut
-  TPTP.UnknownSource      -> Unknown as
+  TPTP.Theory{}           -> parsingError "unsupported unit source"
+  TPTP.Creator{}          -> parsingError "unsupported unit source"
+  TPTP.UnitSource{}       -> parsingError "unsupported unit source"
+  TPTP.Introduced taut _  -> return $ decodeTautologyRule taut
+  TPTP.UnknownSource      -> return $ Unknown as
   TPTP.File{}             -> decodeIntroductionRule role as
-  TPTP.Inference rule _ _ -> decodeInferenceRule rule as
+  TPTP.Inference rule _ _ -> return $ decodeInferenceRule rule as
 
 decodeTautologyRule :: TPTP.Reserved TPTP.Intro -> Rule f
 decodeTautologyRule = \case
@@ -313,11 +318,11 @@ decodeTautologyRule = \case
   TPTP.Extended "choice_axiom" -> AxiomOfChoice
   _ -> Axiom
 
-decodeIntroductionRule :: TPTP.Reserved TPTP.Role -> [a] -> Rule f
+decodeIntroductionRule :: TPTP.Reserved TPTP.Role -> [a] -> Partial (Rule f)
 decodeIntroductionRule role as = case (role, as) of
-  (TPTP.Standard TPTP.Axiom,      []) -> Axiom
-  (TPTP.Standard TPTP.Conjecture, []) -> Conjecture
-  _ -> error $ "decodeIntroductionRule: unrecognized unit role " ++ show role
+  (TPTP.Standard TPTP.Axiom,      []) -> return Axiom
+  (TPTP.Standard TPTP.Conjecture, []) -> return Conjecture
+  _ -> proofError $ "unexpected unit role " <> show role
 
 decodeInferenceRule :: TPTP.Atom -> [f] -> Rule f
 decodeInferenceRule (TPTP.Atom rule) as = case (rule, as) of

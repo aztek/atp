@@ -14,13 +14,14 @@ module ATP.Proof (
 
 import ATP.FOL
 import ATP.Prover
+import ATP.Error
 
 
 -- | The proof by refutation with additional meta information such as which
 -- prover found it.
 data Answer = Answer {
   proofMeta :: Prover,
-  solution :: Solution
+  solution  :: Partial Solution
 } deriving (Show, Eq, Ord)
 
 -- | The successful solution produced by an automated theorem prover for

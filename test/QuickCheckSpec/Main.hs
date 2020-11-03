@@ -26,6 +26,7 @@ import Test.QuickCheck (
   )
 
 import ATP hiding ((===), (==>))
+import ATP.Error
 import ATP.Codec.TPTP
 
 import QuickCheckSpec.Generators.FOL ()
@@ -37,6 +38,12 @@ import QuickCheckSpec.Generators.AlphaEquivalent
 -- | Like '(===)', but for alpha equivalence.
 (~==) :: (Show e, FirstOrder e) => e -> e -> Property
 a ~== b = counterexample (show a ++ " ~/= " ++ show b) (a ~= b)
+
+-- | Like '(~==)', but for results of partial computations.
+(~~=) :: (Show e, FirstOrder e) => Partial e -> Partial e -> Property
+x ~~= y
+  | Right a <- liftPartial x, Right b <- liftPartial y = a ~== b
+  | otherwise = counterexample (show x ++ " ~/= " ++ show y) False
 
 
 -- * Generators
@@ -283,16 +290,16 @@ prop_liftUnliftContradiction c =
 -- * Codec
 
 prop_codecClause :: Clause -> Property
-prop_codecClause c = c ~==~ decodeClause (encodeClause c)
-  where (~==~) = (~==) `on` simplifyClause
+prop_codecClause c = return c ~==~ decodeClause (encodeClause c)
+  where (~==~) = (~~=) `on` fmap simplifyClause
 
 prop_codecFormula :: Formula -> Property
-prop_codecFormula f = f ~==~ decodeFormula (encodeFormula f)
-  where (~==~) = (~==) `on` simplifyFormula
+prop_codecFormula f = return f ~==~ decodeFormula (encodeFormula f)
+  where (~==~) = (~~=) `on` fmap simplifyFormula
 
 prop_codec :: LogicalExpression -> Property
-prop_codec e = e ~==~ decode (encode e)
-  where (~==~) = (~==) `on` simplify
+prop_codec e = return e ~==~ decode (encode e)
+  where (~==~) = (~~=) `on` fmap simplify
 
 
 -- * Runner

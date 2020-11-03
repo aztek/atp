@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 {-|
@@ -23,6 +22,7 @@ module ATP.Prove (
 ) where
 
 import Control.Monad (when)
+import Data.Text (Text)
 import qualified Data.Text.IO as TIO (hGetContents, putStrLn)
 import Data.TPTP (TPTP)
 import Data.TPTP.Parse.Text (parseTSTPOnly)
@@ -30,6 +30,7 @@ import Data.TPTP.Pretty (pretty)
 import System.IO (Handle, hPutStr, hFlush, hClose)
 import System.Process (ProcessHandle, runInteractiveProcess)
 
+import ATP.Error
 import ATP.FOL (ClauseSet, Theorem)
 import ATP.Codec.TPTP (encodeClauseSet, encodeTheorem, decodeSolution)
 import ATP.Prover (Prover(..), proverCmd, eprover)
@@ -98,9 +99,15 @@ runWith ProvingOptions{prover, displayTPTP, displayCmd, displayTSTP} problem = d
 
   when displayTSTP (TIO.putStrLn output)
 
-  case parseTSTPOnly output of
-    Left err   -> error $ "runWith: malformed proof: " ++ err
-    Right tstp -> return $ Answer prover (decodeSolution tstp)
+  -- Parse the response of the theorem prover
+  let solution = parseProverOutput output
+
+  return $ Answer prover solution
+
+parseProverOutput :: Text -> Partial Solution
+parseProverOutput output = case parseTSTPOnly output of
+  Left e  -> parsingError e
+  Right s -> decodeSolution s
 
 startProverProcess :: Prover -> IO (Handle, Handle, Handle, ProcessHandle)
 startProverProcess Prover{cmdPath, cmdArgs} =

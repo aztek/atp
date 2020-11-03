@@ -34,6 +34,7 @@ import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
 
 import ATP.Internal.Enumeration
 
+import ATP.Error
 import ATP.FOL
 import ATP.Proof
 import ATP.Prover (Prover(..))
@@ -260,9 +261,18 @@ instance Pretty Solution where
     Proof r -> pretty r
 
 instance Pretty Answer where
-  pretty (Answer p s) = vsep [meta, pretty s]
+  pretty (Answer p a) = case liftPartial a of
+    Left e -> red $ "Failed to find a solution because" <+> err e <> "."
+    Right s -> vsep [meta s, pretty s]
     where
       name = bold . text . T.unpack $ proverName p
-      meta = case s of
+
+      err = \case
+        Timeout -> name <+> "terminated by the timeout."
+        ParsingError e -> "of the following parsing error:" <+> text (T.unpack e)
+        ProofError   e -> "of the following problem with the proof:" <+> text (T.unpack e)
+        OtherError   e -> "of the following error:" <+> text (T.unpack e)
+
+      meta = \case
         Saturation{} -> yellow $ "Disproven by constructing a saturated set of clauses using" <+> name <> "."
         Proof{} -> green $ "Found a proof by refutation using" <+> name <> "."
