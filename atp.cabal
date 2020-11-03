@@ -38,6 +38,7 @@ library
   exposed-modules:
     ATP
     ATP.Codec.TPTP
+    ATP.Error
     ATP.FOL
     ATP.Pretty.FOL
     ATP.Proof
