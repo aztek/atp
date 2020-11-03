@@ -87,21 +87,16 @@ runWith ProvingOptions{prover, displayTPTP, displayCmd, displayTSTP} problem = d
 
   -- Encode the given theorem in TPTP and write it to the prover's stdin
   let tptp = pretty problem
-
   when displayTPTP (print tptp)
-
   when displayCmd (putStrLn $ proverCmd prover)
-
   hPutStr hStdIn (show tptp) >> hFlush hStdIn >> hClose hStdIn
 
   -- Read the response of the theorem prover
   output <- TIO.hGetContents hStdOut
-
   when displayTSTP (TIO.putStrLn output)
 
   -- Parse the response of the theorem prover
   let solution = parseProverOutput output
-
   return $ Answer prover solution
 
 parseProverOutput :: Text -> Partial Solution
