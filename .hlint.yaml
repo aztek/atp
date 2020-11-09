@@ -1,0 +1,10 @@
+# HLint configuration file
+# https://github.com/ndmitchell/hlint
+
+# Warn about partial functions from Prelude
+ - functions:
+   - {name: error, within: []}
+   - {name: undefined, within: []}
+   - {name: head, within: []}
+   - {name: tail, within: []}
+   - {name: (!!), within: []}
