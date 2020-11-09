@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveTraversable #-}
 
@@ -22,6 +23,9 @@ module ATP.Error (
 ) where
 
 import Control.Monad.Except (MonadTrans, ExceptT(..), MonadError(..), runExcept)
+#if !MIN_VERSION_base(4, 13, 0)
+import Control.Monad.Fail (MonadFail)
+#endif
 import Data.Functor.Identity (Identity)
 import Data.Text (Text)
 import qualified Data.Text as T (pack)
