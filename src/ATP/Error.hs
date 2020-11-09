@@ -39,13 +39,16 @@ data Error
   -- ^ An uncategorized error.
   deriving (Show, Eq, Ord)
 
--- | The type of computations that might fail with an @'Error'@.
-type Partial = PartialT Identity
-
 -- | A monad transformer that adds failing with an @'Error'@ to other monads.
 newtype PartialT m a = PartialT {
   runPartialT :: ExceptT Error m a
 } deriving (Show, Eq, Ord, Functor, Applicative, Monad, MonadTrans, MonadError Error)
+
+instance Monad m => MonadFail (PartialT m) where
+  fail = otherError
+
+-- | The type of computations that might fail with an @'Error'@.
+type Partial = PartialT Identity
 
 -- | Extractor for computations in the @'Partial'@ monad.
 liftPartial :: Partial a -> Either Error a
