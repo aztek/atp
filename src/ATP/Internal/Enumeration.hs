@@ -55,10 +55,9 @@ enumerate v = gets (M.lookup v . snd) >>= \case
 
 alias :: (Ord a, Monad m) => a -> a -> EnumerationT a m ()
 alias a b = gets (\(_, m) -> (M.lookup a m, M.lookup b m)) >>= \case
-  (Just{},  Just{})  -> error "alias"
   (Just i,  Nothing) -> modify $ fmap (M.insert b i)
   (Nothing, Just i)  -> modify $ fmap (M.insert a i)
-  (Nothing, Nothing) -> do
+  (_, _) -> do
     i <- next
     modify $ fmap (M.insert a i)
     modify $ fmap (M.insert b i)
