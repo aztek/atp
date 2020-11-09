@@ -275,9 +275,8 @@ decodeDerivation units = do
          . foldM (decodeSequentS expressions) mempty
          $ decodedSequents
 
-decodeSequentS :: Map TPTP.UnitName LogicalExpression ->
-                  Derivation Integer -> Sequent TPTP.UnitName ->
-                  Enumeration TPTP.UnitName (Derivation Integer)
+decodeSequentS :: Ord n => Map n LogicalExpression -> Derivation Integer ->
+                           Sequent n -> Enumeration n (Derivation Integer)
 decodeSequentS es d s@(Sequent l i) =
   case find synonymous (antecedents i) of
     Just a  -> alias l a $> d
