@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
@@ -254,11 +255,23 @@ encodeTheorem (Theorem as c) = TPTP.TPTP units
 -- | Decode a solution from a TSTP output.
 decodeSolution :: TPTP.TSTP -> Partial Solution
 decodeSolution (TPTP.TSTP szs units)
-  | TPTP.SZS (Just (Right status)) (Just _dataform) <- szs = case status of
-    TPTP.THM -> Proof <$> decodeRefutation units
-    TPTP.CSA -> Saturation <$> decodeDerivation units
-    _ -> parsingError $ "unsupported SZS " <> show status
+  | TPTP.SZS (Just (Right status)) (Just _dataform) <- szs = if
+    | isProof status -> Proof <$> decodeRefutation units
+    | isSaturation status -> Saturation <$> decodeDerivation units
+    | otherwise -> parsingError $ "unsupported SZS " <> show status
   | otherwise = proofError "malformed input: missing SZS ontologies"
+
+isProof :: TPTP.Success -> Bool
+isProof = \case
+  TPTP.UNS -> True
+  TPTP.THM -> True
+  _ -> False
+
+isSaturation :: TPTP.Success -> Bool
+isSaturation = \case
+  TPTP.SAT -> True
+  TPTP.CSA -> True
+  _ -> False
 
 decodeRefutation :: [TPTP.Unit] -> Partial (Refutation Integer)
 decodeRefutation units = do
