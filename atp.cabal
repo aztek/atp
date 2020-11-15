@@ -128,3 +128,23 @@ test-suite doctests
     QuickCheck     >= 2.4     && < 3.0,
     atp,
     doctest
+
+test-suite unit-tests
+  type: detailed-0.9
+  hs-source-dirs: test
+  default-language: Haskell2010
+  test-module: UnitTests.Main
+  ghc-options:
+    -Wall -threaded
+  if flag(Werror)
+    ghc-options: -Werror
+  -- TODO: Workaround the pesky bug in ghc 8.0
+  -- https://stackoverflow.com/q/39310043/1344648
+  if (impl(ghc >= 8.0.0)) && (impl(ghc < 8.1.0))
+    buildable: False
+  -- TODO: Set up E in Travis
+  buildable: False
+  build-depends:
+    base,
+    Cabal >= 1.16.0,
+    atp
