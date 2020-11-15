@@ -316,9 +316,9 @@ collectParents = \case
 
 decodeRule :: TPTP.Source -> TPTP.Reserved TPTP.Role -> [f] -> Partial (Rule f)
 decodeRule s role as = case s of
-  TPTP.Theory{}           -> parsingError "unsupported unit source"
-  TPTP.Creator{}          -> parsingError "unsupported unit source"
-  TPTP.UnitSource{}       -> parsingError "unsupported unit source"
+  TPTP.Theory{}           -> parsingError $ "unsupported unit source " ++ show s
+  TPTP.Creator{}          -> parsingError $ "unsupported unit source " ++ show s
+  TPTP.UnitSource{}       -> return $ Other "triviality" as
   TPTP.Introduced taut _  -> return $ decodeTautologyRule taut
   TPTP.UnknownSource      -> return $ Unknown as
   TPTP.File{}             -> decodeIntroductionRule role as
