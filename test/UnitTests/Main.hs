@@ -1,5 +1,4 @@
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
@@ -25,12 +24,12 @@ uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
 uncurry3 f (a, b, c) = f a b c
 
 simpleTest :: String -> IO Progress -> Test
-simpleTest name run = Test $ TestInstance {
-  name      = name,
+simpleTest nm progress = Test $ TestInstance {
+  name      = nm,
   tags      = [],
   options   = [],
   setOption = const . const $ Left "not supported",
-  run       = run
+  run       = progress
 }
 
 testCase :: String -> IO Answer -> (Solution -> Result) -> Test
