@@ -32,6 +32,11 @@ flag Werror
   default: False
   manual: True
 
+-- Build test suites that require some theorem provers to be installed.
+flag provers
+  default: False
+  manual: True
+
 library
   hs-source-dirs: src
   default-language: Haskell2010
@@ -138,12 +143,14 @@ test-suite unit-tests
     -Wall -threaded
   if flag(Werror)
     ghc-options: -Werror
+  if flag(provers)
+    buildable: True
+  else
+    buildable: False
   -- TODO: Workaround the pesky bug in ghc 8.0
   -- https://stackoverflow.com/q/39310043/1344648
   if (impl(ghc >= 8.0.0)) && (impl(ghc < 8.1.0))
     buildable: False
-  -- TODO: Set up E in Travis
-  buildable: False
   build-depends:
     base,
     Cabal >= 1.16.0,
