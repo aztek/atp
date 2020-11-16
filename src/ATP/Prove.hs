@@ -11,7 +11,7 @@ Stability    : experimental
 
 module ATP.Prove (
   ProvingOptions(..),
-  stdOptions,
+  defaultOptions,
   defaultProver,
   refute,
   refuteUsing,
@@ -23,13 +23,12 @@ module ATP.Prove (
 
 import Control.Monad (when)
 import Data.Text (Text)
-import qualified Data.Text.IO as TIO (hGetContents, putStrLn)
+import qualified Data.Text as T (pack)
 import Data.TPTP (TPTP)
 import Data.TPTP.Parse.Text (parseTSTPOnly)
 import Data.TPTP.Pretty (pretty)
-import System.IO (Handle, hPutStr, hFlush, hClose)
-import System.Process (ProcessHandle, runInteractiveProcess)
-
+import System.Exit (ExitCode(..))
+import System.Process (readProcessWithExitCode)
 import ATP.Error
 import ATP.FOL (ClauseSet, Theorem)
 import ATP.Codec.TPTP (encodeClauseSet, encodeTheorem, decodeSolution)
@@ -39,71 +38,67 @@ import ATP.Proof
 
 data ProvingOptions = ProvingOptions {
   prover :: Prover,
-  displayTPTP :: Bool,
-  displayCmd  :: Bool,
-  displayTSTP :: Bool
+  debug :: Bool
 } deriving (Eq, Show, Ord)
 
-stdOptions :: ProvingOptions
-stdOptions = ProvingOptions {
+-- | The default options used by 'refute' and 'prove'.
+defaultOptions :: ProvingOptions
+defaultOptions = ProvingOptions {
   prover = defaultProver,
-  displayTPTP = False,
-  displayCmd  = False,
-  displayTSTP = False
+  debug = False
 }
 
--- | The default prover used by 'prove'.
+-- | The default prover used by 'refute' and 'prove'.
 defaultProver :: Prover
 defaultProver = eprover
 
 -- | Attempt to refute a set of clauses using 'defaultProver'.
 refute :: ClauseSet -> IO Answer
-refute = refuteWith stdOptions
+refute = refuteWith defaultOptions
 
 -- | Attempt to refute a set of clauses using a given prover.
 refuteUsing :: Prover -> ClauseSet -> IO Answer
-refuteUsing p = refuteWith stdOptions{prover = p}
+refuteUsing p = refuteWith defaultOptions{prover = p}
 
 -- | Attempt to refute a set of clauses with a given set of options.
 refuteWith :: ProvingOptions -> ClauseSet -> IO Answer
-refuteWith po = runWith po . encodeClauseSet
+refuteWith opts = runWith opts . encodeClauseSet
 
 -- | Attempt to prove a theorem using 'defaultProver'.
 prove :: Theorem -> IO Answer
-prove = proveWith stdOptions
+prove = proveWith defaultOptions
 
 -- | Attempt to prove a theorem using a given prover.
 proveUsing :: Prover -> Theorem -> IO Answer
-proveUsing p = proveWith stdOptions{prover = p}
+proveUsing p = proveWith defaultOptions{prover = p}
 
 -- | Attempt to prove a theorem with a given set of options.
 proveWith :: ProvingOptions -> Theorem -> IO Answer
-proveWith po = runWith po . encodeTheorem
+proveWith opts = runWith opts . encodeTheorem
 
 runWith :: ProvingOptions -> TPTP -> IO Answer
-runWith ProvingOptions{prover, displayTPTP, displayCmd, displayTSTP} problem = do
-  -- Execute the theorem prover and open handlers to its stdin and stdout
-  (hStdIn, hStdOut, _, _) <- startProverProcess prover
+runWith opts tptp = do
+  let input = show (pretty tptp)
+  (exitCode, output, err) <- runProver opts input
 
-  -- Encode the given theorem in TPTP and write it to the prover's stdin
-  let tptp = pretty problem
-  when displayTPTP (print tptp)
-  when displayCmd (putStrLn $ proverCmd prover)
-  hPutStr hStdIn (show tptp) >> hFlush hStdIn >> hClose hStdIn
+  let solution = case exitCode of
+                   ExitSuccess -> parseOutput output
+                   ExitFailure code -> exitCodeError code err
 
-  -- Read the response of the theorem prover
-  output <- TIO.hGetContents hStdOut
-  when displayTSTP (TIO.putStrLn output)
+  return (Answer (prover opts) solution)
 
-  -- Parse the response of the theorem prover
-  let solution = parseProverOutput output
-  return $ Answer prover solution
+runProver :: ProvingOptions -> String -> IO (ExitCode, Text, Text)
+runProver opts input = do
+  let ProvingOptions{prover, debug} = opts
+  let Prover{cmdPath, cmdArgs} = prover
+  let printDebug str = when debug (putStrLn str >> putStrLn (replicate 80 '-'))
 
-parseProverOutput :: Text -> Partial Solution
-parseProverOutput output = case parseTSTPOnly output of
-  Left e  -> parsingError e
-  Right s -> decodeSolution s
+  printDebug input
+  printDebug (proverCmd prover)
+  (exitCode, output, err) <- readProcessWithExitCode cmdPath cmdArgs input
+  printDebug output
 
-startProverProcess :: Prover -> IO (Handle, Handle, Handle, ProcessHandle)
-startProverProcess Prover{cmdPath, cmdArgs} =
-  runInteractiveProcess cmdPath cmdArgs Nothing Nothing
+  return (exitCode, T.pack output, T.pack err)
+
+parseOutput :: Text -> Partial Solution
+parseOutput = either parsingError decodeSolution . parseTSTPOnly

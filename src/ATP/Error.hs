@@ -15,6 +15,7 @@ module ATP.Error (
   Partial,
   PartialT(..),
   liftPartial,
+  exitCodeError,
   timeoutError,
   parsingError,
   proofError,
@@ -29,7 +30,9 @@ import qualified Data.Text as T (pack)
 
 -- | The error that might occur while reconstructing the proof.
 data Error
-  = Timeout
+  = ExitCodeError Int Text
+  -- ^ The theorem prover terminated with a non-zero exit code.
+  | Timeout
   -- ^ The theorem prover terminated by the timeout without producing a proof.
   | ParsingError Text
   -- ^ The output of the theorem prover is not a well-formed TSTP.
@@ -50,6 +53,10 @@ newtype PartialT m a = PartialT {
 -- | Extractor for computations in the @'Partial'@ monad.
 liftPartial :: Partial a -> Either Error a
 liftPartial = runExcept . runPartialT
+
+-- | A smart constructor for a computation failed with an @'ExitCodeError'@.
+exitCodeError :: Monad m => Int -> Text -> PartialT m a
+exitCodeError exitCode err = PartialT (throwError $ ExitCodeError exitCode err)
 
 -- | A smart constructor for a computation failed with a @'Timeout'@.
 timeoutError :: Monad m => PartialT m a

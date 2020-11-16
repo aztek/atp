@@ -27,7 +27,7 @@ import Data.Functor (($>))
 import Data.List (genericIndex, find)
 import Data.List.NonEmpty (NonEmpty(..), nonEmpty)
 import Data.Map (Map, (!))
-import Data.Text as T (unpack)
+import qualified Data.Text as T (unpack, null)
 import System.IO (Handle)
 
 import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
@@ -67,7 +67,7 @@ prettyVar v = cyan . text $ genericIndex variables (abs v)
         digits = fmap digitToInt . show
 
 prettySymbol :: Symbol -> Doc
-prettySymbol = text . unpack
+prettySymbol = text . T.unpack
 
 prettyFunction, prettyPredicate :: Symbol -> Doc
 prettyFunction  = prettySymbol
@@ -268,6 +268,12 @@ instance Pretty Answer where
       name = bold . text . T.unpack $ proverName p
 
       err = \case
+        ExitCodeError c e
+          | T.null e  -> exitCode <> "."
+          | otherwise -> exitCode <+> "and the following error message."
+                      <> line <> text (T.unpack e)
+          where
+            exitCode = name <+> "terminated with exit code" <+> bold (text $ show c)
         Timeout -> name <+> "terminated by the timeout."
         ParsingError e -> "of the following parsing error:" <+> text (T.unpack e)
         ProofError   e -> "of the following problem with the proof:" <+> text (T.unpack e)
