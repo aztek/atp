@@ -16,8 +16,9 @@ Stability    : experimental
 module ATP.FirstOrder.Core (
   -- * First-order logic
   Var,
-  Symbol,
+  FunctionSymbol(..),
   Term(..),
+  PredicateSymbol(..),
   Literal(..),
   Sign(..),
   Signed(..),
@@ -71,23 +72,28 @@ import Data.Text (Text)
 -- | The type of variables in first-order formulas.
 type Var = Integer
 
--- | The type of function and predicate symbols in first-order formulas.
-type Symbol = Text
+-- | The type of function symbols in first-order formulas.
+newtype FunctionSymbol = FunctionSymbol Text
+  deriving (Show, Eq, Ord, IsString)
 
 -- | The term in first-order logic.
 data Term
   = Variable Var
     -- ^ A quantified variable.
-  | Function Symbol [Term]
+  | Function FunctionSymbol [Term]
     -- ^ Application of a function symbol. The empty list of arguments
     -- represents a constant.
   deriving (Show, Eq, Ord)
+
+-- | The type of predicate symbols in first-order formulas.
+newtype PredicateSymbol = PredicateSymbol Text
+  deriving (Show, Eq, Ord, IsString)
 
 -- | The literal in first-order logic.
 data Literal
   = Constant Bool
     -- ^ A logical constant - tautology or falsum.
-  | Predicate Symbol [Term]
+  | Predicate PredicateSymbol [Term]
     -- ^ Application of a predicate symbol. The empty list of arguments
     -- represents a boolean constant.
   | Equality Term Term
@@ -219,25 +225,25 @@ type TernaryFunction = Term -> Term -> Term -> Term
 
 -- | Build a unary function from a function symbol.
 #if __GLASGOW_HASKELL__ == 800
-pattern UnaryFunction :: Symbol -> Term -> Term
+pattern UnaryFunction :: FunctionSymbol -> Term -> Term
 #else
-pattern UnaryFunction :: Symbol -> UnaryFunction
+pattern UnaryFunction :: FunctionSymbol -> UnaryFunction
 #endif
 pattern UnaryFunction f a = Function f [a]
 
 -- | Build a binary function from a function symbol.
 #if __GLASGOW_HASKELL__ == 800
-pattern BinaryFunction :: Symbol -> Term -> Term -> Term
+pattern BinaryFunction :: FunctionSymbol -> Term -> Term -> Term
 #else
-pattern BinaryFunction :: Symbol -> BinaryFunction
+pattern BinaryFunction :: FunctionSymbol -> BinaryFunction
 #endif
 pattern BinaryFunction f a b = Function f [a, b]
 
 -- | Build a ternary function from a function symbol.
 #if __GLASGOW_HASKELL__ == 800
-pattern TernaryFunction :: Symbol -> Term -> Term -> Term -> Term
+pattern TernaryFunction :: FunctionSymbol -> Term -> Term -> Term -> Term
 #else
-pattern TernaryFunction :: Symbol -> TernaryFunction
+pattern TernaryFunction :: FunctionSymbol -> TernaryFunction
 #endif
 pattern TernaryFunction f a b c = Function f [a, b, c]
 
@@ -259,25 +265,25 @@ type TernaryPredicate = Term -> Term -> Term -> Formula
 
 -- | Build a unary predicate from a predicate symbol.
 #if __GLASGOW_HASKELL__ == 800
-pattern UnaryPredicate :: Symbol -> Term -> Formula
+pattern UnaryPredicate :: PredicateSymbol -> Term -> Formula
 #else
-pattern UnaryPredicate :: Symbol -> UnaryPredicate
+pattern UnaryPredicate :: PredicateSymbol -> UnaryPredicate
 #endif
 pattern UnaryPredicate p a = Atomic (Predicate p [a])
 
 -- | Build a binary predicate from a predicate symbol.
 #if __GLASGOW_HASKELL__ == 800
-pattern BinaryPredicate :: Symbol -> Term -> Term -> Formula
+pattern BinaryPredicate :: PredicateSymbol -> Term -> Term -> Formula
 #else
-pattern BinaryPredicate :: Symbol -> BinaryPredicate
+pattern BinaryPredicate :: PredicateSymbol -> BinaryPredicate
 #endif
 pattern BinaryPredicate p a b = Atomic (Predicate p [a, b])
 
 -- | Build a ternary predicate from a predicate symbol.
 #if __GLASGOW_HASKELL__ == 800
-pattern TernaryPredicate :: Symbol -> Term -> Term -> Term -> Formula
+pattern TernaryPredicate :: PredicateSymbol -> Term -> Term -> Term -> Formula
 #else
-pattern TernaryPredicate :: Symbol -> TernaryPredicate
+pattern TernaryPredicate :: PredicateSymbol -> TernaryPredicate
 #endif
 pattern TernaryPredicate p a b c = Atomic (Predicate p [a, b, c])
 

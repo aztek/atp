@@ -66,13 +66,6 @@ prettyVar v = cyan . text $ genericIndex variables (abs v)
         index  = if n == 0 then "" else fmap ("₀₁₂₃₄₅₆₇₈₉" !!) (digits n)
         digits = fmap digitToInt . show
 
-prettySymbol :: Symbol -> Doc
-prettySymbol = text . T.unpack
-
-prettyFunction, prettyPredicate :: Symbol -> Doc
-prettyFunction  = prettySymbol
-prettyPredicate = prettySymbol
-
 sepBy :: Doc -> NonEmpty Doc -> Doc
 sepBy s = foldl1 (\a b -> a <+> s <+> b)
 
@@ -89,16 +82,22 @@ prettyParens simple e
   | simple e  = pretty e
   | otherwise = parens (pretty e)
 
+instance Pretty FunctionSymbol where
+  pretty (FunctionSymbol s) = text (T.unpack s)
+
 instance Pretty Term where
   pretty = \case
     Variable v    -> prettyVar v
-    Function f ts -> prettyApplication (prettyFunction f) (fmap pretty ts)
+    Function f ts -> prettyApplication (pretty f) (fmap pretty ts)
+
+instance Pretty PredicateSymbol where
+  pretty (PredicateSymbol p) = text (T.unpack p)
 
 instance Pretty Literal where
   pretty = \case
     Constant True  -> blue "⟙"
     Constant False -> blue "⟘"
-    Predicate p ts -> prettyApplication (prettyPredicate p) (fmap pretty ts)
+    Predicate p ts -> prettyApplication (pretty p) (fmap pretty ts)
     Equality a b   -> pretty a <+> "=" <+> pretty b
 
 instance Pretty (Signed Literal) where

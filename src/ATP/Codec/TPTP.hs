@@ -82,18 +82,18 @@ encodeVar v = TPTP.Var $ genericIndex variables (abs v)
 type Substitutions = EnumerationT TPTP.Var Partial
 
 -- | Encode a function symbol in TPTP.
-encodeFunction :: Symbol -> TPTP.Name TPTP.Function
-encodeFunction = TPTP.Defined . TPTP.Atom
+encodeFunction :: FunctionSymbol -> TPTP.Name TPTP.Function
+encodeFunction (FunctionSymbol s) = TPTP.Defined (TPTP.Atom s)
 
 -- | Decode a function symbol from TPTP.
-decodeFunction :: TPTP.Name s -> Partial Symbol
+decodeFunction :: TPTP.Name s -> Partial FunctionSymbol
 decodeFunction = \case
-  TPTP.Defined (TPTP.Atom s) -> return s
+  TPTP.Defined (TPTP.Atom s) -> return (FunctionSymbol s)
   TPTP.Reserved{} -> parsingError "reserved functions are not supported"
 
 -- | Encode a predicate symbol in TPTP.
-encodePredicate :: Symbol -> TPTP.Name TPTP.Predicate
-encodePredicate = TPTP.Defined . TPTP.Atom
+encodePredicate :: PredicateSymbol -> TPTP.Name TPTP.Predicate
+encodePredicate (PredicateSymbol p) = TPTP.Defined (TPTP.Atom p)
 
 -- | Encode a term in TPTP.
 encodeTerm :: Term -> TPTP.Term
@@ -128,7 +128,7 @@ decodeLiteral = \case
 
 decodePredicate :: TPTP.Name TPTP.Predicate -> Partial ([Term] -> Literal)
 decodePredicate = \case
-  TPTP.Defined  (TPTP.Atom p)                  -> return $ Predicate p
+  TPTP.Defined  (TPTP.Atom p)                  -> return $ Predicate (PredicateSymbol p)
   TPTP.Reserved (TPTP.Standard TPTP.Tautology) -> return $ const (Constant True)
   TPTP.Reserved (TPTP.Standard TPTP.Falsum)    -> return $ const (Constant False)
   TPTP.Reserved (TPTP.Standard p) ->

@@ -26,13 +26,18 @@ import ATP.FOL
 
 -- * Formulas
 
-instance Arbitrary Text where
-  arbitrary = pack <$> listOf1 (choose ('a', 'z'))
+deriving instance Generic FunctionSymbol
+instance Arbitrary FunctionSymbol where
+  arbitrary = FunctionSymbol . pack <$> listOf1 (choose ('a', 'z'))
 
 deriving instance Generic Term
 instance Arbitrary Term where
   arbitrary = genericArbitraryRec uniform
   shrink = genericShrink
+
+deriving instance Generic PredicateSymbol
+instance Arbitrary PredicateSymbol where
+  arbitrary = PredicateSymbol . pack <$> listOf1 (choose ('A', 'Z'))
 
 deriving instance Generic Literal
 instance Arbitrary Literal where
@@ -86,6 +91,9 @@ instance Arbitrary Theorem where
 
 
 -- * Proofs
+
+instance Arbitrary Text where
+  arbitrary = pack <$> listOf1 (choose ('a', 'z'))
 
 deriving instance Generic (Rule f)
 instance Arbitrary f => Arbitrary (Rule f) where
