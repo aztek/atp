@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 {-|
 Module       : ATP.Pretty.FOL
@@ -37,7 +38,7 @@ import ATP.Internal.Enumeration
 import ATP.Error
 import ATP.FOL
 import ATP.Proof
-import ATP.Prover (Prover(..))
+import ATP.Prover (Prover(..), vendorName)
 
 
 -- * Helper functions
@@ -249,11 +250,11 @@ instance Pretty Solution where
     Proof r -> pretty r
 
 instance Pretty Answer where
-  pretty (Answer p a) = case liftPartial a of
+  pretty (Answer Prover{vendor} a) = case liftPartial a of
     Left e -> red $ "Failed to find a solution because" <+> err e <> "." <> line
     Right s -> vsep [meta s, pretty s]
     where
-      name = bold . text . T.unpack $ proverName p
+      name = bold . text . T.unpack $ vendorName vendor
 
       err = \case
         ExitCodeError c e

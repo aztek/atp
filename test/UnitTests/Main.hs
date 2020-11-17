@@ -15,7 +15,7 @@ module UnitTests.Main (tests) where
 import Distribution.TestSuite (Test(..), TestInstance(..),
                                Progress(..), Result(..))
 import ATP
-import ATP.Error (liftPartial)
+import ATP.Error (Error(..), liftPartial)
 
 
 -- * Helpers
@@ -32,23 +32,30 @@ simpleTest nm progress = Test $ TestInstance {
   run       = progress
 }
 
-testCase :: String -> IO Answer -> (Solution -> Result) -> Test
-testCase nm answer testSolution = simpleTest nm r
-  where
-    r = fmap (Finished . testPartial . liftPartial . solution) answer
-    testPartial = \case
-      Left  e -> Error ("Failed to find a solution: " ++ show e)
-      Right s -> testSolution s
+testCase :: String -> (Either Error Solution -> Result) -> IO Answer -> Test
+testCase nm testAnswer = simpleTest nm
+                       . fmap (Finished . testAnswer . liftPartial . solution)
 
-expectSaturation :: Solution -> Result
-expectSaturation = \case
+expectSolution :: (Solution -> Result) -> Either Error Solution -> Result
+expectSolution testSolution = \case
+  Left  e -> Error ("Failed to find a solution: " ++ show e)
+  Right s -> testSolution s
+
+expectSaturation :: Either Error Solution -> Result
+expectSaturation = expectSolution $ \case
   Saturation{} -> Pass
   Proof{} -> Error "Unexpected proof"
 
-expectProof :: Solution -> Result
-expectProof = \case
+expectProof :: Either Error Solution -> Result
+expectProof = expectSolution $ \case
   Saturation{} -> Error "Unexpected saturation"
   Proof{} -> Pass
+
+expectTimeout :: Either Error Solution -> Result
+expectTimeout = \case
+  Left Timeout -> Pass
+  Left  e -> Error $ "Unexpected error " ++ show e
+  Right _ -> Error "Unexpected solution"
 
 
 -- * Test data
@@ -82,14 +89,15 @@ groupTheoryAxiom = [leftIdentity, leftInverse, associativity, groupOfOrder2] |- 
 
 tests :: IO [Test]
 tests = return $ fmap (uncurry3 testCase) [
-    ("E refutes an empty clause",       refute emptyClause,    expectProof),
-    ("E saturates an empty clause set", refute (ClauseSet []), expectSaturation),
+    ("E refutes an empty clause",       expectProof,      refute emptyClause),
+    ("E saturates an empty clause set", expectSaturation, refute (ClauseSet [])),
 
-    ("E proves tautology", prove (Claim Tautology), expectProof),
-    ("E saturates falsum", prove (Claim Falsum),    expectSaturation),
+    ("E proves tautology", expectProof,      prove (Claim Tautology)),
+    ("E saturates falsum", expectSaturation, prove (Claim Falsum)),
 
-    ("E proves syllogism",            prove syllogism,        expectProof),
-    ("E saturates negated syllogism", prove (negated syllogism), expectSaturation),
+    ("E proves syllogism",            expectProof,      prove syllogism),
+    ("E saturates negated syllogism", expectSaturation, prove (negated syllogism)),
 
-    ("E proves group theory axiom", prove groupTheoryAxiom, expectProof)
+    ("E proves group theory axiom", expectProof,   prove groupTheoryAxiom),
+    ("E reached time limit",        expectTimeout, proveWith defaultOptions{timeLimit=1} (negated groupTheoryAxiom))
   ]

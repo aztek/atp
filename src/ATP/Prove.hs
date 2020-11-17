@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-|
 Module       : ATP.Prove
@@ -23,7 +24,7 @@ module ATP.Prove (
 
 import Control.Monad (when)
 import Data.Text (Text)
-import qualified Data.Text as T (pack)
+import qualified Data.Text as T (pack, isInfixOf)
 import Data.TPTP (TPTP)
 import Data.TPTP.Parse.Text (parseTSTPOnly)
 import Data.TPTP.Pretty (pretty)
@@ -32,12 +33,13 @@ import System.Process (readProcessWithExitCode)
 import ATP.Error
 import ATP.FOL (ClauseSet, Theorem)
 import ATP.Codec.TPTP (encodeClauseSet, encodeTheorem, decodeSolution)
-import ATP.Prover (Prover(..), proverCmd, eprover)
+import ATP.Prover
 import ATP.Proof
 
 
 data ProvingOptions = ProvingOptions {
   prover :: Prover,
+  timeLimit :: Int, -- in seconds
   debug :: Bool
 } deriving (Eq, Show, Ord)
 
@@ -45,6 +47,7 @@ data ProvingOptions = ProvingOptions {
 defaultOptions :: ProvingOptions
 defaultOptions = ProvingOptions {
   prover = defaultProver,
+  timeLimit = 300,
   debug = False
 }
 
@@ -78,27 +81,35 @@ proveWith opts = runWith opts . encodeTheorem
 
 runWith :: ProvingOptions -> TPTP -> IO Answer
 runWith opts tptp = do
+  let ProvingOptions{prover} = opts
+  let Prover{vendor} = prover
   let input = show (pretty tptp)
   (exitCode, output, err) <- runProver opts input
-
-  let solution = case exitCode of
-                   ExitSuccess -> parseOutput output
-                   ExitFailure code -> exitCodeError code err
-
-  return (Answer (prover opts) solution)
+  let solution = parseSolution vendor exitCode output err
+  return (Answer prover solution)
 
 runProver :: ProvingOptions -> String -> IO (ExitCode, Text, Text)
 runProver opts input = do
-  let ProvingOptions{prover, debug} = opts
-  let Prover{cmdPath, cmdArgs} = prover
-  let printDebug str = when debug (putStrLn str >> putStrLn (replicate 80 '-'))
-
-  printDebug input
-  printDebug (proverCmd prover)
-  (exitCode, output, err) <- readProcessWithExitCode cmdPath cmdArgs input
-  printDebug output
-
+  let ProvingOptions{prover, timeLimit, debug} = opts
+  let Prover{vendor, executable} = prover
+  let command = proverCommand prover timeLimit
+  let arguments = proverArguments vendor timeLimit
+  let printDebug str = putStrLn str >> putStrLn (replicate 80 '-')
+  when debug (printDebug input)
+  when debug (printDebug command)
+  (exitCode, output, err) <- readProcessWithExitCode executable arguments input
+  when debug (printDebug $ show exitCode)
+  when debug (printDebug output)
+  when debug (printDebug err)
   return (exitCode, T.pack output, T.pack err)
+
+parseSolution :: Vendor -> ExitCode -> Text -> Text -> Partial Solution
+parseSolution vendor exitCode output err = case exitCode of
+  ExitSuccess -> parseOutput output
+  ExitFailure 1 | vendor == Vampire && "Time limit reached" `T.isInfixOf` output -> timeoutError
+  ExitFailure 1 | vendor == E -> parseOutput output
+  ExitFailure 8 | vendor == E -> timeoutError
+  ExitFailure errorCode -> exitCodeError errorCode err
 
 parseOutput :: Text -> Partial Solution
 parseOutput = either parsingError decodeSolution . parseTSTPOnly

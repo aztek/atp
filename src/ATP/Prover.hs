@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE LambdaCase #-}
 
 {-|
 Module       : ATP.Prover
@@ -11,8 +12,11 @@ Stability    : experimental
 -}
 
 module ATP.Prover (
+  Vendor(..),
+  vendorName,
   Prover(..),
-  proverCmd,
+  proverCommand,
+  proverArguments,
   vampire,
   eprover
 ) where
@@ -22,19 +26,40 @@ import Data.Text (Text)
 
 -- | The automated theorem prover.
 data Prover = Prover {
-  proverName :: Text,
-  cmdPath :: FilePath,
-  cmdArgs :: [String]
-} deriving (Show, Eq, Ord)
+  vendor :: Vendor,
+  executable :: FilePath
+} deriving (Eq, Show, Ord)
+
+data Vendor
+  = E
+  | Vampire
+  deriving (Eq, Show, Ord, Enum, Bounded)
+
+vendorName :: Vendor -> Text
+vendorName = \case
+  E -> "E"
+  Vampire -> "Vampire"
+
+proverCommand :: Prover -> Int -> String
+proverCommand Prover{vendor, executable} timeLimit =
+  unwords (executable:proverArguments vendor timeLimit)
 
 -- | Build a command that executes the given prover.
-proverCmd :: Prover -> String
-proverCmd Prover{cmdPath, cmdArgs} = unwords (cmdPath:cmdArgs)
+proverArguments :: Vendor -> Int -> [String]
+proverArguments vendor timeLimit = case vendor of
+  E       -> ["--proof-object", "--silent", "--soft-cpu-limit=" ++ show timeLimit]
+  Vampire -> ["--proof", "tptp", "--statistics", "none", "--time_limit", show timeLimit]
 
 -- | The <http://www.eprover.org/ E> theorem prover.
 eprover :: Prover
-eprover = Prover "E" "eprover" ["-p", "-s"]
+eprover = Prover {
+  vendor = E,
+  executable = "eprover"
+}
 
 -- | The <https://vprover.github.io/ Vampire> theorem prover.
 vampire :: Prover
-vampire = Prover "Vampire" "vampire" ["-p", "tptp", "-stat", "none"]
+vampire = Prover {
+  vendor = Vampire,
+  executable = "vampire"
+}
