@@ -1,5 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE CPP #-}
 
 {-|
@@ -14,6 +16,8 @@ Stability    : experimental
 module ATP.FirstOrder.Derivation (
   -- * Proofs
   Rule(..),
+  RuleName(..),
+  ruleName,
   Inference(..),
   antecedents,
   consequent,
@@ -34,6 +38,7 @@ import Data.Map (Map, (!))
 #if !MIN_VERSION_base(4, 11, 0)
 import Data.Semigroup (Semigroup)
 #endif
+import Data.String (IsString(..))
 import Data.Text (Text)
 
 import ATP.FirstOrder.Core
@@ -59,9 +64,34 @@ data Rule f
   | ForwardDemodulation   f f
   | BackwardDemodulation  f f
   | AxiomOfChoice
-  | Unknown    [f]
-  | Other Text [f]
+  | Unknown        [f]
+  | Other RuleName [f]
   deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
+
+-- | The name of an inference rule.
+newtype RuleName = RuleName { unRuleName :: Text }
+  deriving (Show, Eq, Ord, IsString)
+
+ruleName :: Rule f -> RuleName
+ruleName = \case
+  Axiom{}                 -> "axiom"
+  Conjecture{}            -> "conjecture"
+  NegatedConjecture{}     -> "negated conjecture"
+  Flattening{}            -> "flattening"
+  Skolemisation{}         -> "skolemisation"
+  EnnfTransformation{}    -> "ennf transformation"
+  NnfTransformation{}     -> "nnf transformation"
+  Clausification{}        -> "clausification"
+  TrivialInequality{}     -> "trivial inequality"
+  Superposition{}         -> "superposition"
+  Resolution{}            -> "resolution"
+  Paramodulation{}        -> "paramodulation"
+  SubsumptionResolution{} -> "subsumption resolution"
+  ForwardDemodulation{}   -> "forward demodulation"
+  BackwardDemodulation{}  -> "backward demodulation"
+  AxiomOfChoice{}         -> "axiom of choice"
+  Unknown{}               -> "unknown"
+  Other name _            -> name
 
 -- | A logical inference is an expression of the form
 --

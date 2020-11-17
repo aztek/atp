@@ -353,4 +353,4 @@ decodeInferenceRule (TPTP.Atom rule) as = case (rule, as) of
   ("subsumption_resolution",  [f, g]) -> SubsumptionResolution f g
   ("forward_demodulation",    [f, g]) -> ForwardDemodulation   f g
   ("backward_demodulation",   [f, g]) -> BackwardDemodulation  f g
-  _ -> Other rule as
+  _ -> Other (RuleName rule) as

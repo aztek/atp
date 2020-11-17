@@ -181,30 +181,19 @@ instance Pretty Theorem where
 -- * Pretty printer for proofs
 
 instance Pretty l => Pretty (Rule l) where
-  pretty rule = prettyRuleTag rule <> case nonEmpty (toList rule) of
+  pretty rule = pretty (ruleName rule) <> case nonEmpty (toList rule) of
     Just as -> space <> commaSep (fmap (bold . pretty) as)
     Nothing -> empty
 
-prettyRuleTag :: Rule l -> Doc
-prettyRuleTag = \case
-  Conjecture{}            -> yellow "conjecture"
-  NegatedConjecture{}     -> underline (yellow "negated conjecture")
-  Axiom{}                 -> yellow "axiom"
-  Flattening{}            -> yellow "flattening"
-  Skolemisation{}         -> yellow "skolemisation"
-  TrivialInequality{}     -> yellow "trivial inequality"
-  EnnfTransformation{}    -> yellow "ennf transformation"
-  NnfTransformation{}     -> yellow "nnf transformation"
-  Clausification{}        -> yellow "clausification"
-  Superposition{}         -> yellow "superposition"
-  Resolution{}            -> yellow "resolution"
-  Paramodulation{}        -> yellow "paramodulation"
-  SubsumptionResolution{} -> yellow "subsumption resolution"
-  ForwardDemodulation{}   -> yellow "forward demodulation"
-  BackwardDemodulation{}  -> yellow "backward demodulation"
-  AxiomOfChoice           -> yellow "axiom of choice"
-  Unknown{}               -> red "unknown"
-  Other name _            -> text (T.unpack name)
+instance Pretty RuleName where
+  pretty (RuleName rn) =
+    case rn of
+      "negated conjecture" -> underline (yellow name)
+      "unknown"            -> red name
+      "other"              -> name
+      _                    -> yellow name
+    where
+      name = text (T.unpack rn)
 
 instance Pretty l => Pretty (Inference l) where
   pretty (Inference r f) = pretty f <+> brackets (pretty r)

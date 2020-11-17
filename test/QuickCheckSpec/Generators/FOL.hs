@@ -18,7 +18,7 @@ module QuickCheckSpec.Generators.FOL () where
 import GHC.Generics (Generic)
 import Generic.Random (genericArbitraryU, genericArbitraryRec, (%), uniform)
 
-import Data.Text (Text, pack)
+import Data.Text (pack)
 import Test.QuickCheck (Arbitrary(..), listOf1, choose, genericShrink)
 
 import ATP.FOL
@@ -92,8 +92,8 @@ instance Arbitrary Theorem where
 
 -- * Proofs
 
-instance Arbitrary Text where
-  arbitrary = pack <$> listOf1 (choose ('a', 'z'))
+instance Arbitrary RuleName where
+  arbitrary = RuleName . pack <$> listOf1 (choose ('a', 'z'))
 
 deriving instance Generic (Rule f)
 instance Arbitrary f => Arbitrary (Rule f) where
