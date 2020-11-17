@@ -23,7 +23,7 @@ import Data.Text (Text)
 -- | The automated theorem prover.
 data Prover = Prover {
   proverName :: Text,
-  cmdPath :: String,
+  cmdPath :: FilePath,
   cmdArgs :: [String]
 } deriving (Show, Eq, Ord)
 
