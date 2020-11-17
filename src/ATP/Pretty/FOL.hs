@@ -262,14 +262,14 @@ instance Pretty Solution where
 
 instance Pretty Answer where
   pretty (Answer p a) = case liftPartial a of
-    Left e -> red $ "Failed to find a solution because" <+> err e <> "."
+    Left e -> red $ "Failed to find a solution because" <+> err e <> "." <> line
     Right s -> vsep [meta s, pretty s]
     where
       name = bold . text . T.unpack $ proverName p
 
       err = \case
         ExitCodeError c e
-          | T.null e  -> exitCode <> "."
+          | T.null e  -> exitCode
           | otherwise -> exitCode <+> "and the following error message."
                       <> line <> text (T.unpack e)
           where
