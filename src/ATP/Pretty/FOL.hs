@@ -272,5 +272,5 @@ instance Pretty Answer where
         OtherError   e -> "of the following error:" <+> text (T.unpack e)
 
       meta = \case
-        Saturation{} -> yellow $ "Disproven by constructing a saturated set of clauses using" <+> name <> "."
+        Saturation{} -> yellow $ "Disproven by constructing the saturated set of clauses using" <+> name <> "."
         Proof{} -> green $ "Found a proof by refutation using" <+> name <> "."
