@@ -51,6 +51,13 @@ pprint = putDoc . pretty
 hprint :: Pretty a => Handle -> a -> IO ()
 hprint h = hPutDoc h . pretty
 
+prettySequent :: Pretty a => Doc -> a -> Doc
+prettySequent h f = bold (h <> dot) <+> pretty f <> line
+
+prettySequents :: Pretty a => Doc -> [a] -> Doc
+prettySequents h = hcat . zipWith sequent [1..]
+  where sequent i = prettySequent (h <+> integer i)
+
 
 -- * Pretty printer for formulas
 
@@ -112,6 +119,8 @@ instance Pretty Clause where
     Nothing  -> pretty (Constant False)
     Just nls -> sepBy (pretty Or) (fmap pretty nls)
 
+  prettyList = prettySequents "Axiom"
+
 instance Pretty Connective where
   pretty = blue . \case
     And        -> "⋀"
@@ -134,6 +143,8 @@ instance Pretty Formula where
                     <+> prettyParens (under c) g
     Quantified q v f -> pretty q <+> prettyVar v <+> dot
                     <+> prettyParens unitary f
+
+  prettyList = prettySequents "Axiom"
 
 unitary :: Formula -> Bool
 unitary = \case
@@ -165,18 +176,10 @@ instance Pretty LogicalExpression where
 -- * Pretty printer for problems
 
 instance Pretty ClauseSet where
-  pretty (ClauseSet cs) = vsep (zipWith axiom [1..] cs) <> line
-    where
-      axiom i = sequent ("Axiom" <+> integer i)
-      sequent h f = bold (h <> dot) <+> pretty f
+  pretty (ClauseSet cs) = prettyList cs
 
 instance Pretty Theorem where
-  pretty = \case
-    Theorem as c -> vsep (zipWith axiom [1..] as ++ [conclusion c]) <> line
-      where
-        axiom i = sequent ("Axiom" <+> integer i)
-        conclusion = sequent "Conjecture"
-        sequent h f = bold (h <> dot) <+> pretty f
+  pretty (Theorem as c) = prettyList as <> prettySequent "Conjecture" c
 
 
 -- * Pretty printer for proofs
