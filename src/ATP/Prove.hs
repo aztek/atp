@@ -39,19 +39,28 @@ import ATP.Proof
 
 data ProvingOptions = ProvingOptions {
   prover :: Prover,
-  timeLimit :: Int, -- in seconds
-  debug :: Bool
+  timeLimit :: Int,   -- ^ In seconds
+  memoryLimit :: Int, -- ^ In Mb
+  debug :: Bool       -- ^ If @True@, print the input, the command,
+                      --   the exit code and the output
 } deriving (Eq, Show, Ord)
 
 -- | The default options used by 'refute' and 'prove'.
+--
+-- >>> defaultOptions 
+-- ProvingOptions {prover = Prover {vendor = E, executable = "eprover"}, timeLimit = 300, memoryLimit = 2000, debug = False}
 defaultOptions :: ProvingOptions
 defaultOptions = ProvingOptions {
   prover = defaultProver,
   timeLimit = 300,
+  memoryLimit = 2000,
   debug = False
 }
 
 -- | The default prover used by 'refute' and 'prove'.
+--
+-- >>> defaultProver
+-- Prover {vendor = E, executable = "eprover"}
 defaultProver :: Prover
 defaultProver = eprover
 
@@ -90,10 +99,10 @@ runWith opts tptp = do
 
 runProver :: ProvingOptions -> String -> IO (ExitCode, Text, Text)
 runProver opts input = do
-  let ProvingOptions{prover, timeLimit, debug} = opts
+  let ProvingOptions{prover, timeLimit, memoryLimit, debug} = opts
   let Prover{vendor, executable} = prover
-  let command = proverCommand prover timeLimit
-  let arguments = proverArguments vendor timeLimit
+  let command = proverCommand prover timeLimit memoryLimit
+  let arguments = proverArguments vendor timeLimit memoryLimit
   let printDebug str = putStrLn str >> putStrLn (replicate 80 '-')
   when debug (printDebug input)
   when debug (printDebug command)
@@ -106,9 +115,10 @@ runProver opts input = do
 parseSolution :: Vendor -> ExitCode -> Text -> Text -> Partial Solution
 parseSolution vendor exitCode output err = case exitCode of
   ExitSuccess -> parseOutput output
-  ExitFailure 1 | vendor == Vampire && "Time limit reached" `T.isInfixOf` output -> timeoutError
+  ExitFailure 1 | vendor == Vampire && "Time limit reached" `T.isInfixOf` output -> timeLimitError
+  ExitFailure 1 | vendor == Vampire && "Memory limit exceeded" `T.isInfixOf` output -> memoryLimitError
   ExitFailure 1 | vendor == E -> parseOutput output
-  ExitFailure 8 | vendor == E -> timeoutError
+  ExitFailure 8 | vendor == E -> timeLimitError
   ExitFailure errorCode -> exitCodeError errorCode err
 
 parseOutput :: Text -> Partial Solution

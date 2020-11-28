@@ -16,7 +16,8 @@ module ATP.Error (
   PartialT(..),
   liftPartial,
   exitCodeError,
-  timeoutError,
+  timeLimitError,
+  memoryLimitError,
   parsingError,
   proofError,
   otherError
@@ -32,8 +33,10 @@ import qualified Data.Text as T (pack)
 data Error
   = ExitCodeError Int Text
   -- ^ The theorem prover terminated with a non-zero exit code.
-  | Timeout
-  -- ^ The theorem prover terminated by the timeout without producing a proof.
+  | TimeLimitError
+  -- ^ The theorem prover reached the time limit without producing a solution.
+  | MemoryLimitError
+  -- ^ The theorem prover reached the memory limit without producing a solution.
   | ParsingError Text
   -- ^ The output of the theorem prover is not a well-formed TSTP.
   | ProofError Text
@@ -58,9 +61,13 @@ liftPartial = runExcept . runPartialT
 exitCodeError :: Monad m => Int -> Text -> PartialT m a
 exitCodeError exitCode err = PartialT (throwError $ ExitCodeError exitCode err)
 
--- | A smart constructor for a computation failed with a @'Timeout'@.
-timeoutError :: Monad m => PartialT m a
-timeoutError = PartialT (throwError Timeout)
+-- | A smart constructor for a computation failed with a @'TimeLimitError'@.
+timeLimitError :: Monad m => PartialT m a
+timeLimitError = PartialT (throwError TimeLimitError)
+
+-- | A smart constructor for a computation failed with a @'MemoryLimitError'@.
+memoryLimitError :: Monad m => PartialT m a
+memoryLimitError = PartialT (throwError MemoryLimitError)
 
 -- | A smart constructor for a computation failed with a @'ParsingError'@.
 parsingError :: Monad m => String -> PartialT m a

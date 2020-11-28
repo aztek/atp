@@ -40,15 +40,22 @@ vendorName = \case
   E -> "E"
   Vampire -> "Vampire"
 
-proverCommand :: Prover -> Int -> String
-proverCommand Prover{vendor, executable} timeLimit =
-  unwords (executable:proverArguments vendor timeLimit)
+proverCommand :: Prover -> Int -> Int -> String
+proverCommand Prover{vendor, executable} timeLimit memoryLimit =
+  unwords (executable:proverArguments vendor timeLimit memoryLimit)
 
 -- | Build a command that executes the given prover.
-proverArguments :: Vendor -> Int -> [String]
-proverArguments vendor timeLimit = case vendor of
-  E       -> ["--proof-object", "--silent", "--soft-cpu-limit=" ++ show timeLimit]
-  Vampire -> ["--proof", "tptp", "--statistics", "none", "--time_limit", show timeLimit]
+proverArguments :: Vendor -> Int -> Int -> [String]
+proverArguments vendor timeLimit memoryLimit = case vendor of
+  E       -> ["--proof-object",
+              "--silent",
+              "--soft-cpu-limit=" ++ show timeLimit,
+              "--memory-limit=" ++ show memoryLimit]
+
+  Vampire -> ["--proof", "tptp",
+              "--statistics", "none",
+              "--time_limit", show timeLimit,
+              "--memory_limit", show memoryLimit]
 
 -- | The <http://www.eprover.org/ E> theorem prover.
 eprover :: Prover

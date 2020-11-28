@@ -266,10 +266,11 @@ instance Pretty Answer where
                       <> line <> text (T.unpack e)
           where
             exitCode = name <+> "terminated with exit code" <+> bold (text $ show c)
-        Timeout -> name <+> "terminated by the timeout."
-        ParsingError e -> "of the following parsing error:" <+> text (T.unpack e)
-        ProofError   e -> "of the following problem with the proof:" <+> text (T.unpack e)
-        OtherError   e -> "of the following error:" <+> text (T.unpack e)
+        TimeLimitError   -> name <+> "reached the time limit"
+        MemoryLimitError -> name <+> "reached the memory limit"
+        ParsingError e   -> "of the following parsing error:" <+> text (T.unpack e)
+        ProofError   e   -> "of the following problem with the proof:" <+> text (T.unpack e)
+        OtherError   e   -> "of the following error:" <+> text (T.unpack e)
 
       meta = \case
         Saturation{} -> yellow $ "Disproven by constructing the saturated set of clauses using" <+> name <> "."
