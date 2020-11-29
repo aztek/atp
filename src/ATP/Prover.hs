@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE LambdaCase #-}
 
 {-|
 Module       : ATP.Prover
@@ -13,15 +12,12 @@ Stability    : experimental
 
 module ATP.Prover (
   Vendor(..),
-  vendorName,
   Prover(..),
   proverCommand,
   proverArguments,
   vampire,
   eprover
 ) where
-
-import Data.Text (Text)
 
 
 -- | The automated theorem prover.
@@ -30,21 +26,18 @@ data Prover = Prover {
   executable :: FilePath
 } deriving (Eq, Show, Ord)
 
+-- | The implementation of a theorem prover, supported by @atp@.
 data Vendor
   = E
   | Vampire
   deriving (Eq, Show, Ord, Enum, Bounded)
 
-vendorName :: Vendor -> Text
-vendorName = \case
-  E -> "E"
-  Vampire -> "Vampire"
-
+-- | Build the command that executes the given prover.
 proverCommand :: Prover -> Int -> Int -> String
 proverCommand Prover{vendor, executable} timeLimit memoryLimit =
   unwords (executable:proverArguments vendor timeLimit memoryLimit)
 
--- | Build a command that executes the given prover.
+-- | Build the list of command line arguments for the given prover.
 proverArguments :: Vendor -> Int -> Int -> [String]
 proverArguments vendor timeLimit memoryLimit = case vendor of
   E       -> ["--proof-object",

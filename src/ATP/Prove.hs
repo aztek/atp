@@ -38,10 +38,12 @@ import ATP.Prover
 import ATP.Proof
 
 
+-- | The options that describe what theorem prover to use for a problem and
+-- how to run it.
 data ProvingOptions = ProvingOptions {
   prover :: Prover,
-  timeLimit :: Int,   -- ^ In seconds
-  memoryLimit :: Int, -- ^ In Mb
+  timeLimit :: Int,   -- ^ The time limit given to the prover, in seconds
+  memoryLimit :: Int, -- ^ The memory limit given to the prover, in Mb
   debug :: Bool       -- ^ If @True@, print the input, the command,
                       --   the exit code and the output
 } deriving (Eq, Show, Ord)

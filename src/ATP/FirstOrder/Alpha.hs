@@ -11,24 +11,14 @@ Stability    : experimental
 -}
 
 module ATP.FirstOrder.Alpha (
-  Global,
-  Stack,
-
-  AlphaT(..),
-  runAlphaT,
+  AlphaT,
   evalAlphaT,
-  execAlphaT,
-
   Alpha,
-  runAlpha,
   evalAlpha,
-  execAlpha,
-
   lookup,
   scope,
   enter,
   share,
-
   MonadAlpha(..)
 ) where
 
@@ -45,9 +35,14 @@ import Data.Map (Map)
 import ATP.FirstOrder.Core
 
 
+-- | The stack of renamings for the bound variables in the expression.
 type Stack = [(Var, Var)]
+
+-- | The rename mapping for the free variables in the expression.
 type Global = Map Var Var
 
+-- | The monad transformer that adds to the given monad @m@ the ability to track
+-- a renaming of free and bound variables in a first-order expression.
 newtype AlphaT m a = AlphaT (ReaderT Stack (StateT Global m) a)
   deriving (Functor, Applicative, Monad, MonadReader Stack, MonadState Global)
 
@@ -57,23 +52,19 @@ instance MonadTrans AlphaT where
 runAlphaT :: AlphaT m a -> m (a, Global)
 runAlphaT (AlphaT r) = runStateT (runReaderT r []) M.empty
 
+-- | Evaluate an alpha computation and return the final value,
+-- discarding the global scope.
 evalAlphaT :: Monad m => AlphaT m a -> m a
 evalAlphaT = fmap fst . runAlphaT
 
-execAlphaT :: Monad m => AlphaT m a -> m Global
-execAlphaT = fmap snd . runAlphaT
 
-
+-- | The alpha monad parametrized by the type @a@ of the return value.
 type Alpha a = AlphaT Identity a
 
-runAlpha :: Alpha a -> (a, Global)
-runAlpha = runIdentity . runAlphaT
-
+-- | Evaluate an 'Alpha' computation and return the final value,
+-- discarding the final variable renaming.
 evalAlpha :: Alpha a -> a
 evalAlpha = runIdentity . evalAlphaT
-
-execAlpha :: Alpha a -> Global
-execAlpha = runIdentity . execAlphaT
 
 
 -- | Lookup a variable, first in the stack of bound variables,
@@ -84,12 +75,14 @@ lookup v = do
   fv <- gets (M.lookup v)
   return (bv <|> fv)
 
+-- | Read the set of free and bound variables of the given 'AlphaT' computation.
 scope :: Monad m => AlphaT m [Var]
 scope = do
   bv <- asks (fmap snd)
   fv <- gets M.elems
   return (bv ++ fv)
 
+-- | Run a computation inside 'AlphaT' with the variable renaming.
 enter :: Monad m => Var -> Var -> AlphaT m a -> AlphaT m a
 enter v w = local ((v,w):)
 

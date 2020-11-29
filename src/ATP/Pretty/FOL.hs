@@ -38,7 +38,7 @@ import ATP.Internal.Enumeration
 import ATP.Error
 import ATP.FOL
 import ATP.Proof
-import ATP.Prover (Prover(..), vendorName)
+import ATP.Prover (Prover(..))
 
 
 -- * Helper functions
@@ -257,7 +257,7 @@ instance Pretty Answer where
     Left e -> red $ "Failed to find a solution because" <+> err e <> "." <> line
     Right s -> vsep [meta s, pretty s]
     where
-      name = bold . text . T.unpack $ vendorName vendor
+      name = bold . text $ show vendor
 
       err = \case
         ExitCodeError c e

@@ -72,6 +72,10 @@ data Rule f
 newtype RuleName = RuleName { unRuleName :: Text }
   deriving (Show, Eq, Ord, IsString)
 
+-- | The name of the given inference rule.
+--
+-- >>> unRuleName (ruleName AxiomOfChoice)
+-- "axiom of choice"
 ruleName :: Rule f -> RuleName
 ruleName = \case
   Axiom{}                 -> "axiom"
@@ -99,8 +103,8 @@ ruleName = \case
 -- > ----------- R,
 -- >     C
 --
--- where each of @A_1@, ... @A_n@ (called 'antecedents'), and @C@
--- (called 'consequent') are formulas and @R@ is an inference 'Rule'.
+-- where each of @A_1@, ... @A_n@ (called the 'antecedents'), and @C@
+-- (called the 'consequent') are formulas and @R@ is an inference 'Rule'.
 data Inference f = Inference (Rule f) LogicalExpression
   deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
 
@@ -117,6 +121,8 @@ consequent (Inference _ e) = e
 newtype Contradiction f = Contradiction (Rule f)
   deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
 
+-- | A sequent is a logical inference, annotated with a label.
+-- Sequents are chained in 'Derivation's.
 data Sequent f = Sequent f (Inference f)
   deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
 
@@ -128,15 +134,20 @@ sequentMap ss = M.fromList [(f, e) | Sequent f e <- ss]
 labeling :: Ord f => [Sequent f] -> Map f LogicalExpression
 labeling = fmap consequent . sequentMap
 
+-- | A derivation is a directed asyclic graph of logical inferences.
+-- In this graph nodes are formulas and edges are inference rules.
+-- The type parameter @f@ is used to label and index the nodes.
 newtype Derivation f = Derivation (Map f (Inference f))
   deriving (Show, Eq, Ord, Semigroup, Monoid)
 
+-- | Attach a sequent to a derivation.
 addSequent :: Ord f => Derivation f -> Sequent f -> Derivation f
 addSequent (Derivation m) (Sequent f i) = Derivation (M.insert f i m)
 
 fromDerivation :: Derivation f -> [Sequent f]
 fromDerivation (Derivation m) = fmap (uncurry Sequent) (M.toList m)
 
+-- | Traverse the given derivation breadth-first and produce a list of sequents.
 breadthFirst :: Ord f => Derivation f -> [Sequent f]
 breadthFirst d = sortBy (compare `on` criteria) (fromDerivation d)
   where criteria (Sequent l (Inference r f)) = (distances d ! l, r, f)
@@ -148,5 +159,8 @@ distances (Derivation m) = fmap distance m
       | null (antecedents i) = 0
       | otherwise = 1 + maximum (fmap (\a -> distance (m ! a)) (antecedents i))
 
+-- | A refutation is a special case of a derivation that results in
+-- contradiction. A successful proof produces by an automated theorem prover is
+-- a proof by refutation.
 data Refutation f = Refutation (Derivation f) (Contradiction f)
   deriving (Show, Eq, Ord)
