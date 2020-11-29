@@ -30,6 +30,7 @@ import Data.TPTP.Parse.Text (parseTSTPOnly)
 import Data.TPTP.Pretty (pretty)
 import System.Exit (ExitCode(..))
 import System.Process (readProcessWithExitCode)
+import Text.PrettyPrint.ANSI.Leijen (bold, text)
 import ATP.Error
 import ATP.FOL (ClauseSet, Theorem)
 import ATP.Codec.TPTP (encodeClauseSet, encodeTheorem, decodeSolution)
@@ -103,13 +104,15 @@ runProver opts input = do
   let Prover{vendor, executable} = prover
   let command = proverCommand prover timeLimit memoryLimit
   let arguments = proverArguments vendor timeLimit memoryLimit
-  let printDebug str = putStrLn str >> putStrLn (replicate 80 '-')
-  when debug (printDebug input)
-  when debug (printDebug command)
+  let debugPrint header str = when debug $
+                              print (bold (text header)) >>
+                              putStrLn str >> putStr "\n"
+  debugPrint "Input" input
+  debugPrint "Command" command
   (exitCode, output, err) <- readProcessWithExitCode executable arguments input
-  when debug (printDebug $ show exitCode)
-  when debug (printDebug output)
-  when debug (printDebug err)
+  debugPrint "Exit code" (show exitCode)
+  debugPrint "Standard output" output
+  debugPrint "Standard error" err
   return (exitCode, T.pack output, T.pack err)
 
 parseSolution :: Vendor -> ExitCode -> Text -> Text -> Partial Solution
