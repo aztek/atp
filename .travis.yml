@@ -25,7 +25,7 @@ install:
   - ghc --version
   - cabal --version
   - cabal new-update
-  - cabal new-build -fWerror --enable-tests
+  - cabal new-build -fWerror -fprovers --enable-tests
 
 script:
   - cabal new-test

@@ -15,7 +15,7 @@ module UnitTests.Main (tests) where
 import Distribution.TestSuite (Test(..), TestInstance(..),
                                Progress(..), Result(..))
 import ATP
-import ATP.Error (Error(..), liftPartial)
+import ATP.Error (Error(..), Partial, liftPartial)
 
 
 -- * Helpers
@@ -32,9 +32,8 @@ simpleTest nm progress = Test $ TestInstance {
   run       = progress
 }
 
-testCase :: String -> (Either Error Solution -> Result) -> IO Answer -> Test
-testCase nm testAnswer = simpleTest nm
-                       . fmap (Finished . testAnswer . liftPartial . solution)
+testCase :: String -> (Either Error Solution -> Result) -> IO (Partial Solution) -> Test
+testCase nm testAnswer = simpleTest nm . fmap (Finished . testAnswer . liftPartial)
 
 expectSolution :: (Solution -> Result) -> Either Error Solution -> Result
 expectSolution testSolution = \case
@@ -51,9 +50,9 @@ expectProof = expectSolution $ \case
   Saturation{} -> Error "Unexpected saturation"
   Proof{} -> Pass
 
-expectTimeout :: Either Error Solution -> Result
-expectTimeout = \case
-  Left Timeout -> Pass
+expectTimLimitError :: Either Error Solution -> Result
+expectTimLimitError = \case
+  Left TimeLimitError -> Pass
   Left  e -> Error $ "Unexpected error " ++ show e
   Right _ -> Error "Unexpected solution"
 
@@ -98,6 +97,6 @@ tests = return $ fmap (uncurry3 testCase) [
     ("E proves syllogism",            expectProof,      prove syllogism),
     ("E saturates negated syllogism", expectSaturation, prove (negated syllogism)),
 
-    ("E proves group theory axiom", expectProof,   prove groupTheoryAxiom),
-    ("E reached time limit",        expectTimeout, proveWith defaultOptions{timeLimit=1} (negated groupTheoryAxiom))
+    ("E proves group theory axiom", expectProof,         prove groupTheoryAxiom),
+    ("E reached time limit",        expectTimLimitError, proveWith defaultOptions{timeLimit=1} (negated groupTheoryAxiom))
   ]
