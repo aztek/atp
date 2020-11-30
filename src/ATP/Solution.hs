@@ -1,5 +1,5 @@
 {-|
-Module       : ATP.Proof
+Module       : ATP.Solution
 Description  : Solutions to first-order problems.
 Copyright    : (c) Evgenii Kotelnikov, 2019
 License      : GPL-3
@@ -7,7 +7,7 @@ Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
 -}
 
-module ATP.Proof (
+module ATP.Solution (
   Answer(..),
   Solution(..)
 ) where

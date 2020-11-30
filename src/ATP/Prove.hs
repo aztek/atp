@@ -31,11 +31,12 @@ import Data.TPTP.Pretty (pretty)
 import System.Exit (ExitCode(..))
 import System.Process (readProcessWithExitCode)
 import Text.PrettyPrint.ANSI.Leijen (bold, text)
+
 import ATP.Error
 import ATP.FOL (ClauseSet, Theorem)
 import ATP.Codec.TPTP (encodeClauseSet, encodeTheorem, decodeSolution)
 import ATP.Prover
-import ATP.Proof
+import ATP.Solution
 
 
 -- | The options that describe what theorem prover to use for a problem and

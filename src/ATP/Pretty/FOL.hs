@@ -38,7 +38,7 @@ import ATP.Internal.Enumeration
 
 import ATP.Error
 import ATP.FOL
-import ATP.Proof
+import ATP.Solution
 import ATP.Prover (Prover(..))
 
 

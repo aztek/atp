@@ -46,9 +46,9 @@ library
     ATP.Error
     ATP.FOL
     ATP.Pretty.FOL
-    ATP.Proof
     ATP.Prove
     ATP.Prover
+    ATP.Solution
   other-modules:
     ATP.Internal.Enumeration
     ATP.FirstOrder.Core

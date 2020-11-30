@@ -10,13 +10,13 @@ Stability    : experimental
 module ATP (
   module ATP.FOL,
   module ATP.Pretty.FOL,
-  module ATP.Proof,
   module ATP.Prove,
-  module ATP.Prover
+  module ATP.Prover,
+  module ATP.Solution
 ) where
 
 import ATP.FOL
 import ATP.Pretty.FOL
-import ATP.Proof
 import ATP.Prove
 import ATP.Prover
+import ATP.Solution
