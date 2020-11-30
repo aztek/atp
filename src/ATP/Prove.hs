@@ -99,7 +99,7 @@ runWith opts tptp = do
   let input = show (pretty tptp)
   (exitCode, output, err) <- runProver opts input
   let solution = parseSolution vendor exitCode output err
-  return (Answer prover solution)
+  return (Answer vendor solution)
 
 runProver :: ProvingOptions -> String -> IO (ExitCode, Text, Text)
 runProver opts input = do

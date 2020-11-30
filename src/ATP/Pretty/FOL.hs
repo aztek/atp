@@ -39,7 +39,6 @@ import ATP.Internal.Enumeration
 import ATP.Error
 import ATP.FOL
 import ATP.Solution
-import ATP.Prover (Prover(..))
 
 
 -- * Helper functions
@@ -254,10 +253,8 @@ instance Pretty Solution where
     Proof r -> pretty r
 
 instance Pretty Answer where
-  pretty (Answer p a) = vsep $ either prettyError prettySolution (liftPartial a)
+  pretty (Answer v a) = vsep $ either prettyError prettySolution (liftPartial a)
     where
-      Prover{vendor} = p
-
       strong :: Show a => a -> Doc
       strong = bold . text . show
 
@@ -265,12 +262,12 @@ instance Pretty Answer where
                     : fmap (red . text . T.unpack) (maybeToList $ errMsg e)
 
       err = \case
-        TimeLimitError    -> strong vendor <+> "reached the time limit"
-        MemoryLimitError  -> strong vendor <+> "reached the memory limit"
+        TimeLimitError    -> strong v <+> "reached the time limit"
+        MemoryLimitError  -> strong v <+> "reached the memory limit"
         ParsingError{}    -> "of the following parsing error"
         ProofError{}      -> "of the following problem with the proof"
         OtherError{}      -> "of the following error"
-        ExitCodeError c _ -> strong vendor <+> "terminated with exit code" <+>
+        ExitCodeError c _ -> strong v <+> "terminated with exit code" <+>
                              strong c <+> "and the following error message"
 
       errMsg = \case
@@ -288,6 +285,6 @@ instance Pretty Answer where
         Proof{} -> green proven
 
       saturated = "Disproven by constructing the saturated set of clauses" <+>
-                  "using" <+> strong vendor <> "."
+                  "using" <+> strong v <> "."
 
-      proven = "Found a proof by refutation using" <+> strong vendor <> "."
+      proven = "Found a proof by refutation using" <+> strong v <> "."

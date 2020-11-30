@@ -20,7 +20,7 @@ import ATP.Error
 -- | The proof by refutation with additional meta information such as which
 -- prover found it.
 data Answer = Answer {
-  proofMeta :: Prover,
+  proofMeta :: Vendor,
   solution  :: Partial Solution
 } deriving (Show, Eq, Ord)
 
