@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE LambdaCase #-}
 
 {-|
 Module       : ATP.Prover
@@ -15,9 +16,16 @@ module ATP.Prover (
   Prover(..),
   proverCommand,
   proverArguments,
+  proverOutput,
   vampire,
   eprover
 ) where
+
+import Data.Text (Text)
+import qualified Data.Text as T (isInfixOf)
+import System.Exit (ExitCode(..))
+
+import ATP.Error
 
 
 -- | The automated theorem prover.
@@ -39,16 +47,31 @@ proverCommand Prover{vendor, executable} timeLimit memoryLimit =
 
 -- | Build the list of command line arguments for the given prover.
 proverArguments :: Vendor -> Int -> Int -> [String]
-proverArguments vendor timeLimit memoryLimit = case vendor of
-  E       -> ["--proof-object",
-              "--silent",
-              "--soft-cpu-limit=" ++ show timeLimit,
-              "--memory-limit=" ++ show memoryLimit]
+proverArguments E timeLimit memoryLimit =
+  ["--proof-object",
+   "--silent",
+   "--soft-cpu-limit=" ++ show timeLimit,
+   "--memory-limit=" ++ show memoryLimit]
+proverArguments Vampire timeLimit memoryLimit =
+  ["--proof", "tptp",
+   "--statistics", "none",
+   "--time_limit", show timeLimit,
+   "--memory_limit", show memoryLimit]
 
-  Vampire -> ["--proof", "tptp",
-              "--statistics", "none",
-              "--time_limit", show timeLimit,
-              "--memory_limit", show memoryLimit]
+-- | Interpret the output of the theorem prover from its exit code and
+-- the contents of the returned stdout and stderr.
+proverOutput :: Vendor -> ExitCode -> Text -> Text -> Partial Text
+proverOutput E exitCode stdout stderr = case exitCode of
+  ExitSuccess   -> return stdout
+  ExitFailure 1 -> return stdout
+  ExitFailure 8 -> timeLimitError
+  ExitFailure c -> exitCodeError c stderr
+proverOutput Vampire exitCode stdout stderr = case exitCode of
+  ExitSuccess   -> return stdout
+  ExitFailure 1
+    | "Time limit reached"    `T.isInfixOf` stdout -> timeLimitError
+    | "Memory limit exceeded" `T.isInfixOf` stdout -> memoryLimitError
+  ExitFailure c -> exitCodeError c stderr
 
 -- | The <http://www.eprover.org/ E> theorem prover.
 eprover :: Prover

@@ -24,7 +24,7 @@ module ATP.Prove (
 
 import Control.Monad (when)
 import Data.Text (Text)
-import qualified Data.Text as T (pack, isInfixOf)
+import qualified Data.Text as T (pack)
 import Data.TPTP (TPTP)
 import Data.TPTP.Parse.Text (parseTSTPOnly)
 import Data.TPTP.Pretty (pretty)
@@ -51,7 +51,7 @@ data ProvingOptions = ProvingOptions {
 
 -- | The default options used by 'refute' and 'prove'.
 --
--- >>> defaultOptions 
+-- >>> defaultOptions
 -- ProvingOptions {prover = Prover {vendor = E, executable = "eprover"}, timeLimit = 300, memoryLimit = 2000, debug = False}
 defaultOptions :: ProvingOptions
 defaultOptions = ProvingOptions {
@@ -97,8 +97,9 @@ runWith opts tptp = do
   let ProvingOptions{prover} = opts
   let Prover{vendor} = prover
   let input = show (pretty tptp)
-  (exitCode, output, err) <- runProver opts input
-  let solution = parseSolution vendor exitCode output err
+  (exitCode, stdout, stderr) <- runProver opts input
+  let output = proverOutput vendor exitCode stdout stderr
+  let solution = output >>= parseSolution
   return (Answer vendor solution)
 
 runProver :: ProvingOptions -> String -> IO (ExitCode, Text, Text)
@@ -112,20 +113,11 @@ runProver opts input = do
                               putStrLn str >> putStr "\n"
   debugPrint "Input" input
   debugPrint "Command" command
-  (exitCode, output, err) <- readProcessWithExitCode executable arguments input
+  (exitCode, stdout, stderr) <- readProcessWithExitCode executable arguments input
   debugPrint "Exit code" (show exitCode)
-  debugPrint "Standard output" output
-  debugPrint "Standard error" err
-  return (exitCode, T.pack output, T.pack err)
+  debugPrint "Standard output" stdout
+  debugPrint "Standard error"  stderr
+  return (exitCode, T.pack stdout, T.pack stderr)
 
-parseSolution :: Vendor -> ExitCode -> Text -> Text -> Partial Solution
-parseSolution vendor exitCode output err = case exitCode of
-  ExitSuccess -> parseOutput output
-  ExitFailure 1 | vendor == Vampire && "Time limit reached" `T.isInfixOf` output -> timeLimitError
-  ExitFailure 1 | vendor == Vampire && "Memory limit exceeded" `T.isInfixOf` output -> memoryLimitError
-  ExitFailure 1 | vendor == E -> parseOutput output
-  ExitFailure 8 | vendor == E -> timeLimitError
-  ExitFailure errorCode -> exitCodeError errorCode err
-
-parseOutput :: Text -> Partial Solution
-parseOutput = either parsingError decodeSolution . parseTSTPOnly
+parseSolution :: Text -> Partial Solution
+parseSolution = either parsingError decodeSolution . parseTSTPOnly
