@@ -41,7 +41,6 @@ import qualified Data.TPTP as TPTP
 import ATP.Internal.Enumeration
 import ATP.Error
 import ATP.FOL
-import ATP.Solution
 
 
 -- * Coding and decoding

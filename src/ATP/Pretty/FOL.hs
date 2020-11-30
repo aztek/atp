@@ -28,7 +28,6 @@ import Data.Functor (($>))
 import Data.List (genericIndex, find)
 import Data.List.NonEmpty (NonEmpty(..), nonEmpty)
 import Data.Map (Map, (!))
-import Data.Maybe (maybeToList)
 import qualified Data.Text as T (unpack, null)
 import System.IO (Handle)
 
@@ -38,7 +37,6 @@ import ATP.Internal.Enumeration
 
 import ATP.Error
 import ATP.FOL
-import ATP.Solution
 
 
 -- * Helper functions
@@ -249,28 +247,30 @@ triviallyClausified f c
 
 instance Pretty Solution where
   pretty = \case
-    Saturation d -> pretty d
-    Proof r -> pretty r
-
-instance Pretty Answer where
-  pretty (Answer v a) = vsep $ either prettyError prettySolution (liftPartial a)
+    Saturation d -> vsep [yellow saturated, pretty d]
+    Proof r      -> vsep [green proven,     pretty r]
     where
-      strong :: Show a => a -> Doc
-      strong = bold . text . show
+      saturated = "Disproven by constructing the saturated set of clauses."
+      proven = "Found a proof by refutation."
 
-      prettyError e = red ("Failed to find a solution because" <+> err e <> ".")
-                    : fmap (red . text . T.unpack) (maybeToList $ errMsg e)
+instance Pretty Error where
+  pretty err = red $ case explanation of
+                       Just ex -> vsep [failure, ex]
+                       Nothing -> failure
+    where
+      failure = "Failed to find a solution because" <+> reason <> "."
 
-      err = \case
-        TimeLimitError    -> strong v <+> "reached the time limit"
-        MemoryLimitError  -> strong v <+> "reached the memory limit"
+      reason = case err of
+        TimeLimitError    -> "the theorem prover exceeded its time limit"
+        MemoryLimitError  -> "the theorem prover exceeded its memory limit"
         ParsingError{}    -> "of the following parsing error"
         ProofError{}      -> "of the following problem with the proof"
         OtherError{}      -> "of the following error"
-        ExitCodeError c _ -> strong v <+> "terminated with exit code" <+>
-                             strong c <+> "and the following error message"
+        ExitCodeError c _ -> "the theorem prover terminated with exit code" <+>
+                             bold exitCode <+> "and the following error message"
+          where exitCode = text (show c)
 
-      errMsg = \case
+      explanation = fmap (text . T.unpack) $ case err of
         TimeLimitError    -> Nothing
         MemoryLimitError  -> Nothing
         ParsingError e    -> Just e
@@ -278,13 +278,5 @@ instance Pretty Answer where
         OtherError   e    -> Just e
         ExitCodeError _ e -> if T.null e then Nothing else Just e
 
-      prettySolution s = [meta s, pretty s]
-
-      meta = \case
-        Saturation{} -> yellow saturated
-        Proof{} -> green proven
-
-      saturated = "Disproven by constructing the saturated set of clauses" <+>
-                  "using" <+> strong v <> "."
-
-      proven = "Found a proof by refutation using" <+> strong v <> "."
+instance Pretty a => Pretty (Partial a) where
+  pretty = either pretty pretty . liftPartial

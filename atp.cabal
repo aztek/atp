@@ -48,7 +48,6 @@ library
     ATP.Pretty.FOL
     ATP.Prove
     ATP.Prover
-    ATP.Solution
   other-modules:
     ATP.Internal.Enumeration
     ATP.FirstOrder.Core

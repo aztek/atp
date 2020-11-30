@@ -33,20 +33,19 @@ import System.Process (readProcessWithExitCode)
 import Text.PrettyPrint.ANSI.Leijen (bold, text)
 
 import ATP.Error
-import ATP.FOL (ClauseSet, Theorem)
+import ATP.FOL (ClauseSet, Theorem, Solution)
 import ATP.Codec.TPTP (encodeClauseSet, encodeTheorem, decodeSolution)
 import ATP.Prover
-import ATP.Solution
 
 
 -- | The options that describe what theorem prover to use for a problem and
 -- how to run it.
 data ProvingOptions = ProvingOptions {
-  prover :: Prover,
-  timeLimit :: Int,   -- ^ The time limit given to the prover, in seconds
-  memoryLimit :: Int, -- ^ The memory limit given to the prover, in Mb
-  debug :: Bool       -- ^ If @True@, print the input, the command,
-                      --   the exit code and the output
+  prover      :: Prover,
+  timeLimit   :: Int,    -- ^ The time limit given to the prover, in seconds
+  memoryLimit :: Int,    -- ^ The memory limit given to the prover, in Mb
+  debug       :: Bool    -- ^ If @True@, print the input, the cli command,
+                         --   the exit code and the output of the prover
 } deriving (Eq, Show, Ord)
 
 -- | The default options used by 'refute' and 'prove'.
@@ -69,30 +68,30 @@ defaultProver :: Prover
 defaultProver = eprover
 
 -- | Attempt to refute a set of clauses using 'defaultProver'.
-refute :: ClauseSet -> IO Answer
+refute :: ClauseSet -> IO (Partial Solution)
 refute = refuteWith defaultOptions
 
 -- | Attempt to refute a set of clauses using a given prover.
-refuteUsing :: Prover -> ClauseSet -> IO Answer
+refuteUsing :: Prover -> ClauseSet -> IO (Partial Solution)
 refuteUsing p = refuteWith defaultOptions{prover = p}
 
 -- | Attempt to refute a set of clauses with a given set of options.
-refuteWith :: ProvingOptions -> ClauseSet -> IO Answer
+refuteWith :: ProvingOptions -> ClauseSet -> IO (Partial Solution)
 refuteWith opts = runWith opts . encodeClauseSet
 
 -- | Attempt to prove a theorem using 'defaultProver'.
-prove :: Theorem -> IO Answer
+prove :: Theorem -> IO (Partial Solution)
 prove = proveWith defaultOptions
 
 -- | Attempt to prove a theorem using a given prover.
-proveUsing :: Prover -> Theorem -> IO Answer
+proveUsing :: Prover -> Theorem -> IO (Partial Solution)
 proveUsing p = proveWith defaultOptions{prover = p}
 
 -- | Attempt to prove a theorem with a given set of options.
-proveWith :: ProvingOptions -> Theorem -> IO Answer
+proveWith :: ProvingOptions -> Theorem -> IO (Partial Solution)
 proveWith opts = runWith opts . encodeTheorem
 
-runWith :: ProvingOptions -> TPTP -> IO Answer
+runWith :: ProvingOptions -> TPTP -> IO (Partial Solution)
 runWith opts tptp = do
   let ProvingOptions{prover} = opts
   let Prover{vendor} = prover
@@ -100,7 +99,7 @@ runWith opts tptp = do
   (exitCode, stdout, stderr) <- runProver opts input
   let output = proverOutput vendor exitCode stdout stderr
   let solution = output >>= parseSolution
-  return (Answer vendor solution)
+  return solution
 
 runProver :: ProvingOptions -> String -> IO (ExitCode, Text, Text)
 runProver opts input = do
