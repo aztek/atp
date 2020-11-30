@@ -39,7 +39,8 @@ module ATP.FOL (
   module ATP.FirstOrder.Occurrence,
   module ATP.FirstOrder.Conversion,
   module ATP.FirstOrder.Problem,
-  module ATP.FirstOrder.Derivation
+  module ATP.FirstOrder.Derivation,
+  module ATP.FirstOrder.Solution
 ) where
 
 import ATP.FirstOrder.Core
@@ -50,3 +51,4 @@ import ATP.FirstOrder.Occurrence
 import ATP.FirstOrder.Conversion
 import ATP.FirstOrder.Problem
 import ATP.FirstOrder.Derivation
+import ATP.FirstOrder.Solution

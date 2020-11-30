@@ -58,6 +58,7 @@ library
     ATP.FirstOrder.Conversion
     ATP.FirstOrder.Problem
     ATP.FirstOrder.Derivation
+    ATP.FirstOrder.Solution
   ghc-options:
     -Wall
   if flag(Werror)

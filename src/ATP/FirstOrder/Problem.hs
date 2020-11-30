@@ -18,10 +18,7 @@ module ATP.FirstOrder.Problem (
   -- * Theorems
   Theorem(..),
   (|-),
-  pattern Claim,
-
-  -- * Solutions
-  Solution(..)
+  pattern Claim
 ) where
 
 import qualified Data.Foldable as Foldable (toList)
@@ -30,7 +27,6 @@ import Data.Semigroup (Semigroup(..))
 #endif
 
 import ATP.FirstOrder.Core
-import ATP.FirstOrder.Derivation
 
 
 -- * Clause sets
@@ -58,16 +54,3 @@ as |- c = Theorem (Foldable.toList as) c
 -- | A logical claim is a conjecture entailed by the empty set of axioms.
 pattern Claim :: Formula -> Theorem
 pattern Claim f = Theorem [] f
-
--- * Solution
-
--- | The successful solution produced by an automated theorem prover for
--- first-order logic.
-data Solution
-  = Saturation (Derivation Integer)
-  -- ^ A theorem can be disproven if the prover constructs a saturated set of
-  -- firt-order clauses.
-  | Proof (Refutation Integer)
-  -- ^ A theorem can be proven if the prover derives contradiction (the empty
-  -- clause) from the set of axioms and the negated conjecture.
-  deriving (Show, Eq, Ord)
