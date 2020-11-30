@@ -28,6 +28,7 @@ import Data.Functor (($>))
 import Data.List (genericIndex, find)
 import Data.List.NonEmpty (NonEmpty(..), nonEmpty)
 import Data.Map (Map, (!))
+import Data.Maybe (maybeToList)
 import qualified Data.Text as T (unpack, null)
 import System.IO (Handle)
 
@@ -253,25 +254,40 @@ instance Pretty Solution where
     Proof r -> pretty r
 
 instance Pretty Answer where
-  pretty (Answer Prover{vendor} a) = case liftPartial a of
-    Left e -> red $ "Failed to find a solution because" <+> err e <> "." <> line
-    Right s -> vsep [meta s, pretty s]
+  pretty (Answer p a) = vsep $ either prettyError prettySolution (liftPartial a)
     where
-      name = bold . text $ show vendor
+      Prover{vendor} = p
+
+      strong :: Show a => a -> Doc
+      strong = bold . text . show
+
+      prettyError e = red ("Failed to find a solution because" <+> err e <> ".")
+                    : fmap (red . text . T.unpack) (maybeToList $ errMsg e)
 
       err = \case
-        ExitCodeError c e
-          | T.null e  -> exitCode
-          | otherwise -> exitCode <+> "and the following error message."
-                      <> line <> text (T.unpack e)
-          where
-            exitCode = name <+> "terminated with exit code" <+> bold (text $ show c)
-        TimeLimitError   -> name <+> "reached the time limit"
-        MemoryLimitError -> name <+> "reached the memory limit"
-        ParsingError e   -> "of the following parsing error:" <+> text (T.unpack e)
-        ProofError   e   -> "of the following problem with the proof:" <+> text (T.unpack e)
-        OtherError   e   -> "of the following error:" <+> text (T.unpack e)
+        TimeLimitError    -> strong vendor <+> "reached the time limit"
+        MemoryLimitError  -> strong vendor <+> "reached the memory limit"
+        ParsingError{}    -> "of the following parsing error"
+        ProofError{}      -> "of the following problem with the proof"
+        OtherError{}      -> "of the following error"
+        ExitCodeError c _ -> strong vendor <+> "terminated with exit code" <+>
+                             strong c <+> "and the following error message"
+
+      errMsg = \case
+        TimeLimitError    -> Nothing
+        MemoryLimitError  -> Nothing
+        ParsingError e    -> Just e
+        ProofError   e    -> Just e
+        OtherError   e    -> Just e
+        ExitCodeError _ e -> if T.null e then Nothing else Just e
+
+      prettySolution s = [meta s, pretty s]
 
       meta = \case
-        Saturation{} -> yellow $ "Disproven by constructing the saturated set of clauses using" <+> name <> "."
-        Proof{} -> green $ "Found a proof by refutation using" <+> name <> "."
+        Saturation{} -> yellow saturated
+        Proof{} -> green proven
+
+      saturated = "Disproven by constructing the saturated set of clauses" <+>
+                  "using" <+> strong vendor <> "."
+
+      proven = "Found a proof by refutation using" <+> strong vendor <> "."
