@@ -6,7 +6,7 @@ description:
   Express theorems in first-order logic and automatically prove them using
   third-party reasoning tools.
 homepage: https://github.com/aztek/atp
-bug-reports: https://github.com/aztek/tptp/issues
+bug-reports: https://github.com/aztek/atp/issues
 license: GPL-3.0-only
 license-file: LICENSE
 author: Evgenii Kotelnikov
