@@ -254,7 +254,7 @@ encodeTheorem (Theorem as c) = TPTP.TPTP units
 -- | Decode a solution from a TSTP output.
 decodeSolution :: TPTP.TSTP -> Partial Solution
 decodeSolution (TPTP.TSTP szs units)
-  | TPTP.SZS (Just (Right status)) (Just _dataform) <- szs = if
+  | TPTP.SZS (Just (Right status)) _dataform <- szs = if
     | isProof status -> Proof <$> decodeRefutation units
     | isSaturation status -> Saturation <$> decodeDerivation units
     | otherwise -> parsingError $ "unsupported SZS " <> show status
