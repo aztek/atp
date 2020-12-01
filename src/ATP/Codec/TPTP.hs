@@ -237,7 +237,7 @@ decodeSignedLiteralS (s, l) = sign (decodeSign s) <$> decodeLiteral l
 
 -- | Encode a set of first-order clauses in TPTP.
 encodeClauseSet :: ClauseSet -> TPTP.TPTP
-encodeClauseSet (ClauseSet cs) = TPTP.TPTP units
+encodeClauseSet (Clauses cs) = TPTP.TPTP units
   where
     units = zipWith unit [1..] cs
     unit n f = TPTP.Unit (Right n) (clauze f) Nothing

@@ -33,7 +33,7 @@ import ATP.FirstOrder.Core
 
 -- | A clause set is zero or more first-order clauses.
 -- The empty clause set is logically equivalent to falsum.
-newtype ClauseSet = ClauseSet [Clause]
+newtype ClauseSet = Clauses [Clause]
   deriving (Show, Eq, Ord, Semigroup, Monoid)
 
 

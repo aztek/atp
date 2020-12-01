@@ -174,7 +174,7 @@ instance Pretty LogicalExpression where
 -- * Pretty printer for problems
 
 instance Pretty ClauseSet where
-  pretty (ClauseSet cs) = prettyList cs
+  pretty (Clauses cs) = prettyList cs
 
 instance Pretty Theorem where
   pretty (Theorem as c) = prettyList as <> prettySequent "Conjecture" c
