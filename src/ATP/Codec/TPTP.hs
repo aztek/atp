@@ -297,11 +297,14 @@ decodeSequentS es d s@(Sequent l i) =
 
 decodeSequent :: TPTP.Unit -> Partial (Sequent TPTP.UnitName)
 decodeSequent = \case
+  TPTP.Unit name (TPTP.Formula (TPTP.Standard TPTP.Axiom) formula) Nothing -> do
+    expression <- decode formula
+    return $ Sequent name (Inference Axiom expression)
   TPTP.Unit name (TPTP.Formula role formula) (Just (source, _)) -> do
     rule <- decodeRule source role (collectParents source)
     expression <- decode formula
     return $ Sequent name (Inference rule expression)
-  _ -> proofError "malformed input: expected unit"
+  _ -> proofError "malformed input: unexpected unit"
 
 collectParents :: TPTP.Source -> [TPTP.UnitName]
 collectParents = \case
