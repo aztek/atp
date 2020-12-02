@@ -275,6 +275,14 @@ prop_simplifyIdempotentLogicalExpression :: LogicalExpression -> Property
 prop_simplifyIdempotentLogicalExpression e = simplify e ==~ e
   where (==~) = (===) `on` simplify
 
+prop_simplifyIdempotentClauses :: Clauses -> Property
+prop_simplifyIdempotentClauses cs = simplifyClauses cs ==~ cs
+  where (==~) = (===) `on` simplifyClauses
+
+prop_simplifyIdempotentTheorem :: Theorem -> Property
+prop_simplifyIdempotentTheorem t = simplifyTheorem t ==~ t
+  where (==~) = (===) `on` simplifyTheorem
+
 
 -- * Conversions
 
