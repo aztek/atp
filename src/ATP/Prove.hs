@@ -33,8 +33,8 @@ import System.Process (readProcessWithExitCode)
 import Text.PrettyPrint.ANSI.Leijen (bold, text)
 
 import ATP.Error
-import ATP.FOL (ClauseSet, Theorem, Solution)
-import ATP.Codec.TPTP (encodeClauseSet, encodeTheorem, decodeSolution)
+import ATP.FOL (Clauses, Theorem, Solution)
+import ATP.Codec.TPTP (encodeClauses, encodeTheorem, decodeSolution)
 import ATP.Prover
 
 
@@ -68,16 +68,16 @@ defaultProver :: Prover
 defaultProver = eprover
 
 -- | Attempt to refute a set of clauses using 'defaultProver'.
-refute :: ClauseSet -> IO (Partial Solution)
+refute :: Clauses -> IO (Partial Solution)
 refute = refuteWith defaultOptions
 
 -- | Attempt to refute a set of clauses using a given prover.
-refuteUsing :: Prover -> ClauseSet -> IO (Partial Solution)
+refuteUsing :: Prover -> Clauses -> IO (Partial Solution)
 refuteUsing p = refuteWith defaultOptions{prover = p}
 
 -- | Attempt to refute a set of clauses with a given set of options.
-refuteWith :: ProvingOptions -> ClauseSet -> IO (Partial Solution)
-refuteWith opts = runWith opts . encodeClauseSet
+refuteWith :: ProvingOptions -> Clauses -> IO (Partial Solution)
+refuteWith opts = runWith opts . encodeClauses
 
 -- | Attempt to prove a theorem using 'defaultProver'.
 prove :: Theorem -> IO (Partial Solution)

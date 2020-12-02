@@ -59,8 +59,8 @@ expectTimLimitError = \case
 
 -- * Test data
 
-emptyClause :: ClauseSet
-emptyClause = ClauseSet [EmptyClause]
+emptyClause :: Clauses
+emptyClause = Clauses [EmptyClause]
 
 negated :: Theorem -> Theorem
 negated (Theorem as c) = Theorem as (neg c)
@@ -89,7 +89,7 @@ groupTheoryAxiom = [leftIdentity, leftInverse, associativity, groupOfOrder2] |- 
 tests :: IO [Test]
 tests = return $ fmap (uncurry3 testCase) [
     ("E refutes an empty clause",       expectProof,      refute emptyClause),
-    ("E saturates an empty clause set", expectSaturation, refute (ClauseSet [])),
+    ("E saturates an empty clause set", expectSaturation, refute (Clauses [])),
 
     ("E proves tautology", expectProof,      prove (Claim Tautology)),
     ("E saturates falsum", expectSaturation, prove (Claim Falsum)),

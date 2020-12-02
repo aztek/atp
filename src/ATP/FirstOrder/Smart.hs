@@ -29,6 +29,7 @@ module ATP.FirstOrder.Smart (
   Binder(..),
   forall,
   exists,
+  (|-),
 
   -- * Monoids
   ClauseUnion(..),
@@ -67,6 +68,7 @@ infixl 6 \./
 infix  5 ==>
 infixl 5 <=>
 infixl 5 <~>
+infix  2 |-
 
 -- | A smart constructor for a signed literal.
 signed :: Sign -> Literal -> Signed Literal
@@ -297,6 +299,10 @@ forall = quantified Forall
 -- existentially quantified variables.
 exists :: Binder b => b -> Formula
 exists = quantified Exists
+
+-- | A smart constructor for first-order theorems.
+(|-) :: Foldable f => f Formula -> Formula -> Theorem
+as |- c = Theorem (Foldable.toList as) c
 
 
 -- * Monoids in first-order logic

@@ -24,11 +24,13 @@ module ATP.FirstOrder.Core (
   Signed(..),
   sign,
   Clause(..),
+  Clauses(..),
   Connective(..),
   isAssociative,
   Quantifier(..),
   Formula(..),
   LogicalExpression(..),
+  Theorem(..),
 
   -- * Syntactic sugar
   -- $sugar
@@ -57,7 +59,9 @@ module ATP.FirstOrder.Core (
   pattern TautologyClause,
 
   pattern Tautology,
-  pattern Falsum
+  pattern Falsum,
+
+  pattern Claim
 ) where
 
 #if !MIN_VERSION_base(4, 11, 0)
@@ -138,6 +142,11 @@ instance Monad Signed where
 newtype Clause = Literals { unClause :: [Signed Literal] }
   deriving (Show, Eq, Ord, Semigroup, Monoid)
 
+-- | A clause set is zero or more first-order clauses.
+-- The empty clause set is logically equivalent to falsum.
+newtype Clauses = Clauses { unClauses :: [Clause] }
+  deriving (Show, Eq, Ord, Semigroup, Monoid)
+
 -- | The quantifier in first-order logic.
 data Quantifier
   = Forall -- ^ The universal quantifier.
@@ -181,6 +190,12 @@ data LogicalExpression
   = Clause Clause
   | Formula Formula
   deriving (Show, Eq, Ord)
+
+-- | A theorem is zero or more axioms and a conjecture.
+data Theorem = Theorem {
+  axioms :: [Formula],
+  conjecture :: Formula
+} deriving (Show, Eq, Ord)
 
 
 -- * Syntactic sugar
@@ -327,3 +342,7 @@ pattern Tautology = Atomic (Constant True)
 -- 'Falsum' is semantically (but not syntactically) equivalent to 'EmptyClause'.
 pattern Falsum :: Formula
 pattern Falsum = Atomic (Constant False)
+
+-- | A logical claim is a conjecture entailed by the empty set of axioms.
+pattern Claim :: Formula -> Theorem
+pattern Claim f = Theorem [] f

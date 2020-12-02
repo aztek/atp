@@ -79,8 +79,8 @@ instance Arbitrary LogicalExpression where
 
 -- * Problems
 
-deriving instance Generic ClauseSet
-instance Arbitrary ClauseSet where
+deriving instance Generic Clauses
+instance Arbitrary Clauses where
   arbitrary = genericArbitraryU
   shrink = genericShrink
 

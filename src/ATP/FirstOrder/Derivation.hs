@@ -27,7 +27,8 @@ module ATP.FirstOrder.Derivation (
   addSequent,
   breadthFirst,
   labeling,
-  Refutation(..)
+  Refutation(..),
+  Solution(..)
 ) where
 
 import Data.Foldable (toList)
@@ -163,4 +164,14 @@ distances (Derivation m) = fmap distance m
 -- contradiction. A successful proof produces by an automated theorem prover is
 -- a proof by refutation.
 data Refutation f = Refutation (Derivation f) (Contradiction f)
+  deriving (Show, Eq, Ord)
+
+-- | The solution produced by an automated first-order theorem prover.
+data Solution
+  = Saturation (Derivation Integer)
+  -- ^ A theorem can be disproven if the prover constructs a saturated set of
+  -- firt-order clauses.
+  | Proof (Refutation Integer)
+  -- ^ A theorem can be proven if the prover derives contradiction (the empty
+  -- clause) from the set of axioms and the negated conjecture.
   deriving (Show, Eq, Ord)
