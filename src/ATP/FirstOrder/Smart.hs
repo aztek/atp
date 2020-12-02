@@ -40,7 +40,11 @@ module ATP.FirstOrder.Smart (
   Equivalence(..),
   equivalence,
   Inequivalence(..),
-  inequivalence
+  inequivalence,
+
+  -- * Miscellaneous
+  flattenConjunction,
+  flattenDisjunction
 ) where
 
 import Data.Coerce (coerce)
@@ -80,34 +84,6 @@ unitClause (Signed s l) = case signed s l of
   FalsumLiteral -> EmptyClause
   sl -> UnitClause sl
 
--- | Smart union of two clauses.
--- ('\./') has the following properties.
---
--- __Associativity__
---
--- prop> (f \./ g) \./ h == f \./ (g \./ h)
---
--- __Left identity__
---
--- prop> EmptyClause \./ c == c
---
--- __Right identity__
---
--- prop> c \./ EmptyClause == c
---
--- __Left zero__
---
--- prop> TautologyClause \./ c == TautologyClause
---
--- __Right zero__
---
--- prop> c \./ TautologyClause == TautologyClause
---
-(\./) :: Clause -> Clause -> Clause
-TautologyClause \./ _ = TautologyClause
-_ \./ TautologyClause = TautologyClause
-Literals cs \./ Literals ss = Literals (cs <> ss)
-
 -- | A smart contructor for a clause.
 -- 'clause' eliminates negated boolean constants, falsums and redundant tautologies.
 clause :: Foldable f => f (Signed Literal) -> Clause
@@ -118,34 +94,6 @@ singleClause :: Clause -> Clauses
 singleClause (Literals ls) = case clause ls of
   TautologyClause -> NoClauses
   c -> SingleClause c
-
--- | A smart contructor for the conjunction of two sets of clause.
--- ('/.\') has the following properties.
---
--- __Associativity__
---
--- prop> (f /.\ g) /.\ h == f /.\ (g /.\ h)
---
--- __Left identity__
---
--- prop> NoClauses /.\ g == g
---
--- __Right identity__
---
--- prop> f /.\ NoClauses == f
---
--- __Left zero__
---
--- prop> SingleClause EmptyClause /.\ g == SingleClause EmptyClause
---
--- __Right zero__
---
--- prop> f /.\ SingleClause EmptyClause == SingleClause EmptyClause
---
-(/.\) :: Clauses -> Clauses -> Clauses
-SingleClause EmptyClause /.\ _ = SingleClause EmptyClause
-_ /.\ SingleClause EmptyClause = SingleClause EmptyClause
-Clauses cs /.\ Clauses ss = Clauses (cs <> ss)
 
 -- | A smart constructor for the set of clauses.
 -- 'clauses' eliminates negated boolean constants, falsums and redundant tautologies.
@@ -343,36 +291,6 @@ as |- c = Theorem (Foldable.toList as) c
 
 -- * Monoids in first-order logic
 
--- | The ('EmptyClause', '\./') monoid with the absorbing element 'TautologyClause'.
-newtype ClauseUnion = ClauseUnion { getClauseUnion :: Clause }
-  deriving (Show, Eq, Ord)
-
-instance Semigroup ClauseUnion where
-  (<>) = coerce (\./)
-
-instance Monoid ClauseUnion where
-  mempty = ClauseUnion EmptyClause
-  mappend = (<>)
-
--- | Build the union of a collection of clauses.
-clauseUnion :: Foldable f => f Clause -> Clause
-clauseUnion = getClauseUnion . mconcat . fmap ClauseUnion . Foldable.toList
-
--- | The ('NoClauses', '/.\') monoid with the absorbing element 'SingleClause EmptyClause'.
-newtype ClauseConjunction = ClauseConjunction { getClauseConjunction :: Clauses }
-  deriving (Show, Eq, Ord)
-
-instance Semigroup ClauseConjunction where
-  (<>) = coerce (/.\)
-
-instance Monoid ClauseConjunction where
-  mempty = ClauseConjunction NoClauses
-  mappend = (<>)
-
--- | Build the conjunction of a collection of clauses.
-clauseConjunction :: Foldable f => f Clauses -> Clauses
-clauseConjunction = getClauseConjunction . mconcat . fmap ClauseConjunction . Foldable.toList
-
 -- | The ('Tautology', '/\') monoid.
 newtype Conjunction = Conjunction { getConjunction :: Formula }
   deriving (Show, Eq, Ord)
@@ -432,3 +350,220 @@ instance Monoid Inequivalence where
 -- | Build the inequivalence of formulas in a list.
 inequivalence :: Foldable f => f Formula -> Formula
 inequivalence = getInequivalence . mconcat . fmap Inequivalence . Foldable.toList
+
+
+-- * Miscellaneous
+
+-- | Smart conjunction of two clauses.
+-- ('/.\') has the following properties.
+--
+-- __Associativity__
+--
+-- prop> (f /.\ g) /.\ h == f /.\ (g /.\ h)
+--
+-- __Left identity__
+--
+-- prop> NoClauses /.\ g == g
+--
+-- __Right identity__
+--
+-- prop> f /.\ NoClauses == f
+--
+-- __Left zero__
+--
+-- prop> SingleClause EmptyClause /.\ g == SingleClause EmptyClause
+--
+-- __Right zero__
+--
+-- prop> f /.\ SingleClause EmptyClause == SingleClause EmptyClause
+--
+(/.\) :: Clauses -> Clauses -> Clauses
+SingleClause EmptyClause /.\ _ = SingleClause EmptyClause
+_ /.\ SingleClause EmptyClause = SingleClause EmptyClause
+Clauses cs /.\ Clauses ss = Clauses (cs <> ss)
+
+-- | The ('NoClauses', '/.\') monoid with the absorbing element 'SingleClause EmptyClause'.
+newtype ClauseConjunction = ClauseConjunction { getClauseConjunction :: Clauses }
+  deriving (Show, Eq, Ord)
+
+instance Semigroup ClauseConjunction where
+  (<>) = coerce (/.\)
+
+instance Monoid ClauseConjunction where
+  mempty = ClauseConjunction NoClauses
+  mappend = (<>)
+
+-- | Build the conjunction of a collection of clauses.
+clauseConjunction :: Foldable f => f Clauses -> Clauses
+clauseConjunction = getClauseConjunction . mconcat . fmap ClauseConjunction . Foldable.toList
+
+-- | Smart union of two clauses.
+-- ('\./') has the following properties.
+--
+-- __Associativity__
+--
+-- prop> (f \./ g) \./ h == f \./ (g \./ h)
+--
+-- __Left identity__
+--
+-- prop> EmptyClause \./ c == c
+--
+-- __Right identity__
+--
+-- prop> c \./ EmptyClause == c
+--
+-- __Left zero__
+--
+-- prop> TautologyClause \./ c == TautologyClause
+--
+-- __Right zero__
+--
+-- prop> c \./ TautologyClause == TautologyClause
+--
+(\./) :: Clause -> Clause -> Clause
+TautologyClause \./ _ = TautologyClause
+_ \./ TautologyClause = TautologyClause
+Literals cs \./ Literals ss = Literals (cs <> ss)
+
+-- | The ('EmptyClause', '\./') monoid with the absorbing element 'TautologyClause'.
+newtype ClauseUnion = ClauseUnion { getClauseUnion :: Clause }
+  deriving (Show, Eq, Ord)
+
+instance Semigroup ClauseUnion where
+  (<>) = coerce (\./)
+
+instance Monoid ClauseUnion where
+  mempty = ClauseUnion EmptyClause
+  mappend = (<>)
+
+-- | Build the union of a collection of clauses.
+clauseUnion :: Foldable f => f Clause -> Clause
+clauseUnion = getClauseUnion . mconcat . fmap ClauseUnion . Foldable.toList
+
+-- | A multi-conjunction.
+-- ('//\\') has the following properties.
+--
+-- __Associativity__
+--
+-- prop> (f //\\ g) //\\ h == f //\\ (g //\\ h)
+--
+-- __Left identity__
+--
+-- prop> [] //\\ g == g
+--
+-- __Right identity__
+--
+-- prop> f //\\ [] == f
+--
+-- __Left zero__
+--
+-- prop> [Falsum] //\\ g == [Falsum]
+--
+-- __Right zero__
+--
+-- prop> f //\\ [Falsum] == [Falsum]
+--
+(//\\) :: [Formula] -> [Formula] -> [Formula]
+[Falsum] //\\ _ = [Falsum]
+_ //\\ [Falsum] = [Falsum]
+fs //\\ gs = fs <> gs
+
+-- | The ('[]', '//\\') monoid with the absorbing element '[Falsum]'.
+newtype MultiConjunction = MultiConjunction { getMultiConjunction :: [Formula] }
+  deriving (Show, Eq, Ord)
+
+multiConjunction :: Formula -> MultiConjunction
+multiConjunction = \case
+  Tautology -> MultiConjunction []
+  f -> MultiConjunction [f]
+
+instance Semigroup MultiConjunction where
+  (<>) = coerce (//\\)
+
+instance Monoid MultiConjunction where
+  mempty = multiConjunction Tautology
+  mappend = (<>)
+
+-- | Remove redundant boolean constants from a list of conjuncted formulas.
+--
+-- >>> flattenConjunction []
+-- []
+--
+-- >>> flattenConjunction [Tautology]
+-- []
+--
+-- >>> flattenConjunction [Falsum]
+-- [Atomic (Constant False)]
+--
+-- >>> flattenConjunction ["p", Tautology]
+-- [Atomic (Predicate (PredicateSymbol "p") [])]
+--
+-- >>> flattenConjunction ["p", Falsum, "q"]
+-- [Atomic (Constant False)]
+--
+flattenConjunction :: Foldable f => f Formula -> [Formula]
+flattenConjunction = getMultiConjunction . mconcat . fmap multiConjunction . Foldable.toList
+
+-- | A multi-disjunction.
+-- ('\\//') has the following properties.
+--
+-- __Associativity__
+--
+-- prop> (f \\// g) \\// h == f \\// (g \\// h)
+--
+-- __Left identity__
+--
+-- prop> [] \\// g == g
+--
+-- __Right identity__
+--
+-- prop> f \\// [] == f
+--
+-- __Left zero__
+--
+-- prop> [Tautology] \\// g == [Tautology]
+--
+-- __Right zero__
+--
+-- prop> f \\// [Tautology] == [Tautology]
+--
+(\\//) :: [Formula] -> [Formula] -> [Formula]
+[Tautology] \\// _ = [Tautology]
+_ \\// [Tautology] = [Tautology]
+fs \\// gs = fs <> gs
+
+-- | The ('[]', '\\//') monoid with the absorbing element '[Tautology]'.
+newtype MultiDisjunction = MultiDisjunction { getMultiDisjunction :: [Formula] }
+  deriving (Show, Eq, Ord)
+
+multiDisjunction :: Formula -> MultiDisjunction
+multiDisjunction = \case
+  Falsum -> MultiDisjunction []
+  f -> MultiDisjunction [f]
+
+instance Semigroup MultiDisjunction where
+  (<>) = coerce (\\//)
+
+instance Monoid MultiDisjunction where
+  mempty = multiDisjunction Falsum
+  mappend = (<>)
+
+-- | Remove redundant boolean constants from a list of disjuncted formulas.
+--
+-- >>> flattenDisjunction []
+-- []
+--
+-- >>> flattenDisjunction [Tautology]
+-- [Atomic (Constant True)]
+--
+-- >>> flattenDisjunction [Falsum]
+-- []
+--
+-- >>> flattenDisjunction ["p", Tautology, "q"]
+-- [Atomic (Constant True)]
+--
+-- >>> flattenDisjunction ["p", Falsum]
+-- [Atomic (Predicate (PredicateSymbol "p") [])]
+--
+flattenDisjunction :: Foldable f => f Formula -> [Formula]
+flattenDisjunction = getMultiDisjunction . mconcat . fmap multiDisjunction . Foldable.toList
