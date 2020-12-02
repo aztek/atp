@@ -221,6 +221,12 @@ prop_simplifyClauseEliminatesRedundantTautology c =
     s == TautologyClause || TautologyLiteral `notElem` unClause s
       where s = simplifyClause c
 
+prop_simplifyClauses :: Clauses -> Property
+prop_simplifyClauses cs =
+  whenFail (print ss) $
+    ss == NoClauses || ss == SingleClause EmptyClause || EmptyClause `notElem` unClauses ss
+      where ss = simplifyClauses cs
+
 
 -- ** Formulas
 

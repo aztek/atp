@@ -13,6 +13,7 @@ module ATP.FirstOrder.Simplification (
   -- * Simplification
   simplify,
   simplifyClause,
+  simplifyClauses,
   simplifyFormula
 ) where
 
@@ -41,17 +42,38 @@ simplify = \case
 -- * @'simplifyClause c'@ does not contain falsum literals.
 -- * @'simplifyClause c'@ does not contain redundant tautology literals.
 --
--- >>> simplifyClause (Clause [Signed Negative (Constant True)])
--- Literals {unClause = [Signed {signof = Positive, unsign = False []}]}
+-- >>> simplifyClause (UnitClause (Signed Negative (Constant True)))
+-- Literals {unClause = []}
 --
--- >>> simplifyClause (Clause [FalsumLiteral, Signed Positive (Predicate "p" [])])
--- Literals {unClause = [Signed {signof = Positive, unsign = Constant False}]}
+-- >>> simplifyClause (Literals [FalsumLiteral, Signed Positive (Predicate "p" [])])
+-- Literals {unClause = [Signed {signof = Positive, unsign = Predicate (PredicateSymbol "p") []}]}
 --
--- >>> simplifyClause (Clause [TautologyLiteral, Signed Positive (Predicate "p" [])])
--- Literals {unClause = [Signed {signof = Positive, unsign = Predicate "p" []}]}
+-- >>> simplifyClause (Literals [TautologyLiteral, Signed Positive (Predicate "p" [])])
+-- Literals {unClause = [Signed {signof = Positive, unsign = Constant True}]}
 --
 simplifyClause :: Clause -> Clause
 simplifyClause = clause . unClause
+
+-- | Simplify the given clause set by replacing the 'Clauses' constructor with
+-- the smart constructor 'clauses'. The effects of simplification are
+-- the following.
+--
+-- * @'simplifyClauses c'@ does not contain negative constant literals.
+-- * @'simplifyClauses c'@ does not contain falsum literals.
+-- * @'simplifyClauses c'@ does not contain tautology literals.
+-- * @'simplifyClauses c'@ does not contain redundant falsum literals.
+--
+-- >>> simplifyClauses (SingleClause (UnitClause (Signed Negative (Constant True))))
+-- Clauses {unClauses = [Literals {unClause = []}]}
+--
+-- >>> simplifyClauses (SingleClause (Literals [FalsumLiteral, Signed Positive (Predicate "p" [])]))
+-- Clauses {unClauses = [Literals {unClause = [Signed {signof = Positive, unsign = Predicate (PredicateSymbol "p") []}]}]}
+--
+-- >>> simplifyClauses (SingleClause (Literals [TautologyLiteral, Signed Positive (Predicate "p" [])]))
+-- Clauses {unClauses = []}
+--
+simplifyClauses :: Clauses -> Clauses
+simplifyClauses = clauses . unClauses
 
 -- | Simplify the given formula by replacing each of its constructors with
 -- corresponding smart constructors. The effects of simplification are

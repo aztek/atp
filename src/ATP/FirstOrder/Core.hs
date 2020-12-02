@@ -58,6 +58,9 @@ module ATP.FirstOrder.Core (
   pattern UnitClause,
   pattern TautologyClause,
 
+  pattern NoClauses,
+  pattern SingleClause,
+
   pattern Tautology,
   pattern Falsum,
 
@@ -330,6 +333,14 @@ pattern UnitClause l = Literals [l]
 -- 'Tautology'.
 pattern TautologyClause :: Clause
 pattern TautologyClause = UnitClause TautologyLiteral
+
+-- | The set of clauses with a single clause in it.
+pattern NoClauses :: Clauses
+pattern NoClauses = Clauses []
+
+-- | The set of clauses with a single clause in it.
+pattern SingleClause :: Clause -> Clauses
+pattern SingleClause c = Clauses [c]
 
 
 -- ** Formulas

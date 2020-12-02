@@ -14,10 +14,11 @@ Stability    : experimental
 
 module ATP.FirstOrder.Smart (
   -- * Smart constructors
-  unitClause,
   signed,
-  (\./),
+  unitClause,
   clause,
+  singleClause,
+  clauses,
   (===),
   (=/=),
   neg,
@@ -32,8 +33,6 @@ module ATP.FirstOrder.Smart (
   (|-),
 
   -- * Monoids
-  ClauseUnion(..),
-  clauseUnion,
   Conjunction(..),
   conjunction,
   Disjunction(..),
@@ -105,8 +104,6 @@ unitClause (Signed s l) = case signed s l of
 -- prop> c \./ TautologyClause == TautologyClause
 --
 (\./) :: Clause -> Clause -> Clause
-EmptyClause \./ c = c
-c \./ EmptyClause = c
 TautologyClause \./ _ = TautologyClause
 _ \./ TautologyClause = TautologyClause
 Literals cs \./ Literals ss = Literals (cs <> ss)
@@ -115,6 +112,45 @@ Literals cs \./ Literals ss = Literals (cs <> ss)
 -- 'clause' eliminates negated boolean constants, falsums and redundant tautologies.
 clause :: Foldable f => f (Signed Literal) -> Clause
 clause = clauseUnion . fmap unitClause . Foldable.toList
+
+-- | A smart constructor for a set of clauses with a single clause in it.
+singleClause :: Clause -> Clauses
+singleClause (Literals ls) = case clause ls of
+  TautologyClause -> NoClauses
+  c -> SingleClause c
+
+-- | A smart contructor for the conjunction of two sets of clause.
+-- ('/.\') has the following properties.
+--
+-- __Associativity__
+--
+-- prop> (f /.\ g) /.\ h == f /.\ (g /.\ h)
+--
+-- __Left identity__
+--
+-- prop> NoClauses /.\ g == g
+--
+-- __Right identity__
+--
+-- prop> f /.\ NoClauses == f
+--
+-- __Left zero__
+--
+-- prop> SingleClause EmptyClause /.\ g == SingleClause EmptyClause
+--
+-- __Right zero__
+--
+-- prop> f /.\ SingleClause EmptyClause == SingleClause EmptyClause
+--
+(/.\) :: Clauses -> Clauses -> Clauses
+SingleClause EmptyClause /.\ _ = SingleClause EmptyClause
+_ /.\ SingleClause EmptyClause = SingleClause EmptyClause
+Clauses cs /.\ Clauses ss = Clauses (cs <> ss)
+
+-- | A smart constructor for the set of clauses.
+-- 'clauses' eliminates negated boolean constants, falsums and redundant tautologies.
+clauses :: Foldable f => f Clause -> Clauses
+clauses = clauseConjunction . fmap singleClause . Foldable.toList
 
 -- | A smart constructor for equality.
 (===) :: Term -> Term -> Formula
@@ -300,14 +336,14 @@ forall = quantified Forall
 exists :: Binder b => b -> Formula
 exists = quantified Exists
 
--- | A smart constructor for first-order theorems.
+-- | A synonym for 'Theorem'.
 (|-) :: Foldable f => f Formula -> Formula -> Theorem
 as |- c = Theorem (Foldable.toList as) c
 
 
 -- * Monoids in first-order logic
 
--- | The ('EmptyClause', '\./') monoid.
+-- | The ('EmptyClause', '\./') monoid with the absorbing element 'TautologyClause'.
 newtype ClauseUnion = ClauseUnion { getClauseUnion :: Clause }
   deriving (Show, Eq, Ord)
 
@@ -321,6 +357,21 @@ instance Monoid ClauseUnion where
 -- | Build the union of a collection of clauses.
 clauseUnion :: Foldable f => f Clause -> Clause
 clauseUnion = getClauseUnion . mconcat . fmap ClauseUnion . Foldable.toList
+
+-- | The ('NoClauses', '/.\') monoid with the absorbing element 'SingleClause EmptyClause'.
+newtype ClauseConjunction = ClauseConjunction { getClauseConjunction :: Clauses }
+  deriving (Show, Eq, Ord)
+
+instance Semigroup ClauseConjunction where
+  (<>) = coerce (/.\)
+
+instance Monoid ClauseConjunction where
+  mempty = ClauseConjunction NoClauses
+  mappend = (<>)
+
+-- | Build the conjunction of a collection of clauses.
+clauseConjunction :: Foldable f => f Clauses -> Clauses
+clauseConjunction = getClauseConjunction . mconcat . fmap ClauseConjunction . Foldable.toList
 
 -- | The ('Tautology', '/\') monoid.
 newtype Conjunction = Conjunction { getConjunction :: Formula }
