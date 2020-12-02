@@ -14,7 +14,8 @@ module ATP.FirstOrder.Simplification (
   simplify,
   simplifyClause,
   simplifyClauses,
-  simplifyFormula
+  simplifyFormula,
+  simplifyTheorem
 ) where
 
 import ATP.FirstOrder.Core
@@ -109,3 +110,11 @@ smartConnective = \case
   Implies    -> (==>)
   Equivalent -> (<=>)
   Xor        -> (<~>)
+
+-- | Simplify the given theorem by flattening the conjunction of its premises
+-- and its conjecture.
+simplifyTheorem :: Theorem -> Theorem
+simplifyTheorem (Theorem as c) = flattenConjunction as' |- c'
+  where
+    as' = fmap simplifyFormula as
+    c' = simplifyFormula c

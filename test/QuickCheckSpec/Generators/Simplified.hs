@@ -29,26 +29,26 @@ newtype Simplified a = Simplified { getSimplified :: a }
 
 instance Arbitrary (Simplified Clause) where
   arbitrary = Simplified . simplifyClause <$> arbitrary
+  shrink = fmap (Simplified . simplifyClause) . shrink . getSimplified
 
 instance Arbitrary (Simplified Formula) where
   arbitrary = Simplified . simplifyFormula <$> arbitrary
+  shrink = fmap (Simplified . simplifyFormula) . shrink . getSimplified
 
 instance Arbitrary (Simplified LogicalExpression) where
   arbitrary = Simplified . simplify <$> arbitrary
+  shrink = fmap (Simplified . simplify) . shrink . getSimplified
 
 
 -- * Problems
 
 instance Arbitrary (Simplified Clauses) where
-  arbitrary = do
-    cs <- fmap getSimplified <$> arbitrary
-    return $ Simplified (Clauses cs)
+  arbitrary = Simplified . simplifyClauses <$> arbitrary
+  shrink = fmap (Simplified . simplifyClauses) . shrink . getSimplified
 
 instance Arbitrary (Simplified Theorem) where
-  arbitrary = do
-    as <- fmap getSimplified <$> arbitrary
-    c <- getSimplified <$> arbitrary
-    return $ Simplified (Theorem as c)
+  arbitrary = Simplified . simplifyTheorem <$> arbitrary
+  shrink = fmap (Simplified . simplifyTheorem) . shrink . getSimplified
 
 
 -- * Proofs
