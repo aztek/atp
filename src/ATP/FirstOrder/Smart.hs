@@ -178,11 +178,11 @@ f /\ g = Connected And f g
 --
 -- __Left zero__
 --
--- prop> Tautology /\ g == Tautology
+-- prop> Tautology \/ g == Tautology
 --
 -- __Right zero__
 --
--- prop> f /\ Tautology == Tautology
+-- prop> f \/ Tautology == Tautology
 --
 (\/) :: Formula -> Formula -> Formula
 Tautology \/ _ = Tautology
