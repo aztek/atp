@@ -200,32 +200,30 @@ prop_alphaEquivalenceTransitivityTerm = alphaEquivalenceTransitivity
 
 prop_simplifyClauseEliminatesNegatedConstants :: Clause -> Property
 prop_simplifyClauseEliminatesNegatedConstants c =
-  whenFail (print s) $
-    not $ any isNegatedConstant (unClause s)
-      where s = simplifyClause c
+  whenFail (print s) (isSimplifiedClause s)
+    where s = simplifyClause c
 
 isNegatedConstant :: Signed Literal -> Bool
 isNegatedConstant = \case
   Signed Negative Constant{} -> True
   _ -> False
 
-prop_simplifyClauseEliminatesFalsum :: Clause -> Property
-prop_simplifyClauseEliminatesFalsum c =
-  whenFail (print s) $
-    FalsumLiteral `notElem` unClause s
-      where s = simplifyClause c
-
-prop_simplifyClauseEliminatesRedundantTautology :: Clause -> Property
-prop_simplifyClauseEliminatesRedundantTautology c =
-  whenFail (print s) $
-    s == TautologyClause || TautologyLiteral `notElem` unClause s
-      where s = simplifyClause c
+isSimplifiedClause :: Clause -> Bool
+isSimplifiedClause (Literals ls) =
+  not (any isNegatedConstant ls) &&
+  FalsumLiteral `notElem` ls &&
+  (ls == [TautologyLiteral] || TautologyLiteral `notElem` ls)
 
 prop_simplifyClauses :: Clauses -> Property
 prop_simplifyClauses cs =
-  whenFail (print ss) $
-    ss == NoClauses || ss == SingleClause EmptyClause || EmptyClause `notElem` unClauses ss
-      where ss = simplifyClauses cs
+  whenFail (print ss) (areSimplifiedClauses ss)
+    where ss = simplifyClauses cs
+
+areSimplifiedClauses :: Clauses -> Bool
+areSimplifiedClauses (Clauses []) = True
+areSimplifiedClauses (Clauses cs) =
+  all isSimplifiedClause cs &&
+  (cs == [EmptyClause] || EmptyClause `notElem` cs)
 
 
 -- ** Formulas
