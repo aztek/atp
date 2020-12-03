@@ -15,13 +15,10 @@ module UnitTests.Main (tests) where
 import Distribution.TestSuite (Test(..), TestInstance(..),
                                Progress(..), Result(..))
 import ATP
-import ATP.Error (Error(..), Partial, liftPartial)
+import ATP.Error (Error(..), liftPartial)
 
 
 -- * Helpers
-
-uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
-uncurry3 f (a, b, c) = f a b c
 
 simpleTest :: String -> IO Progress -> Test
 simpleTest nm progress = Test $ TestInstance {
@@ -32,8 +29,17 @@ simpleTest nm progress = Test $ TestInstance {
   run       = progress
 }
 
-testCase :: String -> (Either Error Solution -> Result) -> IO (Partial Solution) -> Test
-testCase nm testAnswer = simpleTest nm . fmap (Finished . testAnswer . liftPartial)
+testCase :: Prover -> String ->
+            (Either Error Solution -> Result) ->
+            Either Clauses Theorem -> Test
+testCase p nm testAnswer input = simpleTest testName progress
+  where
+    testName = show (vendor p) ++ " " ++ nm
+    progress = fmap (Finished . testAnswer . liftPartial) solution
+    solution = case input of
+                 Left cs -> refuteWith opts cs
+                 Right t -> proveWith  opts t
+    opts = defaultOptions{prover=p, timeLimit=5}
 
 expectSolution :: (Solution -> Result) -> Either Error Solution -> Result
 expectSolution testSolution = \case
@@ -87,16 +93,19 @@ groupTheoryAxiom = [leftIdentity, leftInverse, associativity, groupOfOrder2] |- 
 -- * Test suite
 
 tests :: IO [Test]
-tests = return $ fmap (uncurry3 testCase) [
-    ("E refutes an empty clause",       expectProof,      refute emptyClause),
-    ("E saturates an empty clause set", expectSaturation, refute (Clauses [])),
+tests = return [testCase p n t i | (n, t, i) <- cases, p <- provers]
+  where
+    provers = [eprover, vampire]
+    cases = [
+        ("refutes an empty clause",       expectProof,      Left emptyClause),
+        ("saturates an empty clause set", expectSaturation, Left (Clauses [])),
 
-    ("E proves tautology", expectProof,      prove (Claim Tautology)),
-    ("E saturates falsum", expectSaturation, prove (Claim Falsum)),
+        ("proves tautology", expectProof,      Right (Claim Tautology)),
+        ("saturates falsum", expectSaturation, Right (Claim Falsum)),
 
-    ("E proves syllogism",            expectProof,      prove syllogism),
-    ("E saturates negated syllogism", expectSaturation, prove (negated syllogism)),
+        ("proves syllogism",            expectProof,      Right syllogism),
+        ("saturates negated syllogism", expectSaturation, Right (negated syllogism)),
 
-    ("E proves group theory axiom", expectProof,         prove groupTheoryAxiom),
-    ("E reached time limit",        expectTimLimitError, proveWith defaultOptions{timeLimit=1} (negated groupTheoryAxiom))
-  ]
+        ("proves group theory axiom", expectProof,         Right groupTheoryAxiom),
+        ("reached time limit",        expectTimLimitError, Right (negated groupTheoryAxiom))
+      ]
