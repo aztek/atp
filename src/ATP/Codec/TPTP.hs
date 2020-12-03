@@ -255,7 +255,7 @@ encodeTheorem (Theorem as c) = TPTP.TPTP units
   where
     units = unit TPTP.Conjecture 0 c : zipWith (unit TPTP.Axiom) [1..] as
     unit r n f = TPTP.Unit (Right n) (formula r f) Nothing
-    formula r f = TPTP.Formula (TPTP.Standard r) (encode $ Formula f)
+    formula r = TPTP.Formula (TPTP.Standard r) . encode . Formula . close
 
 -- | Decode a solution from a TSTP output.
 decodeSolution :: TPTP.TSTP -> Partial Solution
