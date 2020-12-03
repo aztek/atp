@@ -26,7 +26,6 @@ import Test.QuickCheck (
   )
 
 import ATP hiding ((===), (==>))
-import ATP.Error
 import ATP.Codec.TPTP
 
 import QuickCheckSpec.Generators.FOL ()

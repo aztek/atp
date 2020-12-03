@@ -15,7 +15,6 @@ module UnitTests.Main (tests) where
 import Distribution.TestSuite (Test(..), TestInstance(..),
                                Progress(..), Result(..))
 import ATP
-import ATP.Error (Error(..), liftPartial)
 
 
 -- * Helpers
