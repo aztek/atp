@@ -24,31 +24,9 @@ import ATP.FOL
 newtype Simplified a = Simplified { getSimplified :: a }
   deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
 
-
--- * Formulas
-
-instance Arbitrary (Simplified Clause) where
-  arbitrary = Simplified . simplifyClause <$> arbitrary
-  shrink = traverse (fmap simplifyClause . shrink)
-
-instance Arbitrary (Simplified Clauses) where
-  arbitrary = Simplified . simplifyClauses <$> arbitrary
-  shrink = traverse (fmap simplifyClauses . shrink)
-
-instance Arbitrary (Simplified Formula) where
-  arbitrary = Simplified . simplifyFormula <$> arbitrary
-  shrink = traverse (fmap simplifyFormula . shrink)
-
-instance Arbitrary (Simplified LogicalExpression) where
+instance {-# OVERLAPPABLE #-} (Simplify e, Arbitrary e) => Arbitrary (Simplified e) where
   arbitrary = Simplified . simplify <$> arbitrary
   shrink = traverse (fmap simplify . shrink)
-
-instance Arbitrary (Simplified Theorem) where
-  arbitrary = Simplified . simplifyTheorem <$> arbitrary
-  shrink = traverse (fmap simplifyTheorem . shrink)
-
-
--- * Proofs
 
 instance Arbitrary f => Arbitrary (Simplified (Inference f)) where
   arbitrary = do

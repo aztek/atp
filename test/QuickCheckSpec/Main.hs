@@ -44,6 +44,10 @@ x ~~= y
   | Right a <- liftPartial x, Right b <- liftPartial y = a ~== b
   | otherwise = counterexample (show x ++ " ~/= " ++ show y) False
 
+-- | Like '(~==~)', but modulo simplification.
+(~==~) :: (Show e, FirstOrder e, Simplify e) => Partial e -> Partial e -> Property
+(~==~) = (~~=) `on` fmap simplify
+
 
 -- * Generators
 
@@ -200,7 +204,7 @@ prop_alphaEquivalenceTransitivityTerm = alphaEquivalenceTransitivity
 prop_simplifyClauseEliminatesNegatedConstants :: Clause -> Property
 prop_simplifyClauseEliminatesNegatedConstants c =
   whenFail (print s) (isSimplifiedClause s)
-    where s = simplifyClause c
+    where s = simplify c
 
 isNegatedConstant :: Signed Literal -> Bool
 isNegatedConstant = \case
@@ -216,7 +220,7 @@ isSimplifiedClause (Literals ls) =
 prop_simplifyClauses :: Clauses -> Property
 prop_simplifyClauses cs =
   whenFail (print ss) (areSimplifiedClauses ss)
-    where ss = simplifyClauses cs
+    where ss = simplify cs
 
 areSimplifiedClauses :: Clauses -> Bool
 areSimplifiedClauses (Clauses []) = True
@@ -231,7 +235,7 @@ prop_simplifyFormulaEliminatesDoubleNegation :: Formula -> Property
 prop_simplifyFormulaEliminatesDoubleNegation f =
   whenFail (print g) $
     not (containsDoubleNegation g)
-      where g = simplifyFormula f
+      where g = simplify f
 
 containsDoubleNegation :: Formula -> Bool
 containsDoubleNegation = \case
@@ -247,7 +251,7 @@ prop_simplifyFormulaEliminatesLeftAssocitivity :: Formula -> Property
 prop_simplifyFormulaEliminatesLeftAssocitivity f =
   whenFail (print g) $
     not (containsLeftAssocitivity g)
-      where g = simplifyFormula f
+      where g = simplify f
 
 containsLeftAssocitivity :: Formula -> Bool
 containsLeftAssocitivity = \case
@@ -262,25 +266,24 @@ containsLeftAssocitivity = \case
 
 -- ** Idempotence
 
-prop_simplifyIdempotentClause :: Clause -> Property
-prop_simplifyIdempotentClause c = simplifyClause c ==~ c
-  where (==~) = (===) `on` simplifyClause
-
-prop_simplifyIdempotentFormula :: Formula -> Property
-prop_simplifyIdempotentFormula f = simplifyFormula f ==~ f
-  where (==~) = (===) `on` simplifyFormula
-
-prop_simplifyIdempotentLogicalExpression :: LogicalExpression -> Property
-prop_simplifyIdempotentLogicalExpression e = simplify e ==~ e
+simplifyIdempotent :: (Eq a, Show a, Simplify a) => a -> Property
+simplifyIdempotent a = simplify a ==~ a
   where (==~) = (===) `on` simplify
 
+prop_simplifyIdempotentClause :: Clause -> Property
+prop_simplifyIdempotentClause = simplifyIdempotent
+
+prop_simplifyIdempotentFormula :: Formula -> Property
+prop_simplifyIdempotentFormula = simplifyIdempotent
+
+prop_simplifyIdempotentLogicalExpression :: LogicalExpression -> Property
+prop_simplifyIdempotentLogicalExpression = simplifyIdempotent
+
 prop_simplifyIdempotentClauses :: Clauses -> Property
-prop_simplifyIdempotentClauses cs = simplifyClauses cs ==~ cs
-  where (==~) = (===) `on` simplifyClauses
+prop_simplifyIdempotentClauses = simplifyIdempotent
 
 prop_simplifyIdempotentTheorem :: Theorem -> Property
-prop_simplifyIdempotentTheorem t = simplifyTheorem t ==~ t
-  where (==~) = (===) `on` simplifyTheorem
+prop_simplifyIdempotentTheorem = simplifyIdempotent
 
 
 -- * Conversions
@@ -291,7 +294,7 @@ prop_liftUnliftSignedLiteral s =
 
 prop_liftUnliftClause :: Clause -> Property
 prop_liftUnliftClause c = unliftClause (liftClause c) ==~ Just c
-  where (==~) = (===) `on` fmap simplifyClause
+  where (==~) = (===) `on` fmap simplify
 
 prop_liftUnliftContradiction :: (Show f, Eq f) => Contradiction f -> Property
 prop_liftUnliftContradiction c =
@@ -302,15 +305,12 @@ prop_liftUnliftContradiction c =
 
 prop_codecClause :: Clause -> Property
 prop_codecClause c = return c ~==~ decodeClause (encodeClause c)
-  where (~==~) = (~~=) `on` fmap simplifyClause
 
 prop_codecFormula :: Formula -> Property
 prop_codecFormula f = return f ~==~ decodeFormula (encodeFormula f)
-  where (~==~) = (~~=) `on` fmap simplifyFormula
 
 prop_codec :: LogicalExpression -> Property
 prop_codec e = return e ~==~ decode (encode e)
-  where (~==~) = (~~=) `on` fmap simplify
 
 
 -- * Runner

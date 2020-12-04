@@ -11,11 +11,7 @@ Stability    : experimental
 -}
 module ATP.FirstOrder.Simplification (
   -- * Simplification
-  simplify,
-  simplifyClause,
-  simplifyClauses,
-  simplifyFormula,
-  simplifyTheorem
+  Simplify(..)
 ) where
 
 import ATP.FirstOrder.Core
@@ -28,79 +24,84 @@ import ATP.FirstOrder.Smart
 
 -- * Simplification
 
+-- | A class of first-order expressions that 'simplify' syntactically shrinks
+-- while preserving their evaluation.
+class Simplify a where
+  simplify :: a -> a
+
 -- | Simplify the given formula by replacing each of its constructors with
 -- corresponding smart constructors.
-simplify :: LogicalExpression -> LogicalExpression
-simplify = \case
-  Clause  c -> Clause  (simplifyClause  c)
-  Formula f -> Formula (simplifyFormula f)
+instance Simplify LogicalExpression where
+  simplify = \case
+    Clause  c -> Clause  (simplify c)
+    Formula f -> Formula (simplify f)
 
 -- | Simplify the given clause by replacing the 'Literals' constructor with
 -- the smart constructor 'clause'. The effects of simplification are
 -- the following.
 --
--- * @'simplifyClause c'@ does not contain negative constant literals.
--- * @'simplifyClause c'@ does not contain falsum literals.
--- * @'simplifyClause c'@ does not contain redundant tautology literals.
+-- * @'simplify' c@ does not contain negative constant literals.
+-- * @'simplify' c@ does not contain falsum literals.
+-- * @'simplify' c@ does not contain redundant tautology literals.
 --
--- >>> simplifyClause (UnitClause (Signed Negative (Constant True)))
+-- >>> simplify (UnitClause (Signed Negative (Constant True)))
 -- Literals {getLiterals = []}
 --
--- >>> simplifyClause (Literals [FalsumLiteral, Signed Positive (Predicate "p" [])])
+-- >>> simplify (Literals [FalsumLiteral, Signed Positive (Predicate "p" [])])
 -- Literals {getLiterals = [Signed {signof = Positive, unsign = Predicate (PredicateSymbol "p") []}]}
 --
--- >>> simplifyClause (Literals [TautologyLiteral, Signed Positive (Predicate "p" [])])
+-- >>> simplify (Literals [TautologyLiteral, Signed Positive (Predicate "p" [])])
 -- Literals {getLiterals = [Signed {signof = Positive, unsign = Constant True}]}
 --
-simplifyClause :: Clause -> Clause
-simplifyClause = clause . getLiterals
+instance Simplify Clause where
+  simplify = clause . getLiterals
 
 -- | Simplify the given clause set by replacing the 'Clauses' constructor with
 -- the smart constructor 'clauses'. The effects of simplification are
 -- the following.
 --
--- * @'simplifyClauses c'@ does not contain negative constant literals.
--- * @'simplifyClauses c'@ does not contain falsum literals.
--- * @'simplifyClauses c'@ does not contain tautology literals.
--- * @'simplifyClauses c'@ does not contain redundant falsum literals.
+-- * @'simplify' c@ does not contain negative constant literals.
+-- * @'simplify' c@ does not contain falsum literals.
+-- * @'simplify' c@ does not contain tautology literals.
+-- * @'simplify' c@ does not contain redundant falsum literals.
 --
--- >>> simplifyClauses (SingleClause (UnitClause (Signed Negative (Constant True))))
+-- >>> simplify (SingleClause (UnitClause (Signed Negative (Constant True))))
 -- Clauses {getClauses = [Literals {getLiterals = []}]}
 --
--- >>> simplifyClauses (SingleClause (Literals [FalsumLiteral, Signed Positive (Predicate "p" [])]))
+-- >>> simplify (SingleClause (Literals [FalsumLiteral, Signed Positive (Predicate "p" [])]))
 -- Clauses {getClauses = [Literals {getLiterals = [Signed {signof = Positive, unsign = Predicate (PredicateSymbol "p") []}]}]}
 --
--- >>> simplifyClauses (SingleClause (Literals [TautologyLiteral, Signed Positive (Predicate "p" [])]))
+-- >>> simplify (SingleClause (Literals [TautologyLiteral, Signed Positive (Predicate "p" [])]))
 -- Clauses {getClauses = []}
 --
-simplifyClauses :: Clauses -> Clauses
-simplifyClauses = clauses . getClauses
+instance Simplify Clauses where
+  simplify = clauses . getClauses
 
 -- | Simplify the given formula by replacing each of its constructors with
 -- corresponding smart constructors. The effects of simplification are
 -- the following.
 --
--- * @'simplifyFormula' f@ does not contain nested negations.
+-- * @'simplify' f@ does not contain nested negations.
 -- * All chained applications of any binary connective inside
---   @'simplifyFormula' f@ are right-associative.
+--   @'simplify' f@ are right-associative.
 --
 -- Any formula built only using smart constructors is simplified by construction.
 --
--- >>> simplifyFormula (Connected Or tautology (Atomic (Predicate "p" [])))
+-- >>> simplify (Connected Or tautology (Atomic (Predicate "p" [])))
 -- Atomic (Constant True)
 --
--- >>> simplifyFormula (Negate (Negate (Atomic (Predicate "p" []))))
+-- >>> simplify (Negate (Negate (Atomic (Predicate "p" []))))
 -- Atomic (Predicate "p" [])
 --
--- >>> simplifyFormula (Connected And (Connected And (Atomic (Predicate "p" [])) (Atomic (Predicate "q" []))) (Atomic (Predicate "r" [])))
+-- >>> simplify (Connected And (Connected And (Atomic (Predicate "p" [])) (Atomic (Predicate "q" []))) (Atomic (Predicate "r" [])))
 -- Connected And (Atomic (Predicate "p" [])) (Connected And (Atomic (Predicate "q" [])) (Atomic (Predicate "r" [])))
 --
-simplifyFormula :: Formula -> Formula
-simplifyFormula = \case
-  Atomic l         -> Atomic l
-  Negate f         -> neg (simplifyFormula f)
-  Connected  c f g -> simplifyFormula f # simplifyFormula g where (#) = smartConnective c
-  Quantified q v f -> quantified q (v, simplifyFormula f)
+instance Simplify Formula where
+  simplify = \case
+    Atomic l -> Atomic l
+    Negate f -> neg (simplify f)
+    Connected  c f g -> simplify f # simplify g where (#) = smartConnective c
+    Quantified q v f -> quantified q (v, simplify f)
 
 -- | Convert a binary connective to its corresponding smart constructor.
 smartConnective :: Connective -> Formula -> Formula -> Formula
@@ -113,8 +114,5 @@ smartConnective = \case
 
 -- | Simplify the given theorem by flattening the conjunction of its premises
 -- and its conjecture.
-simplifyTheorem :: Theorem -> Theorem
-simplifyTheorem (Theorem as c) = flattenConjunction as' |- c'
-  where
-    as' = fmap simplifyFormula as
-    c' = simplifyFormula c
+instance Simplify Theorem where
+  simplify (Theorem as c) = flattenConjunction (fmap simplify as) |- simplify c
