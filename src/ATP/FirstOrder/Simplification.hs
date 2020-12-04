@@ -44,16 +44,16 @@ simplify = \case
 -- * @'simplifyClause c'@ does not contain redundant tautology literals.
 --
 -- >>> simplifyClause (UnitClause (Signed Negative (Constant True)))
--- Literals {unClause = []}
+-- Literals {getLiterals = []}
 --
 -- >>> simplifyClause (Literals [FalsumLiteral, Signed Positive (Predicate "p" [])])
--- Literals {unClause = [Signed {signof = Positive, unsign = Predicate (PredicateSymbol "p") []}]}
+-- Literals {getLiterals = [Signed {signof = Positive, unsign = Predicate (PredicateSymbol "p") []}]}
 --
 -- >>> simplifyClause (Literals [TautologyLiteral, Signed Positive (Predicate "p" [])])
--- Literals {unClause = [Signed {signof = Positive, unsign = Constant True}]}
+-- Literals {getLiterals = [Signed {signof = Positive, unsign = Constant True}]}
 --
 simplifyClause :: Clause -> Clause
-simplifyClause = clause . unClause
+simplifyClause = clause . getLiterals
 
 -- | Simplify the given clause set by replacing the 'Clauses' constructor with
 -- the smart constructor 'clauses'. The effects of simplification are
@@ -65,16 +65,16 @@ simplifyClause = clause . unClause
 -- * @'simplifyClauses c'@ does not contain redundant falsum literals.
 --
 -- >>> simplifyClauses (SingleClause (UnitClause (Signed Negative (Constant True))))
--- Clauses {unClauses = [Literals {unClause = []}]}
+-- Clauses {getClauses = [Literals {getLiterals = []}]}
 --
 -- >>> simplifyClauses (SingleClause (Literals [FalsumLiteral, Signed Positive (Predicate "p" [])]))
--- Clauses {unClauses = [Literals {unClause = [Signed {signof = Positive, unsign = Predicate (PredicateSymbol "p") []}]}]}
+-- Clauses {getClauses = [Literals {getLiterals = [Signed {signof = Positive, unsign = Predicate (PredicateSymbol "p") []}]}]}
 --
 -- >>> simplifyClauses (SingleClause (Literals [TautologyLiteral, Signed Positive (Predicate "p" [])]))
--- Clauses {unClauses = []}
+-- Clauses {getClauses = []}
 --
 simplifyClauses :: Clauses -> Clauses
-simplifyClauses = clauses . unClauses
+simplifyClauses = clauses . getClauses
 
 -- | Simplify the given formula by replacing each of its constructors with
 -- corresponding smart constructors. The effects of simplification are

@@ -140,14 +140,14 @@ instance Applicative Signed where
 instance Monad Signed where
   Signed s e >>= f = sign s (f e)
 
--- | The first-order clause - an explicitly universally-quantified disjunction
+-- | The first-order clause - an implicitly universally-quantified disjunction
 -- of positive or negative literals, represented as a list of signed literals.
-newtype Clause = Literals { unClause :: [Signed Literal] }
+newtype Clause = Literals { getLiterals :: [Signed Literal] }
   deriving (Show, Eq, Ord, Semigroup, Monoid)
 
 -- | A clause set is zero or more first-order clauses.
 -- The empty clause set is logically equivalent to falsum.
-newtype Clauses = Clauses { unClauses :: [Clause] }
+newtype Clauses = Clauses { getClauses :: [Clause] }
   deriving (Show, Eq, Ord, Semigroup, Monoid)
 
 -- | The quantifier in first-order logic.

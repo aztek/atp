@@ -216,7 +216,7 @@ unsortFirstOrder = traverse $ \case
 
 -- | Encode a clause in unsorted first-order logic in TPTP.
 encodeClause :: Clause -> TPTP.Clause
-encodeClause = TPTP.clause . fmap encodeSignedLiteral . unClause
+encodeClause = TPTP.clause . fmap encodeSignedLiteral . getLiterals
 
 -- | Decode a clause in unsorted first-order logic from TPTP.
 decodeClause :: TPTP.Clause -> Partial Clause

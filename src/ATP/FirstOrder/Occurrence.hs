@@ -184,12 +184,12 @@ instance FirstOrder Formula where
       return (Quantified q v' f')
 
 instance FirstOrder Clause where
-  vars = vars . unClause
+  vars = vars . getLiterals
   free = vars
   bound _ = mempty
-  (~=) = (~=) `on` unClause
-  (?=) = (?=) `on` unClause
-  alpha = fmap Literals . traverse alpha . unClause
+  (~=) = (~=) `on` getLiterals
+  (?=) = (?=) `on` getLiterals
+  alpha = fmap Literals . traverse alpha . getLiterals
 
 instance FirstOrder e => FirstOrder (Signed e) where
   vars  = vars  . unsign
