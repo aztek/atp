@@ -15,6 +15,8 @@ module ATP.Error (
   Partial,
   PartialT(..),
   liftPartial,
+  isSuccess,
+  isFailure,
   exitCodeError,
   timeLimitError,
   memoryLimitError,
@@ -24,6 +26,7 @@ module ATP.Error (
 ) where
 
 import Control.Monad.Except (MonadTrans, ExceptT(..), MonadError(..), runExcept)
+import Data.Either (isLeft, isRight)
 import Data.Functor.Identity (Identity)
 import Data.Text (Text)
 import qualified Data.Text as T (pack)
@@ -56,6 +59,14 @@ newtype PartialT m a = PartialT {
 -- | Extractor for computations in the @'Partial'@ monad.
 liftPartial :: Partial a -> Either Error a
 liftPartial = runExcept . runPartialT
+
+-- | Check whether a partial computation resulted successfully.
+isSuccess :: Partial a -> Bool
+isSuccess = isRight . liftPartial
+
+-- | Check whether a partial computation resulted with an error.
+isFailure :: Partial a -> Bool
+isFailure = isLeft . liftPartial
 
 -- | A smart constructor for a computation failed with an @'ExitCodeError'@.
 exitCodeError :: Monad m => Int -> Text -> PartialT m a
