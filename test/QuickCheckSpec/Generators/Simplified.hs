@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 {-|
@@ -22,33 +22,30 @@ import ATP.FOL
 
 
 newtype Simplified a = Simplified { getSimplified :: a }
-  deriving (Show, Eq, Ord, Functor)
+  deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
 
 
 -- * Formulas
 
 instance Arbitrary (Simplified Clause) where
   arbitrary = Simplified . simplifyClause <$> arbitrary
-  shrink = fmap (Simplified . simplifyClause) . shrink . getSimplified
-
-instance Arbitrary (Simplified Formula) where
-  arbitrary = Simplified . simplifyFormula <$> arbitrary
-  shrink = fmap (Simplified . simplifyFormula) . shrink . getSimplified
-
-instance Arbitrary (Simplified LogicalExpression) where
-  arbitrary = Simplified . simplify <$> arbitrary
-  shrink = fmap (Simplified . simplify) . shrink . getSimplified
-
-
--- * Problems
+  shrink = traverse (fmap simplifyClause . shrink)
 
 instance Arbitrary (Simplified Clauses) where
   arbitrary = Simplified . simplifyClauses <$> arbitrary
-  shrink = fmap (Simplified . simplifyClauses) . shrink . getSimplified
+  shrink = traverse (fmap simplifyClauses . shrink)
+
+instance Arbitrary (Simplified Formula) where
+  arbitrary = Simplified . simplifyFormula <$> arbitrary
+  shrink = traverse (fmap simplifyFormula . shrink)
+
+instance Arbitrary (Simplified LogicalExpression) where
+  arbitrary = Simplified . simplify <$> arbitrary
+  shrink = traverse (fmap simplify . shrink)
 
 instance Arbitrary (Simplified Theorem) where
   arbitrary = Simplified . simplifyTheorem <$> arbitrary
-  shrink = fmap (Simplified . simplifyTheorem) . shrink . getSimplified
+  shrink = traverse (fmap simplifyTheorem . shrink)
 
 
 -- * Proofs
