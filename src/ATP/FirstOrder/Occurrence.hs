@@ -32,7 +32,7 @@ import ATP.FirstOrder.Core
 import ATP.FirstOrder.Alpha
 
 -- $setup
--- >>> :load QuickCheckSpec.Generators
+-- >>> :load Property.Generators
 
 
 -- * Occurrence

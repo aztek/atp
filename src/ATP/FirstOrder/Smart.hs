@@ -57,7 +57,7 @@ import ATP.FirstOrder.Core
 
 -- $setup
 -- >>> :set -XOverloadedStrings
--- >>> :load QuickCheckSpec.Generators
+-- >>> :load Property.Generators
 -- >>> let eq = binaryPredicate "eq"
 
 

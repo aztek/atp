@@ -28,8 +28,8 @@ import Test.QuickCheck (
 import ATP hiding ((===), (==>))
 import ATP.Codec.TPTP
 
-import QuickCheckSpec.Generators.FOL ()
-import QuickCheckSpec.Generators.AlphaEquivalent
+import Property.Generators ()
+import Property.Modifiers.AlphaEquivalent
 
 
 -- * Helper functions

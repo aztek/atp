@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveTraversable #-}
 
 {-|
-Module       : QuickCheckSpec.Generators
+Module       : Property.Modifiers.Simplified
 Description  : QuickCheck generators of simplified first-order expressions.
 Copyright    : (c) Evgenii Kotelnikov, 2020
 License      : GPL-3
@@ -9,13 +9,13 @@ Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
 -}
 
-module QuickCheckSpec.Generators.Simplified (
+module Property.Modifiers.Simplified (
   Simplified(..)
 ) where
 
 import Test.QuickCheck (Arbitrary(..))
 
-import QuickCheckSpec.Generators.FOL ()
+import Property.Generators ()
 
 import ATP.FOL
 

@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 {-|
-Module       : QuickCheckSpec.Generators.AlphaEquivalent
+Module       : Property.Modifiers.AlphaEquivalent
 Description  : QuickCheck generators of alpha-equivalent and alpha-inequivalent
                first-order expressions.
 Copyright    : (c) Evgenii Kotelnikov, 2020
@@ -11,7 +11,7 @@ Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
 -}
 
-module QuickCheckSpec.Generators.AlphaEquivalent (
+module Property.Modifiers.AlphaEquivalent (
   genAlphaEquivalent,
   genAlphaInequivalent
 ) where

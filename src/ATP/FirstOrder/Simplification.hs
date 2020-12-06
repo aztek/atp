@@ -19,7 +19,7 @@ import ATP.FirstOrder.Smart
 
 -- $setup
 -- >>> :set -XOverloadedStrings
--- >>> :load QuickCheckSpec.Generators
+-- >>> :load Property.Generators
 
 
 -- * Simplification

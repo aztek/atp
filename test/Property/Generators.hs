@@ -5,7 +5,7 @@
 {-# LANGUAGE CPP #-}
 
 {-|
-Module       : QuickCheckSpec.Generators.FOL
+Module       : Property.Generators
 Description  : QuickCheck generators of first-order formulas, theorems and proofs.
 Copyright    : (c) Evgenii Kotelnikov, 2020
 License      : GPL-3
@@ -13,7 +13,7 @@ Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
 -}
 
-module QuickCheckSpec.Generators.FOL () where
+module Property.Generators () where
 
 import GHC.Generics (Generic)
 import Generic.Random (genericArbitraryU, genericArbitraryRec, (%), uniform)

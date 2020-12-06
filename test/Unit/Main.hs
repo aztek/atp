@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
-Module       : UnitTests.Main
+Module       : Unit.Main
 Description  : Basic unit tests.
 Copyright    : (c) Evgenii Kotelnikov, 2019-2020
 License      : GPL-3
@@ -10,7 +10,7 @@ Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
 -}
 
-module UnitTests.Main (tests) where
+module Unit.Main (tests) where
 
 import Distribution.TestSuite (Test(..), TestInstance(..),
                                Progress(..), Result(..))

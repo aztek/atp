@@ -1,5 +1,5 @@
 {-|
-Module       : DocTests.Main
+Module       : Doc.Main
 Description  : Runner of doctests.
 Copyright    : (c) Evgenii Kotelnikov, 2019
 License      : GPL-3

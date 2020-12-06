@@ -79,15 +79,15 @@ library
       -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns
       -Wredundant-constraints
 
-test-suite quickcheck
+test-suite property
   type: exitcode-stdio-1.0
   hs-source-dirs: test
   default-language: Haskell2010
-  main-is: QuickCheckSpec/Main.hs
+  main-is: Property/Main.hs
   other-modules:
-    QuickCheckSpec.Generators.AlphaEquivalent
-    QuickCheckSpec.Generators.FOL
-    QuickCheckSpec.Generators.Simplified
+    Property.Generators
+    Property.Modifiers.AlphaEquivalent
+    Property.Modifiers.Simplified
   ghc-options:
     -Wall -threaded
   if flag(Werror)
@@ -110,13 +110,13 @@ test-suite quickcheck
       -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns
       -Wredundant-constraints
 
-test-suite doctest
+test-suite doc
   type: exitcode-stdio-1.0
   hs-source-dirs: test
   default-language: Haskell2010
-  main-is: DocTests/Main.hs
+  main-is: Doc/Main.hs
   other-modules:
-    QuickCheckSpec.Generators
+    Property.Generators
   ghc-options:
     -Wall -threaded
   if flag(Werror)
@@ -136,7 +136,7 @@ test-suite unit
   type: detailed-0.9
   hs-source-dirs: test
   default-language: Haskell2010
-  test-module: UnitTests.Main
+  test-module: Unit.Main
   ghc-options:
     -Wall -threaded
   if flag(Werror)
