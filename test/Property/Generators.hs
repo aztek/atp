@@ -41,7 +41,7 @@ instance Arbitrary PredicateSymbol where
 
 deriving instance Generic Literal
 instance Arbitrary Literal where
-  arbitrary = genericArbitraryRec uniform
+  arbitrary = genericArbitraryRec (1 % 2 % 2 % ())
   shrink = genericShrink
 
 deriving instance Generic Sign
