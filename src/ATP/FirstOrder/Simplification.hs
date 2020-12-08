@@ -82,6 +82,7 @@ instance Simplify Clauses where
 -- the following.
 --
 -- * @'simplify' f@ does not contain nested negations.
+-- * @'simplify' f@ does not contain some of the constant atomic formulas from @f@.
 -- * All chained applications of any binary connective inside
 --   @'simplify' f@ are right-associative.
 --
