@@ -20,7 +20,6 @@ module ATP.Prover (
   proverOutput,
   vampire,
   eprover,
-  cvc4,
   defaultProver
 ) where
 
@@ -41,7 +40,6 @@ data Prover = Prover {
 data Vendor
   = E
   | Vampire
-  | CVC4
   deriving (Eq, Show, Ord, Enum, Bounded)
 
 -- | The time limit allocated to the prover, in seconds.
@@ -62,10 +60,6 @@ proverArguments Vampire timeLimit memoryLimit =
    "--statistics", "none",
    "--time_limit", show timeLimit,
    "--memory_limit", show memoryLimit]
-proverArguments CVC4 timeLimit _memoryLimit =
-  ["-L", "tptp",
-   "--proof", "--dump-proof", "--output-lang=tptp",
-   "--tlimit=" ++ show (timeLimit * 1000)]
 
 -- | Interpret the output of the theorem prover from its exit code and
 -- the contents of the returned stdout and stderr.
@@ -85,9 +79,6 @@ proverOutput Vampire exitCode stdout stderr = case exitCode of
     | "Time limit reached"    `T.isInfixOf` stdout -> timeLimitError
     | "Memory limit exceeded" `T.isInfixOf` stdout -> memoryLimitError
   ExitFailure c -> exitCodeError c stderr
-proverOutput CVC4 exitCode stdout stderr = case exitCode of
-  ExitSuccess   -> return stdout
-  ExitFailure c -> exitCodeError c stderr
 
 -- | The <http://www.eprover.org/ E> theorem prover.
 eprover :: Prover
@@ -101,12 +92,6 @@ vampire :: Prover
 vampire = Prover {
   vendor = Vampire,
   executable = "vampire"
-}
-
-cvc4 :: Prover
-cvc4 = Prover {
-  vendor = CVC4,
-  executable = "cvc4"
 }
 
 -- | The default prover used by @refute@ and @prove@.
