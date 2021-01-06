@@ -5,7 +5,7 @@
 Module       : ATP.Internal.Enumeration
 Description  : The helper Enumeration monad used to describe computations that
                carry on a renaming of values to consecutive numbers.
-Copyright    : (c) Evgenii Kotelnikov, 2019-2020
+Copyright    : (c) Evgenii Kotelnikov, 2019-2021
 License      : GPL-3
 Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental

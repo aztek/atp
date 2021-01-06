@@ -5,7 +5,7 @@
 Module       : Property.Modifiers.AlphaEquivalent
 Description  : QuickCheck generators of alpha-equivalent and alpha-inequivalent
                first-order expressions.
-Copyright    : (c) Evgenii Kotelnikov, 2020
+Copyright    : (c) Evgenii Kotelnikov, 2019-2021
 License      : GPL-3
 Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental

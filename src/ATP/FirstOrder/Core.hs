@@ -7,7 +7,7 @@
 {-|
 Module       : ATP.FirstOrder.Core
 Description  : Data types representing unsorted first-order logic.
-Copyright    : (c) Evgenii Kotelnikov, 2019-2020
+Copyright    : (c) Evgenii Kotelnikov, 2019-2021
 License      : GPL-3
 Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental

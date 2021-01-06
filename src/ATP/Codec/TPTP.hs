@@ -6,7 +6,7 @@
 {-|
 Module       : ATP.Codec.TPTP
 Description  : Coding and decoding of unsorted first-order logic in TPTP.
-Copyright    : (c) Evgenii Kotelnikov, 2019
+Copyright    : (c) Evgenii Kotelnikov, 2019-2021
 License      : GPL-3
 Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental

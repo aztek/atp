@@ -7,7 +7,7 @@
 {-|
 Module       : ATP.FirstOrder.Derivation
 Description  : Derivations in first-order logic.
-Copyright    : (c) Evgenii Kotelnikov, 2019-2020
+Copyright    : (c) Evgenii Kotelnikov, 2019-2021
 License      : GPL-3
 Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental

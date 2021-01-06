@@ -3,7 +3,7 @@
 {-|
 Module       : GroupTheory
 Description  : A theorem in group theory.
-Copyright    : (c) Evgenii Kotelnikov, 2019
+Copyright    : (c) Evgenii Kotelnikov, 2019-2021
 License      : GPL-3
 Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
