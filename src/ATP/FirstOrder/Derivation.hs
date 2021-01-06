@@ -20,7 +20,6 @@ module ATP.FirstOrder.Derivation (
   ruleName,
   Inference(..),
   antecedents,
-  consequent,
   Contradiction(..),
   Sequent(..),
   Derivation(..),
@@ -106,24 +105,22 @@ ruleName = \case
 --
 -- where each of @A_1@, ... @A_n@ (called the 'antecedents'), and @C@
 -- (called the 'consequent') are formulas and @R@ is an inference 'Rule'.
-data Inference f = Inference (Rule f) LogicalExpression
-  deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
+data Inference f = Inference {
+  inferenceRule :: Rule f,
+  consequent :: LogicalExpression
+} deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
 
 -- | The antecedents of an inference.
 antecedents :: Inference f -> [f]
-antecedents (Inference rule _) = toList rule
+antecedents = toList
 
--- | The consequent of an inference.
-consequent :: Inference f -> LogicalExpression
-consequent (Inference _ e) = e
-
--- | Contradiction is a special case of an inference whos consequent is
--- a logical falsum.
+-- | Contradiction is a special case of an inference that has the logical falsum
+-- as the consequent.
 newtype Contradiction f = Contradiction (Rule f)
   deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
 
 -- | A sequent is a logical inference, annotated with a label.
--- Sequents are chained in 'Derivation's.
+-- Linked sequents form derivations.
 data Sequent f = Sequent f (Inference f)
   deriving (Show, Eq, Ord, Functor, Foldable, Traversable)
 
@@ -160,9 +157,9 @@ distances (Derivation m) = fmap distance m
       | null (antecedents i) = 0
       | otherwise = 1 + maximum (fmap (\a -> distance (m ! a)) (antecedents i))
 
--- | A refutation is a special case of a derivation that results in
--- contradiction. A successful proof produces by an automated theorem prover is
--- a proof by refutation.
+-- | A refutation is a special case of a derivation that results in a
+-- contradiction. A successful proof produces by an automated theorem prover
+-- is a proof by refutation.
 data Refutation f = Refutation (Derivation f) (Contradiction f)
   deriving (Show, Eq, Ord)
 
@@ -170,7 +167,7 @@ data Refutation f = Refutation (Derivation f) (Contradiction f)
 data Solution
   = Saturation (Derivation Integer)
   -- ^ A theorem can be disproven if the prover constructs a saturated set of
-  -- firt-order clauses.
+  -- first-order clauses.
   | Proof (Refutation Integer)
   -- ^ A theorem can be proven if the prover derives contradiction (the empty
   -- clause) from the set of axioms and the negated conjecture.

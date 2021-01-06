@@ -3,17 +3,18 @@
 
 {-|
 Module       : ATP.Prove
-Description  : Interface for calling an automated theorem prover.
+Description  : Interface to automated theorem provers.
 Copyright    : (c) Evgenii Kotelnikov, 2019
 License      : GPL-3
 Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
+
+Interface to automated theorem provers.
 -}
 
 module ATP.Prove (
   ProvingOptions(..),
   defaultOptions,
-  defaultProver,
   refute,
   refuteUsing,
   refuteWith,
@@ -42,10 +43,10 @@ import ATP.Prover
 -- how to run it.
 data ProvingOptions = ProvingOptions {
   prover      :: Prover,
-  timeLimit   :: Int,    -- ^ The time limit given to the prover, in seconds
-  memoryLimit :: Int,    -- ^ The memory limit given to the prover, in Mb
-  debug       :: Bool    -- ^ If @True@, print the input, the cli command,
-                         --   the exit code and the output of the prover
+  timeLimit   :: TimeLimit,
+  memoryLimit :: MemoryLimit,
+  debug       :: Bool -- ^ If @True@, print the input, the cli command,
+                      --   the exit code and the output of the prover
 } deriving (Eq, Show, Ord)
 
 -- | The default options used by 'refute' and 'prove'.
@@ -60,14 +61,9 @@ defaultOptions = ProvingOptions {
   debug = False
 }
 
--- | The default prover used by 'refute' and 'prove'.
---
--- >>> defaultProver
--- Prover {vendor = E, executable = "eprover"}
-defaultProver :: Prover
-defaultProver = eprover
-
 -- | Attempt to refute a set of clauses using 'defaultProver'.
+--
+-- > refute = refuteWith defaultOptions
 refute :: Clauses -> IO (Partial Solution)
 refute = refuteWith defaultOptions
 
@@ -80,6 +76,8 @@ refuteWith :: ProvingOptions -> Clauses -> IO (Partial Solution)
 refuteWith opts = runWith opts . encodeClauses
 
 -- | Attempt to prove a theorem using 'defaultProver'.
+--
+-- > prove = proveWith defaultOptions
 prove :: Theorem -> IO (Partial Solution)
 prove = proveWith defaultOptions
 
@@ -105,13 +103,12 @@ runProver :: ProvingOptions -> String -> IO (ExitCode, Text, Text)
 runProver opts input = do
   let ProvingOptions{prover, timeLimit, memoryLimit, debug} = opts
   let Prover{vendor, executable} = prover
-  let command = proverCommand prover timeLimit memoryLimit
   let arguments = proverArguments vendor timeLimit memoryLimit
   let debugPrint header str = when debug $
                               print (bold (text header)) >>
                               putStrLn str >> putStr "\n"
   debugPrint "Input" input
-  debugPrint "Command" command
+  debugPrint "Command" $ unwords (executable:arguments)
   (exitCode, stdout, stderr) <- readProcessWithExitCode executable arguments input
   debugPrint "Exit code" (show exitCode)
   debugPrint "Standard output" stdout

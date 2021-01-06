@@ -11,6 +11,8 @@ Copyright    : (c) Evgenii Kotelnikov, 2019-2020
 License      : GPL-3
 Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
+
+Pretty-printers for formulas, theorems and proofs.
 -}
 
 module ATP.Pretty.FOL (

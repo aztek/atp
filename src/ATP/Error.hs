@@ -8,6 +8,8 @@ Copyright    : (c) Evgenii Kotelnikov, 2019-2020
 License      : GPL-3
 Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
+
+Monads and monad transformers for computations with errors.
 -}
 
 module ATP.Error (

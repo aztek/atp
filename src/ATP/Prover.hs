@@ -8,17 +8,21 @@ Copyright    : (c) Evgenii Kotelnikov, 2019
 License      : GPL-3
 Maintainer   : evgeny.kotelnikov@gmail.com
 Stability    : experimental
+
+Models of automated theorem provers.
 -}
 
 module ATP.Prover (
   Vendor(..),
   Prover(..),
-  proverCommand,
+  TimeLimit,
+  MemoryLimit,
   proverArguments,
   proverOutput,
   vampire,
   eprover,
-  cvc4
+  cvc4,
+  defaultProver
 ) where
 
 import Data.Text (Text)
@@ -41,13 +45,14 @@ data Vendor
   | CVC4
   deriving (Eq, Show, Ord, Enum, Bounded)
 
--- | Build the command that executes the given prover.
-proverCommand :: Prover -> Int -> Int -> String
-proverCommand Prover{vendor, executable} timeLimit memoryLimit =
-  unwords (executable:proverArguments vendor timeLimit memoryLimit)
+-- | The time limit allocated to the prover, in seconds.
+type TimeLimit = Int
+
+-- | The memory limit allocated to the prover, in Mb.
+type MemoryLimit = Int
 
 -- | Build the list of command line arguments for the given prover.
-proverArguments :: Vendor -> Int -> Int -> [String]
+proverArguments :: Vendor -> TimeLimit -> MemoryLimit -> [String]
 proverArguments E timeLimit memoryLimit =
   ["--proof-object",
    "--silent",
@@ -60,12 +65,16 @@ proverArguments Vampire timeLimit memoryLimit =
    "--memory_limit", show memoryLimit]
 proverArguments CVC4 timeLimit _memoryLimit =
   ["-L", "tptp",
-   "--proof", "--output-lang=tptp",
+   "--proof", "--dump-proof", "--output-lang=tptp",
    "--tlimit=" ++ show (timeLimit * 1000)]
 
 -- | Interpret the output of the theorem prover from its exit code and
 -- the contents of the returned stdout and stderr.
-proverOutput :: Vendor -> ExitCode -> Text -> Text -> Partial Text
+proverOutput :: Vendor
+             -> ExitCode
+             -> Text -- ^ Standard out
+             -> Text -- ^ Standard error
+             -> Partial Text
 proverOutput E exitCode stdout stderr = case exitCode of
   ExitSuccess   -> return stdout
   ExitFailure 1 -> return stdout
@@ -100,3 +109,10 @@ cvc4 = Prover {
   vendor = CVC4,
   executable = "cvc4"
 }
+
+-- | The default prover used by @refute@ and @prove@.
+--
+-- >>> defaultProver
+-- Prover {vendor = E, executable = "eprover"}
+defaultProver :: Prover
+defaultProver = eprover
