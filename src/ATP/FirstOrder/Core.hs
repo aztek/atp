@@ -44,6 +44,7 @@ module ATP.FirstOrder.Core (
   pattern TernaryFunction,
 
   Predicate,
+  Proposition,
   UnaryPredicate,
   BinaryPredicate,
   TernaryPredicate,
@@ -271,6 +272,9 @@ pattern TernaryFunction f a b c = Function f [a, b, c]
 -- | The type of a predicate symbol - a mapping from zero or more terms
 -- to a formula.
 type Predicate = [Term] -> Formula
+
+-- | The type of a proposition.
+type Proposition = Formula
 
 -- | The type of a predicate symbol with one argument.
 type UnaryPredicate = Term -> Formula
