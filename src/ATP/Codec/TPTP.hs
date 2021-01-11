@@ -205,14 +205,9 @@ decode :: TPTP.Formula -> Partial LogicalExpression
 decode = \case
   TPTP.FOF f  -> Formula <$> decodeFormula f
   TPTP.CNF c  -> Clause  <$> decodeClause  c
-  TPTP.TFF0 f | Just g <- unsortFirstOrder f -> Formula <$> decodeFormula g
+  TPTP.TFF0 f | Just g <- TPTP.unsortFirstOrder f -> Formula <$> decodeFormula g
   TPTP.TFF0{} -> parsingError "formulas in TFF0 are not supported"
   TPTP.TFF1{} -> parsingError "formulas in TFF1 are not supported"
-
-unsortFirstOrder :: TPTP.MonomorphicFirstOrder -> Maybe TPTP.UnsortedFirstOrder
-unsortFirstOrder = traverse $ \case
-  TPTP.Sorted Nothing -> Just (TPTP.Unsorted ())
-  TPTP.Sorted Just{}  -> Nothing
 
 -- | Encode a clause in unsorted first-order logic in TPTP.
 encodeClause :: Clause -> TPTP.Clause
