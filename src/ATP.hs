@@ -85,8 +85,13 @@ import ATP.Error
 -- The proof returned by the theorem prover is a directed acyclic graph of
 -- logical inferences. Each logical 'Inference' is a step of the proof that
 -- derives a conclusion from a set of premises using an inference 'Rule'.
--- The proof ends with a 'Contradiction' and therefore is a proof by
--- 'Refutation'.
+-- The proof starts with negating the conjecture and ends with a 'Contradiction'
+-- and therefore is a proof by 'Refutation'.
+--
+-- Theorem provers implement elaborate proof search strategies that can be
+-- tweaked in many different ways. 'ProvingOptions' contain values of the input
+-- parameters to theorem provers. 'prove' uses 'defaultOptions' and 'proveWith'
+-- run a specified set of options.
 
 -- $prover
 -- By default 'prove' runs the E theorem prover ('eprover'). Currently,
