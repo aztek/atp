@@ -1,5 +1,4 @@
-Haskell interface to automated theorem provers
-===
+# Haskell interface to automated theorem provers
 
 [![Build Status](https://travis-ci.org/aztek/atp.svg?branch=master)](https://travis-ci.org/aztek/atp)
 
@@ -30,6 +29,8 @@ syllogism :: Theorem
 syllogism = [humansAreMortal, socratesIsHuman] |- socratesIsMortal
 ```
 
+(See [examples](./tree/master/examples) for more.)
+
 `pprint` pretty-prints theorems and proofs.
 
 ```
@@ -39,11 +40,11 @@ Axiom 2. human(socrates)
 Conjecture. mortal(socrates)
 ```
 
-`prove` runs a third-party automated first-order theorem prover [E](https://wwwlehre.dhbw-stuttgart.de/~sschulz/E/E.html) to contruct a proof of the syllogism. This is a proof by _refutation_, that is, contradiction is derived from negated conjecture.
+`prove` runs a third-party automated first-order theorem prover [E](https://wwwlehre.dhbw-stuttgart.de/~sschulz/E/E.html) to construct a proof of the syllogism.
 
 ```
 λ: prove syllogism >>= pprint
-Found a proof by refutation using E.
+Found a proof by refutation.
 1. human(socrates) [axiom]
 2. ∀ x . (human(x) => mortal(x)) [axiom]
 3. mortal(socrates) [conjecture]
@@ -53,3 +54,7 @@ Found a proof by refutation using E.
 7. mortal(socrates) [paramodulation 6, 1]
 8. ⟘ [cn 4, 7]
 ```
+
+The proof returned by the theorem prover is a directed acyclic graph of logical inferences. Each logical inference is a step of the proof that derives a conclusion from zero or more premises using one of the predefined inference rules. The proof starts with negating the conjecture (step 4) and ends with a contradiction (step 8) and therefore is a proof by _refutation_.
+
+`proveUsing` runs a given theorem prover, currently supported are [E](https://wwwlehre.dhbw-stuttgart.de/~sschulz/E/E.html) and [Vampire](https://vprover.github.io/). `proveUsing vampire syllogism` runs Vampire that finds a proof that is very similar to the one above.
