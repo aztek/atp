@@ -48,6 +48,7 @@ module ATP.FirstOrder.Core (
   UnaryPredicate,
   BinaryPredicate,
   TernaryPredicate,
+  pattern Proposition,
   pattern UnaryPredicate,
   pattern BinaryPredicate,
   pattern TernaryPredicate,
@@ -221,7 +222,7 @@ instance IsString Clause where
   fromString = UnitClause . fromString
 
 instance IsString Formula where
-  fromString = Atomic . fromString
+  fromString = Proposition . fromString
 
 
 -- ** Function symbols
@@ -284,6 +285,14 @@ type BinaryPredicate = Term -> Term -> Formula
 
 -- | The type of a function symbol with three arguments.
 type TernaryPredicate = Term -> Term -> Term -> Formula
+
+-- | Build a proposition from a predicate symbol.
+#if __GLASGOW_HASKELL__ == 800
+pattern Proposition :: PredicateSymbol -> Formula
+#else
+pattern Proposition :: PredicateSymbol -> Proposition
+#endif
+pattern Proposition p = Atomic (Predicate p [])
 
 -- | Build a unary predicate from a predicate symbol.
 #if __GLASGOW_HASKELL__ == 800
