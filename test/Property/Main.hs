@@ -21,7 +21,7 @@ import Data.Semigroup (Semigroup(..))
 import System.Exit (exitFailure)
 
 import Test.QuickCheck (
-    Property, property, (===), (==>), whenFail, counterexample, forAll,
+    Testable, Property, property, (===), (==>), counterexample, forAll,
     forAllProperties, quickCheckWithResult, stdArgs, Args(..), withMaxSuccess
   )
 
@@ -33,6 +33,10 @@ import Property.Modifiers.AlphaEquivalent
 
 
 -- * Helper functions
+
+infix 4 ~==
+infix 4 ~~=
+infix 4 ~==~
 
 -- | Like '(===)', but for alpha equivalence.
 (~==) :: (Show e, FirstOrder e) => e -> e -> Property
@@ -47,6 +51,9 @@ x ~~= y
 -- | Like '(~==~)', but modulo simplification.
 (~==~) :: (Show e, FirstOrder e, Simplify e) => Partial e -> Partial e -> Property
 (~==~) = (~~=) `on` fmap simplify
+
+satisfies :: (Show b, Testable prop) => (a -> b) -> (b -> prop) -> a -> Property
+satisfies f p a = counterexample (show b) (p b) where b = f a
 
 
 -- * Generators
@@ -201,15 +208,8 @@ prop_alphaEquivalenceTransitivityTerm = alphaEquivalenceTransitivity
 
 -- ** Clauses
 
-prop_simplifyClauseEliminatesNegatedConstants :: Clause -> Property
-prop_simplifyClauseEliminatesNegatedConstants c =
-  whenFail (print s) (isSimplifiedClause s)
-    where s = simplify c
-
-isNegatedConstant :: Signed Literal -> Bool
-isNegatedConstant = \case
-  Signed Negative Constant{} -> True
-  _ -> False
+prop_simplifyClause :: Clause -> Property
+prop_simplifyClause = simplify `satisfies` isSimplifiedClause
 
 isSimplifiedClause :: Clause -> Bool
 isSimplifiedClause (Literals ls) =
@@ -217,10 +217,13 @@ isSimplifiedClause (Literals ls) =
   FalsumLiteral `notElem` ls &&
   (ls == [TautologyLiteral] || TautologyLiteral `notElem` ls)
 
+isNegatedConstant :: Signed Literal -> Bool
+isNegatedConstant = \case
+  Signed Negative Constant{} -> True
+  _ -> False
+
 prop_simplifyClauses :: Clauses -> Property
-prop_simplifyClauses cs =
-  whenFail (print ss) (areSimplifiedClauses ss)
-    where ss = simplify cs
+prop_simplifyClauses = simplify `satisfies` areSimplifiedClauses
 
 areSimplifiedClauses :: Clauses -> Bool
 areSimplifiedClauses (Clauses []) = True
@@ -231,34 +234,26 @@ areSimplifiedClauses (Clauses cs) =
 
 -- ** Formulas
 
-prop_simplifyFormulaEliminatesDoubleNegation :: Formula -> Property
-prop_simplifyFormulaEliminatesDoubleNegation f =
-  whenFail (print g) $
-    not (containsDoubleNegation g)
-      where g = simplify f
+prop_simplifyFormula :: Formula -> Property
+prop_simplifyFormula = simplify `satisfies` isSimplifiedFormula
+
+isSimplifiedFormula :: Formula -> Bool
+isSimplifiedFormula f =
+  not (containsDoubleNegation f) &&
+  not (containsLeftAssocitivity f)
 
 containsDoubleNegation :: Formula -> Bool
 containsDoubleNegation = \case
-  Tautology -> False
-  Falsum    -> False
-  Atomic{}  -> False
+  Atomic{} -> False
   Negate Negate{} -> True
   Negate f -> containsDoubleNegation f
   Connected  _ f g -> containsDoubleNegation f || containsDoubleNegation g
   Quantified _ _ f -> containsDoubleNegation f
 
-prop_simplifyFormulaEliminatesLeftAssocitivity :: Formula -> Property
-prop_simplifyFormulaEliminatesLeftAssocitivity f =
-  whenFail (print g) $
-    not (containsLeftAssocitivity g)
-      where g = simplify f
-
 containsLeftAssocitivity :: Formula -> Bool
 containsLeftAssocitivity = \case
-  Tautology -> False
-  Falsum    -> False
-  Atomic{}  -> False
-  Negate f  -> containsLeftAssocitivity f
+  Atomic{} -> False
+  Negate f -> containsLeftAssocitivity f
   Connected  c (Connected c' _ _) _ | c' == c && isAssociative c -> True
   Connected  _ f g -> containsLeftAssocitivity f || containsLeftAssocitivity g
   Quantified _ _ f -> containsLeftAssocitivity f
