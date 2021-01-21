@@ -75,13 +75,13 @@ infix  2 |-
 
 -- | A smart constructor for a signed literal.
 signed :: Sign -> Literal -> Signed Literal
-signed Negative (Constant b) = Signed Positive (Constant (not b))
+signed Negative (Propositional b) = Signed Positive (Propositional (not b))
 signed s l = Signed s l
 
 -- | A smart constructor for a unit clause.
 unitClause :: Signed Literal -> Clause
 unitClause (Signed s l) = case signed s l of
-  FalsumLiteral -> EmptyClause
+  FalsityLiteral -> EmptyClause
   sl -> UnitClause sl
 
 -- | A smart contructor for a clause.
@@ -111,8 +111,8 @@ a =/= b = Negate (a === b)
 -- | A smart constructor for negation.
 neg :: Formula -> Formula
 neg = \case
-  Tautology -> Falsum
-  Falsum    -> Tautology
+  Tautology -> Falsity
+  Falsity   -> Tautology
   Negate f  -> f
   f         -> Negate f
 
@@ -133,16 +133,16 @@ neg = \case
 --
 -- __Left zero__
 --
--- prop> Falsum /\ g == Falsum
+-- prop> Falsity /\ g == Falsity
 --
 -- __Right zero__
 --
--- prop> f /\ Falsum == Falsum
+-- prop> f /\ Falsity == Falsity
 --
 (/\) :: Formula -> Formula -> Formula
-Falsum    /\ _ = Falsum
+Falsity   /\ _ = Falsity
 Tautology /\ g = g
-_ /\ Falsum    = Falsum
+_ /\ Falsity   = Falsity
 f /\ Tautology = f
 Connected And f g /\ h = f /\ (g /\ h)
 f /\ g = Connected And f g
@@ -156,11 +156,11 @@ f /\ g = Connected And f g
 --
 -- __Left identity__
 --
--- prop> Falsum \/ g == g
+-- prop> Falsity \/ g == g
 --
 -- __Right identity__
 --
--- prop> f \/ Falsum == f
+-- prop> f \/ Falsity == f
 --
 -- __Left zero__
 --
@@ -172,18 +172,18 @@ f /\ g = Connected And f g
 --
 (\/) :: Formula -> Formula -> Formula
 Tautology \/ _ = Tautology
-Falsum    \/ g = g
+Falsity   \/ g = g
 _ \/ Tautology = Tautology
-f \/ Falsum    = f
+f \/ Falsity   = f
 Connected Or f g \/ h = f \/ (g \/ h)
 f \/ g = Connected Or f g
 
 -- | A smart constructor for the 'Implies' connective.
 (==>) :: Formula -> Formula -> Formula
 Tautology ==> g = g
-Falsum    ==> _ = Tautology
+Falsity   ==> _ = Tautology
 _ ==> Tautology = Tautology
-f ==> Falsum    = neg f
+f ==> Falsity   = neg f
 f ==> g = Connected Implies f g
 
 -- | A smart constructor for the 'Equivalent' connective.
@@ -216,15 +216,15 @@ f <=> g = Connected Equivalent f g
 --
 -- __Left identity__
 --
--- prop> Falsum <~> g == g
+-- prop> Falsity <~> g == g
 --
 -- __Right identity__
 --
--- prop> f <~> Falsum == f
+-- prop> f <~> Falsity == f
 --
 (<~>) :: Formula -> Formula -> Formula
-Falsum <~> g = g
-f <~> Falsum = f
+Falsity <~> g = g
+f <~> Falsity = f
 Connected Xor f g <~> h = f <~> (g <~> h)
 f <~> g = Connected Xor f g
 
@@ -253,7 +253,7 @@ instance Binder Formula where
 instance Binder (Var, Formula) where
   quantified q (v, f) = case f of
     Tautology -> f
-    Falsum    -> f
+    Falsity   -> f
     _         -> Quantified q v f
 
 -- | The recursive instance for polyvariadic bindings of quantified variables.
@@ -306,7 +306,7 @@ instance Monoid Conjunction where
 conjunction :: Foldable f => f Formula -> Formula
 conjunction = getConjunction . mconcat . fmap Conjunction . Foldable.toList
 
--- | The ('Falsum', '\/') monoid.
+-- | The ('Falsity', '\/') monoid.
 newtype Disjunction = Disjunction { getDisjunction :: Formula }
   deriving (Show, Eq, Ord)
 
@@ -314,7 +314,7 @@ instance Semigroup Disjunction where
   (<>) = coerce (\/)
 
 instance Monoid Disjunction where
-  mempty = Disjunction Falsum
+  mempty = Disjunction Falsity
   mappend = (<>)
 
 -- | Build the disjunction of formulas in a list.
@@ -336,7 +336,7 @@ instance Monoid Equivalence where
 equivalence :: Foldable f => f Formula -> Formula
 equivalence = getEquivalence . mconcat . fmap Equivalence . Foldable.toList
 
--- | The ('Falsum', '<~>') monoid.
+-- | The ('Falsity', '<~>') monoid.
 newtype Inequivalence = Inequivalence { getInequivalence :: Formula }
   deriving (Show, Eq, Ord)
 
@@ -344,7 +344,7 @@ instance Semigroup Inequivalence where
   (<>) = coerce (<~>)
 
 instance Monoid Inequivalence where
-  mempty = Inequivalence Falsum
+  mempty = Inequivalence Falsity
   mappend = (<>)
 
 -- | Build the inequivalence of formulas in a list.
@@ -457,18 +457,18 @@ clauseUnion = getClauseUnion . mconcat . fmap ClauseUnion . Foldable.toList
 --
 -- __Left zero__
 --
--- prop> [Falsum] //\\ g == [Falsum]
+-- prop> [Falsity] //\\ g == [Falsity]
 --
 -- __Right zero__
 --
--- prop> f //\\ [Falsum] == [Falsum]
+-- prop> f //\\ [Falsity] == [Falsity]
 --
 (//\\) :: [Formula] -> [Formula] -> [Formula]
-[Falsum] //\\ _ = [Falsum]
-_ //\\ [Falsum] = [Falsum]
+[Falsity] //\\ _ = [Falsity]
+_ //\\ [Falsity] = [Falsity]
 fs //\\ gs = fs <> gs
 
--- | The ('[]', '//\\') monoid with the absorbing element '[Falsum]'.
+-- | The ('[]', '//\\') monoid with the absorbing element '[Falsity]'.
 newtype MultiConjunction = MultiConjunction { getMultiConjunction :: [Formula] }
   deriving (Show, Eq, Ord)
 
@@ -492,14 +492,14 @@ instance Monoid MultiConjunction where
 -- >>> flattenConjunction [Tautology]
 -- []
 --
--- >>> flattenConjunction [Falsum]
--- [Atomic (Constant False)]
+-- >>> flattenConjunction [Falsity]
+-- [Atomic (Propositional False)]
 --
 -- >>> flattenConjunction ["p", Tautology]
 -- [Atomic (Predicate (PredicateSymbol "p") [])]
 --
--- >>> flattenConjunction ["p", Falsum, "q"]
--- [Atomic (Constant False)]
+-- >>> flattenConjunction ["p", Falsity, "q"]
+-- [Atomic (Propositional False)]
 --
 flattenConjunction :: Foldable f => f Formula -> [Formula]
 flattenConjunction = getMultiConjunction . mconcat . fmap multiConjunction . Foldable.toList
@@ -538,14 +538,14 @@ newtype MultiDisjunction = MultiDisjunction { getMultiDisjunction :: [Formula] }
 
 multiDisjunction :: Formula -> MultiDisjunction
 multiDisjunction = \case
-  Falsum -> MultiDisjunction []
+  Falsity -> MultiDisjunction []
   f -> MultiDisjunction [f]
 
 instance Semigroup MultiDisjunction where
   (<>) = coerce (\\//)
 
 instance Monoid MultiDisjunction where
-  mempty = multiDisjunction Falsum
+  mempty = multiDisjunction Falsity
   mappend = (<>)
 
 -- | Remove redundant boolean constants from a list of disjuncted formulas.
@@ -554,15 +554,15 @@ instance Monoid MultiDisjunction where
 -- []
 --
 -- >>> flattenDisjunction [Tautology]
--- [Atomic (Constant True)]
+-- [Atomic (Propositional True)]
 --
--- >>> flattenDisjunction [Falsum]
+-- >>> flattenDisjunction [Falsity]
 -- []
 --
 -- >>> flattenDisjunction ["p", Tautology, "q"]
--- [Atomic (Constant True)]
+-- [Atomic (Propositional True)]
 --
--- >>> flattenDisjunction ["p", Falsum]
+-- >>> flattenDisjunction ["p", Falsity]
 -- [Atomic (Predicate (PredicateSymbol "p") [])]
 --
 flattenDisjunction :: Foldable f => f Formula -> [Formula]

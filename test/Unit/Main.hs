@@ -99,8 +99,8 @@ tests = return [testCase p n t i | (n, t, i) <- cases, p <- provers]
         ("refutes an empty clause",       expectProof,      Left emptyClause),
         ("saturates an empty clause set", expectSaturation, Left (Clauses [])),
 
-        ("proves tautology", expectProof,      Right (Claim Tautology)),
-        ("saturates falsum", expectSaturation, Right (Claim Falsum)),
+        ("proves tautology",  expectProof,      Right (Claim Tautology)),
+        ("saturates falsity", expectSaturation, Right (Claim Falsity)),
 
         ("proves syllogism",            expectProof,      Right syllogism),
         ("saturates negated syllogism", expectSaturation, Right (negated syllogism)),

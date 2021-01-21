@@ -214,12 +214,12 @@ prop_simplifyClause = simplify `satisfies` isSimplifiedClause
 isSimplifiedClause :: Clause -> Bool
 isSimplifiedClause (Literals ls) =
   not (any isNegatedConstant ls) &&
-  FalsumLiteral `notElem` ls &&
+  FalsityLiteral `notElem` ls &&
   (ls == [TautologyLiteral] || TautologyLiteral `notElem` ls)
 
 isNegatedConstant :: Signed Literal -> Bool
 isNegatedConstant = \case
-  Signed Negative Constant{} -> True
+  Signed Negative Propositional{} -> True
   _ -> False
 
 prop_simplifyClauses :: Clauses -> Property

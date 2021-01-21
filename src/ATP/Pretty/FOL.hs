@@ -102,8 +102,8 @@ instance Pretty PredicateSymbol where
 
 instance Pretty Literal where
   pretty = \case
-    Constant True  -> blue "⟙"
-    Constant False -> blue "⟘"
+    Propositional True  -> blue "⟙"
+    Propositional False -> blue "⟘"
     Predicate p ts -> prettyApplication (pretty p) (fmap pretty ts)
     Equality a b   -> pretty a <+> "=" <+> pretty b
 
@@ -115,7 +115,7 @@ instance Pretty (Signed Literal) where
 
 instance Pretty Clause where
   pretty (Literals ls) = case nonEmpty ls of
-    Nothing  -> pretty (Constant False)
+    Nothing  -> pretty (Propositional False)
     Just nls -> sepBy (pretty Or) (fmap pretty nls)
 
   prettyList = prettySequents "Axiom"

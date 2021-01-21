@@ -38,7 +38,7 @@ import ATP.FirstOrder.Occurrence
 -- | Convert a clause to a full first-order formula.
 liftClause :: Clause -> Formula
 liftClause = \case
-  EmptyClause -> Falsum
+  EmptyClause -> Falsity
   Literals ls -> close . foldl1 (Connected Or) . fmap liftSignedLiteral $ ls
 
 -- | Try to convert a first-order formula /f/ to a clause.
@@ -70,7 +70,7 @@ unliftSignedLiteral = \case
 
 -- | Convert a contradiction to an inference.
 liftContradiction :: Contradiction f -> Inference f
-liftContradiction (Contradiction r) = Inference r (Formula Falsum)
+liftContradiction (Contradiction r) = Inference r (Formula Falsity)
 
 -- | Try to convert an inference to a contradiction.
 unliftContradiction :: Inference f -> Maybe (Contradiction f)
@@ -78,11 +78,11 @@ unliftContradiction (Inference r e)
   | isContradiction e = Just (Contradiction r)
   | otherwise = Nothing
 
--- | Check whether a given expression is either a falsum or an empty clause.
+-- | Check whether a given expression is either a falsity or an empty clause.
 isContradiction :: LogicalExpression -> Bool
 isContradiction = \case
-  Clause c | Falsum <- liftClause c -> True
-  Formula Falsum -> True
+  Clause c | Falsity <- liftClause c -> True
+  Formula Falsity -> True
   _ -> False
 
 -- | Convert a refutation to a derivation.

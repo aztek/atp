@@ -39,6 +39,7 @@ module ATP.FirstOrder.Core (
   UnaryFunction,
   BinaryFunction,
   TernaryFunction,
+  pattern Constant,
   pattern UnaryFunction,
   pattern BinaryFunction,
   pattern TernaryFunction,
@@ -53,8 +54,8 @@ module ATP.FirstOrder.Core (
   pattern BinaryPredicate,
   pattern TernaryPredicate,
 
-  pattern FalsumLiteral,
   pattern TautologyLiteral,
+  pattern FalsityLiteral,
 
   pattern EmptyClause,
   pattern UnitClause,
@@ -64,7 +65,7 @@ module ATP.FirstOrder.Core (
   pattern SingleClause,
 
   pattern Tautology,
-  pattern Falsum,
+  pattern Falsity,
 
   pattern Claim
 ) where
@@ -100,7 +101,7 @@ newtype PredicateSymbol = PredicateSymbol Text
 
 -- | The literal in first-order logic.
 data Literal
-  = Constant Bool
+  = Propositional Bool
     -- ^ A logical constant - tautology or falsum.
   | Predicate PredicateSymbol [Term]
     -- ^ Application of a predicate symbol. The empty list of arguments
@@ -144,11 +145,12 @@ instance Monad Signed where
 
 -- | The first-order clause - an implicitly universally-quantified disjunction
 -- of positive or negative literals, represented as a list of signed literals.
+-- The empty clause is logically equivalent to falsum.
 newtype Clause = Literals { getLiterals :: [Signed Literal] }
   deriving (Show, Eq, Ord, Semigroup, Monoid)
 
 -- | A clause set is zero or more first-order clauses.
--- The empty clause set is logically equivalent to falsum.
+-- The empty clause set is logically equivalent to tautology.
 newtype Clauses = Clauses { getClauses :: [Clause] }
   deriving (Show, Eq, Ord, Semigroup, Monoid)
 
@@ -158,7 +160,7 @@ data Quantifier
   | Exists -- ^ The existential quantifier.
   deriving (Eq, Show, Ord, Enum, Bounded)
 
--- | The binary connective in first-order logic.
+-- | The binary logical connective.
 data Connective
   = And        -- ^ Conjunction.
   | Or         -- ^ Disjunction.
@@ -167,7 +169,7 @@ data Connective
   | Xor        -- ^ Exclusive or.
   deriving (Show, Eq, Ord, Enum, Bounded)
 
--- | Check associativity of a given connective.
+-- | Associativity of a given binary logical connective.
 --
 -- >>> isAssociative Implies
 -- False
@@ -210,7 +212,7 @@ data Theorem = Theorem {
 -- Instances, type synonyms and pattern synonyms for syntactic convenience.
 
 instance IsString Term where
-  fromString = flip Function [] . fromString
+  fromString = Constant . fromString
 
 instance IsString Literal where
   fromString = flip Predicate [] . fromString
@@ -242,6 +244,14 @@ type BinaryFunction = Term -> Term -> Term
 
 -- | The type of a function symbol with three arguments.
 type TernaryFunction = Term -> Term -> Term -> Term
+
+-- | Build a proposition from a predicate symbol.
+#if __GLASGOW_HASKELL__ == 800
+pattern Constant :: FunctionSymbol -> Term
+#else
+pattern Constant :: FunctionSymbol -> Constant
+#endif
+pattern Constant f = Function f []
 
 -- | Build a unary function from a function symbol.
 #if __GLASGOW_HASKELL__ == 800
@@ -321,31 +331,31 @@ pattern TernaryPredicate p a b c = Atomic (Predicate p [a, b, c])
 
 -- ** Literals
 
--- | The positive falsum literal.
-pattern FalsumLiteral :: Signed Literal
-pattern FalsumLiteral = Signed Positive (Constant False)
-
 -- | The positive tautology literal.
 pattern TautologyLiteral :: Signed Literal
-pattern TautologyLiteral = Signed Positive (Constant True)
+pattern TautologyLiteral = Signed Positive (Propositional True)
+
+-- | The positive falsity literal.
+pattern FalsityLiteral :: Signed Literal
+pattern FalsityLiteral = Signed Positive (Propositional False)
 
 
 -- ** Clauses
 
+-- | A unit clause with a single positive tautology literal.
+-- 'TautologyClause' is semantically (but not syntactically) equivalent to
+-- 'Tautology'.
+pattern TautologyClause :: Clause
+pattern TautologyClause = UnitClause TautologyLiteral
+
 -- | The empty clause.
--- 'EmptyClause' is semantically (but not syntactically) equivalent to 'Falsum'.
+-- 'EmptyClause' is semantically (but not syntactically) equivalent to 'Falsity'.
 pattern EmptyClause :: Clause
 pattern EmptyClause = Literals []
 
 -- | The unit clause.
 pattern UnitClause :: Signed Literal -> Clause
 pattern UnitClause l = Literals [l]
-
--- | A unit clause with a single positive tautology.
--- 'TautologyClause' is semantically (but not syntactically) equivalent to
--- 'Tautology'.
-pattern TautologyClause :: Clause
-pattern TautologyClause = UnitClause TautologyLiteral
 
 -- | The set of clauses with a single clause in it.
 pattern NoClauses :: Clauses
@@ -358,14 +368,14 @@ pattern SingleClause c = Clauses [c]
 
 -- ** Formulas
 
--- | The logical truth.
+-- | The logical tautology.
 pattern Tautology :: Formula
-pattern Tautology = Atomic (Constant True)
+pattern Tautology = Atomic (Propositional True)
 
 -- | The logical false.
--- 'Falsum' is semantically (but not syntactically) equivalent to 'EmptyClause'.
-pattern Falsum :: Formula
-pattern Falsum = Atomic (Constant False)
+-- 'Falsity' is semantically (but not syntactically) equivalent to 'EmptyClause'.
+pattern Falsity :: Formula
+pattern Falsity = Atomic (Propositional False)
 
 -- | A logical claim is a conjecture entailed by the empty set of axioms.
 pattern Claim :: Formula -> Theorem

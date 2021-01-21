@@ -111,9 +111,9 @@ decodeTermS = \case
 -- | Encode a literal in TPTP.
 encodeLiteral :: Literal -> TPTP.Literal
 encodeLiteral = \case
-  Predicate p ts -> TPTP.Predicate (encodePredicate p) (fmap encodeTerm ts)
-  Equality a b   -> TPTP.Equality (encodeTerm a) TPTP.Positive (encodeTerm b)
-  Constant b     -> TPTP.Predicate (TPTP.Reserved (TPTP.Standard p)) []
+  Predicate p ts  -> TPTP.Predicate (encodePredicate p) (fmap encodeTerm ts)
+  Equality a b    -> TPTP.Equality (encodeTerm a) TPTP.Positive (encodeTerm b)
+  Propositional b -> TPTP.Predicate (TPTP.Reserved (TPTP.Standard p)) []
     where p = if b then TPTP.Tautology else TPTP.Falsum
 
 -- | Decode a literal from TPTP.
@@ -128,8 +128,8 @@ decodeLiteral = \case
 decodePredicate :: TPTP.Name TPTP.Predicate -> Partial ([Term] -> Literal)
 decodePredicate = \case
   TPTP.Defined  (TPTP.Atom p)                  -> return $ Predicate (PredicateSymbol p)
-  TPTP.Reserved (TPTP.Standard TPTP.Tautology) -> return $ const (Constant True)
-  TPTP.Reserved (TPTP.Standard TPTP.Falsum)    -> return $ const (Constant False)
+  TPTP.Reserved (TPTP.Standard TPTP.Tautology) -> return $ const (Propositional True)
+  TPTP.Reserved (TPTP.Standard TPTP.Falsum)    -> return $ const (Propositional False)
   TPTP.Reserved (TPTP.Standard p) ->
     parsingError $ "unsupported standard reserved predicate " <> show p
   TPTP.Reserved TPTP.Extended{} ->

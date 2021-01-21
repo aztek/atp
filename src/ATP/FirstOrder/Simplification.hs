@@ -44,14 +44,14 @@ instance Simplify LogicalExpression where
 -- * @'simplify' c@ does not contain falsum literals.
 -- * @'simplify' c@ does not contain redundant tautology literals.
 --
--- >>> simplify (UnitClause (Signed Negative (Constant True)))
+-- >>> simplify (UnitClause (Signed Negative (Propositional True)))
 -- Literals {getLiterals = []}
 --
--- >>> simplify (Literals [FalsumLiteral, Signed Positive (Predicate "p" [])])
+-- >>> simplify (Literals [FalsityLiteral, Signed Positive (Predicate "p" [])])
 -- Literals {getLiterals = [Signed {signof = Positive, unsign = Predicate (PredicateSymbol "p") []}]}
 --
 -- >>> simplify (Literals [TautologyLiteral, Signed Positive (Predicate "p" [])])
--- Literals {getLiterals = [Signed {signof = Positive, unsign = Constant True}]}
+-- Literals {getLiterals = [Signed {signof = Positive, unsign = Propositional True}]}
 --
 instance Simplify Clause where
   simplify = clause . getLiterals
@@ -65,10 +65,10 @@ instance Simplify Clause where
 -- * @'simplify' c@ does not contain tautology literals.
 -- * @'simplify' c@ does not contain redundant falsum literals.
 --
--- >>> simplify (SingleClause (UnitClause (Signed Negative (Constant True))))
+-- >>> simplify (SingleClause (UnitClause (Signed Negative (Propositional True))))
 -- Clauses {getClauses = [Literals {getLiterals = []}]}
 --
--- >>> simplify (SingleClause (Literals [FalsumLiteral, Signed Positive (Predicate "p" [])]))
+-- >>> simplify (SingleClause (Literals [FalsityLiteral, Signed Positive (Predicate "p" [])]))
 -- Clauses {getClauses = [Literals {getLiterals = [Signed {signof = Positive, unsign = Predicate (PredicateSymbol "p") []}]}]}
 --
 -- >>> simplify (SingleClause (Literals [TautologyLiteral, Signed Positive (Predicate "p" [])]))
@@ -89,7 +89,7 @@ instance Simplify Clauses where
 -- Any formula built only using smart constructors is simplified by construction.
 --
 -- >>> simplify (Connected Or tautology (Atomic (Predicate "p" [])))
--- Atomic (Constant True)
+-- Atomic (Propositional True)
 --
 -- >>> simplify (Negate (Negate (Atomic (Predicate "p" []))))
 -- Atomic (Predicate "p" [])

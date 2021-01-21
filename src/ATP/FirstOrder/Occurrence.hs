@@ -209,22 +209,22 @@ instance FirstOrder e => FirstOrder (Signed e) where
 
 instance FirstOrder Literal where
   vars = \case
-    Constant{}     -> mempty
-    Predicate _ ts -> vars ts
-    Equality a b   -> vars a <> vars b
+    Propositional{} -> mempty
+    Predicate _ ts  -> vars ts
+    Equality a b    -> vars a <> vars b
 
   free = vars
   bound _ = mempty
 
-  Constant  b    ?= Constant  b'     = return (b == b')
-  Predicate p ts ?= Predicate p' ts' | p == p' = ts ?= ts'
-  Equality  a b  ?= Equality  a' b'  = liftM2 (&&) (a ?= a') (b ?= b')
+  Propositional b ?= Propositional b' = return (b == b')
+  Predicate p ts  ?= Predicate p' ts' | p == p' = ts ?= ts'
+  Equality  a b   ?= Equality  a' b'  = liftM2 (&&) (a ?= a') (b ?= b')
   _ ?= _ = return False
 
   alpha = \case
-    Constant b     -> return (Constant b)
-    Predicate p ts -> Predicate p <$> traverse alpha ts
-    Equality a b   -> Equality <$> alpha a <*> alpha b
+    Propositional b -> return (Propositional b)
+    Predicate p ts  -> Predicate p <$> traverse alpha ts
+    Equality a b    -> Equality <$> alpha a <*> alpha b
 
 instance FirstOrder Term where
   vars = \case
