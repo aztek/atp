@@ -22,6 +22,7 @@ tested-with:
   GHC == 8.10.3
 
 extra-source-files:
+  CHANGELOG.md
   test/**/*.hs
 
 source-repository head
