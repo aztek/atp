@@ -260,7 +260,7 @@ instance FirstOrder Var where
     Nothing -> do { v' <- binding v; share v v'; return v' }
 
 instance FirstOrder e => FirstOrder [e] where
-  vars = mconcat . fmap vars
+  vars = foldMap vars
   free = vars
   bound = mempty
 

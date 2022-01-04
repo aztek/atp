@@ -86,8 +86,8 @@ unitClause (Signed s l) = case signed s l of
 
 -- | A smart contructor for a clause.
 -- 'clause' eliminates negated boolean constants, falsums and redundant tautologies.
-clause :: Foldable f => f (Signed Literal) -> Clause
-clause = clauseUnion . fmap unitClause . Foldable.toList
+clause :: Traversable t => t (Signed Literal) -> Clause
+clause = clauseUnion . fmap unitClause
 
 -- | A smart constructor for a set of clauses with a single clause in it.
 singleClause :: Clause -> Clauses
@@ -97,8 +97,8 @@ singleClause (Literals ls) = case clause ls of
 
 -- | A smart constructor for the set of clauses.
 -- 'clauses' eliminates negated boolean constants, falsums and redundant tautologies.
-clauses :: Foldable f => f Clause -> Clauses
-clauses = clauseConjunction . fmap singleClause . Foldable.toList
+clauses :: Traversable t => t Clause -> Clauses
+clauses = clauseConjunction . fmap singleClause
 
 -- | A smart constructor for equality.
 (===) :: Term -> Term -> Formula
@@ -304,7 +304,7 @@ instance Monoid Conjunction where
 
 -- | Build the conjunction of formulas in a list.
 conjunction :: Foldable f => f Formula -> Formula
-conjunction = getConjunction . mconcat . fmap Conjunction . Foldable.toList
+conjunction = getConjunction . foldMap Conjunction
 
 -- | The ('Falsity', '\/') monoid.
 newtype Disjunction = Disjunction { getDisjunction :: Formula }
@@ -319,7 +319,7 @@ instance Monoid Disjunction where
 
 -- | Build the disjunction of formulas in a list.
 disjunction :: Foldable f => f Formula -> Formula
-disjunction = getDisjunction . mconcat . fmap Disjunction . Foldable.toList
+disjunction = getDisjunction . foldMap Disjunction
 
 -- | The ('Tautology', '<=>') monoid.
 newtype Equivalence = Equivalence { getEquivalence :: Formula }
@@ -334,7 +334,7 @@ instance Monoid Equivalence where
 
 -- | Build the equivalence of formulas in a list.
 equivalence :: Foldable f => f Formula -> Formula
-equivalence = getEquivalence . mconcat . fmap Equivalence . Foldable.toList
+equivalence = getEquivalence . foldMap Equivalence
 
 -- | The ('Falsity', '<~>') monoid.
 newtype Inequivalence = Inequivalence { getInequivalence :: Formula }
@@ -349,7 +349,7 @@ instance Monoid Inequivalence where
 
 -- | Build the inequivalence of formulas in a list.
 inequivalence :: Foldable f => f Formula -> Formula
-inequivalence = getInequivalence . mconcat . fmap Inequivalence . Foldable.toList
+inequivalence = getInequivalence . foldMap Inequivalence
 
 
 -- * Miscellaneous
@@ -395,7 +395,7 @@ instance Monoid ClauseConjunction where
 
 -- | Build the conjunction of a collection of clauses.
 clauseConjunction :: Foldable f => f Clauses -> Clauses
-clauseConjunction = getClauseConjunction . mconcat . fmap ClauseConjunction . Foldable.toList
+clauseConjunction = getClauseConjunction . foldMap ClauseConjunction
 
 -- | Smart union of two clauses.
 -- ('\./') has the following properties.
@@ -438,7 +438,7 @@ instance Monoid ClauseUnion where
 
 -- | Build the union of a collection of clauses.
 clauseUnion :: Foldable f => f Clause -> Clause
-clauseUnion = getClauseUnion . mconcat . fmap ClauseUnion . Foldable.toList
+clauseUnion = getClauseUnion . foldMap ClauseUnion
 
 -- | A multi-conjunction.
 -- ('//\\') has the following properties.
@@ -502,7 +502,7 @@ instance Monoid MultiConjunction where
 -- [Atomic (Propositional False)]
 --
 flattenConjunction :: Foldable f => f Formula -> [Formula]
-flattenConjunction = getMultiConjunction . mconcat . fmap multiConjunction . Foldable.toList
+flattenConjunction = getMultiConjunction . foldMap multiConjunction
 
 -- | A multi-disjunction.
 -- ('\\//') has the following properties.
@@ -566,4 +566,4 @@ instance Monoid MultiDisjunction where
 -- [Atomic (Predicate (PredicateSymbol "p") [])]
 --
 flattenDisjunction :: Foldable f => f Formula -> [Formula]
-flattenDisjunction = getMultiDisjunction . mconcat . fmap multiDisjunction . Foldable.toList
+flattenDisjunction = getMultiDisjunction . foldMap multiDisjunction
