@@ -29,7 +29,7 @@ syllogism :: Theorem
 syllogism = [humansAreMortal, socratesIsHuman] |- socratesIsMortal
 ```
 
-(See [examples](./tree/master/examples) for more.)
+(See [examples](https://github.com/aztek/atp/tree/master/examples) for more.)
 
 `pprint` pretty-prints theorems and proofs.
 
