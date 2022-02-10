@@ -58,3 +58,5 @@ Found a proof by refutation.
 The proof returned by the theorem prover is a directed acyclic graph of logical inferences. Each logical inference is a step of the proof that derives a conclusion from zero or more premises using one of the predefined inference rules. The proof starts with negating the conjecture (step 4) and ends with a contradiction (step 8) and therefore is a proof by _refutation_.
 
 `proveUsing` runs a given theorem prover, currently supported are [E](https://wwwlehre.dhbw-stuttgart.de/~sschulz/E/E.html) and [Vampire](https://vprover.github.io/). `proveUsing vampire syllogism` runs Vampire that finds a proof that is very similar to the one above.
+
+See [Hackage](https://hackage.haskell.org/package/atp/docs/ATP.html) for the Haddock documentation.
